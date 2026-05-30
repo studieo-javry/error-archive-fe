@@ -1,0 +1,189 @@
+@import "tailwindcss";
+@import "highlight.js/styles/github.css" layer(base);
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+  --font-serif: "Merriweather", serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Glassmorphism Header */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.dark .glass {
+  background: rgba(39, 39, 42, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Card Hover */
+.card-hover:hover {
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+.dark .card-hover:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+/* Serif Title */
+.serif-title {
+  font-family: var(--font-serif);
+}
+
+/* LED Timeline Nodes */
+.tl-node {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: relative;
+  z-index: 10;
+  margin-top: 6px;
+  box-sizing: content-box;
+}
+.dark .tl-node {
+  border-color: #18181b;
+}
+
+.tl-line {
+  width: 1px;
+  background-color: #e4e4e7;
+  position: absolute;
+  top: 16px;
+  bottom: -24px;
+}
+.dark .tl-line {
+  background-color: #27272a;
+}
+
+.led-fail {
+  background-color: #f43f5e;
+  box-shadow: 0 0 14px 4px rgba(244, 63, 94, 0.4);
+}
+.led-ref {
+  background-color: #3b82f6;
+  box-shadow: 0 0 14px 4px rgba(59, 130, 246, 0.4);
+}
+.led-success {
+  background-color: #10b981;
+  box-shadow: 0 0 14px 4px rgba(16, 185, 129, 0.4);
+}
+
+/* Solution Selection Mode */
+.cb-wrapper {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+}
+.selection-mode .cb-wrapper {
+  width: 32px;
+  opacity: 1;
+  margin-right: 8px;
+}
+.selection-mode .step-item {
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+.selection-mode .step-item.is-checked {
+  opacity: 1;
+}
+.selection-mode .tl-line {
+  opacity: 0.2;
+}
+
+/* Custom Checkbox */
+.custom-checkbox {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #d4d4d8;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.dark .custom-checkbox {
+  border-color: #52525b;
+}
+.custom-checkbox:checked {
+  background-color: #10b981;
+  border-color: #10b981;
+}
+
+/* Borderless Inputs */
+.raw-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #e4e4e7;
+  border-radius: 0;
+  padding: 0.5rem 0;
+  color: #18181b;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.dark .raw-input {
+  color: #f4f4f5;
+  border-bottom-color: #3f3f46;
+}
+.raw-input:focus {
+  border-bottom-color: #10b981;
+}
+.dark .raw-input:focus {
+  border-bottom-color: #10b981;
+}
+.raw-input::placeholder {
+  color: #a1a1aa;
+  font-weight: 300;
+}
+.dark .raw-input::placeholder {
+  color: #52525b;
+}
+
+.raw-textarea {
+  background: transparent;
+  border: none;
+  border-left: 2px solid #e4e4e7;
+  padding-left: 1rem;
+  font-size: 0.85rem;
+  color: #52525b;
+  outline: none;
+  resize: none;
+  transition: border-color 0.2s;
+}
+.dark .raw-textarea {
+  color: #a1a1aa;
+  border-left-color: #3f3f46;
+}
+.raw-textarea:focus {
+  border-left-color: #10b981;
+  color: #18181b;
+}
+.dark .raw-textarea:focus {
+  border-left-color: #10b981;
+  color: #f4f4f5;
+}
+
+/* Footer Slide */
+.footer-slide-up {
+  transform: translateY(0);
+}
+.footer-slide-down {
+  transform: translateY(100%);
+}
