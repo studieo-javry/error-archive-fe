@@ -1,14 +1,13 @@
-export interface ApiResponse<T> {
-  success: boolean
-  data: T
-  message?: string
-  timestamp: string
+export interface CursorPaginatedResponse<T> {
+  items: T[]
+  nextCursor: string | null
+  hasNext: boolean
 }
 
-export interface PaginatedResponse<T> {
+export interface OffsetPaginatedResponse<T> {
   items: T[]
-  total: number
   page: number
   size: number
-  hasNext: boolean
+  totalElements: number
+  totalPages: number
 }

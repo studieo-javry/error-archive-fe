@@ -1,13 +1,16 @@
 import apiClient from './apiClient'
-import type { ApiResponse } from '@/types/api'
 import type { Solution, SolutionCreateRequest } from '@/types/error'
 
 export const solutionApi = {
-  list(errorId: string) {
-    return apiClient.get<ApiResponse<Solution[]>>(`/errors/${errorId}/solutions`)
+  list(caseId: number) {
+    return apiClient.get<Solution[]>(`/error-cases/${caseId}/solutions`)
   },
 
-  create(errorId: string, data: SolutionCreateRequest) {
-    return apiClient.post<ApiResponse<Solution>>(`/errors/${errorId}/solutions`, data)
+  create(caseId: number, data: SolutionCreateRequest) {
+    return apiClient.post<Solution>(`/error-cases/${caseId}/solutions`, data)
+  },
+
+  delete(caseId: number, solutionId: number) {
+    return apiClient.delete<void>(`/error-cases/${caseId}/solutions/${solutionId}`)
   },
 }

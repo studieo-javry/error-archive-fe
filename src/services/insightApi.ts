@@ -1,5 +1,4 @@
 import apiClient from './apiClient'
-import type { ApiResponse } from '@/types/api'
 
 export interface ActivityDay {
   date: string
@@ -17,7 +16,7 @@ export interface KpiStats {
 
 export interface LeaderboardEntry {
   rank: number
-  user: { id: string; username: string; displayName: string; avatarUrl: string }
+  user: { id: number; displayName: string; avatarUrl: string | null }
   score: number
   errorCount: number
   solutionCount: number
@@ -25,18 +24,18 @@ export interface LeaderboardEntry {
 
 export const insightApi = {
   dashboard() {
-    return apiClient.get<ApiResponse<{ recentErrors: unknown[]; stats: KpiStats }>>('/dashboard')
+    return apiClient.get<{ recentErrors: unknown[]; stats: KpiStats }>('/dashboard')
   },
 
   activity(year?: number) {
-    return apiClient.get<ApiResponse<ActivityDay[]>>('/insights/activity', { params: { year } })
+    return apiClient.get<ActivityDay[]>('/insights/activity', { params: { year } })
   },
 
   kpi() {
-    return apiClient.get<ApiResponse<KpiStats>>('/insights/kpi')
+    return apiClient.get<KpiStats>('/insights/kpi')
   },
 
   leaderboard(limit = 10) {
-    return apiClient.get<ApiResponse<LeaderboardEntry[]>>('/insights/leaderboard', { params: { limit } })
+    return apiClient.get<LeaderboardEntry[]>('/insights/leaderboard', { params: { limit } })
   },
 }
