@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Snippet } from '@/types/error'
+import type { ErrorCaseSnippet } from '@/types/error'
 import hljs from 'highlight.js'
 
-const props = defineProps<{ snippet: Snippet | null }>()
+const props = defineProps<{ snippet: ErrorCaseSnippet | null }>()
 
 const highlightedCode = computed(() => {
   if (!props.snippet) return ''
@@ -22,8 +22,8 @@ const highlightedCode = computed(() => {
         <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300">{{ snippet.title || 'Code snippet' }}</span>
         <span class="px-1.5 py-0.5 rounded text-[10px] bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 uppercase">{{ snippet.language }}</span>
       </div>
-      <span v-if="snippet.filePath" class="text-[11px] text-zinc-400 dark:text-zinc-500 truncate max-w-48">
-        {{ snippet.filePath }}<template v-if="snippet.lineRange">:{{ snippet.lineRange }}</template>
+      <span v-if="snippet.filePathOrClass" class="text-[11px] text-zinc-400 dark:text-zinc-500 truncate max-w-48">
+        {{ snippet.filePathOrClass }}<template v-if="snippet.lineRange">:{{ snippet.lineRange }}</template>
       </span>
     </div>
     <pre class="p-3 text-xs font-mono overflow-x-auto bg-white dark:bg-zinc-900"><code v-html="highlightedCode" /></pre>

@@ -4,69 +4,62 @@ import { useRoute } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
 import { stepApi } from '@/services/stepApi'
 import { solutionApi } from '@/services/solutionApi'
-import { snippetApi } from '@/services/snippetApi'
-import { attachmentApi } from '@/services/attachmentApi'
-import type { ErrorCase, Step, Solution, StepStatus, Snippet, Attachment } from '@/types/error'
+import type { ErrorCaseDetail, Step, Solution, StepCreateRequest } from '@/types/error'
 import ErrorStatusBadge from '@/components/error/ErrorStatusBadge.vue'
 import TimelineList from '@/components/timeline/TimelineList.vue'
 import StepForm from '@/components/timeline/StepForm.vue'
 import SolutionSelector from '@/components/timeline/SolutionSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
-import { HeartIcon } from '@heroicons/vue/24/outline'
-import { HeartIcon as HeartSolidIcon } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
-const errorCase = ref<ErrorCase | null>(null)
+const errorCase = ref<ErrorCaseDetail | null>(null)
 const steps = ref<Step[]>([])
 const solutions = ref<Solution[]>([])
-const snippets = ref<Snippet[]>([])
-const attachments = ref<Attachment[]>([])
 const loading = ref(true)
 const selectionMode = ref(false)
-const selectedStepIds = ref<Set<string>>(new Set())
-const activeFilter = ref<string | null>(null)
+const selectedStepIds = ref<Set<number>>(new Set())
+const activeFilter = ref<number | null>(null)
 
-const highlightedStepIds = computed<Set<string> | null>(() => {
-  if (!activeFilter.value) return null
+const highlightedStepIds = computed<Set<number> | null>(() => {
+  if (activeFilter.value === null) return null
   const sol = solutions.value.find(s => s.id === activeFilter.value)
   if (!sol) return null
-  return new Set(sol.selectedStepIds)
+  return new Set(sol.stepIds)
 })
 
 const activeSolution = computed(() => {
-  if (!activeFilter.value) return null
+  if (activeFilter.value === null) return null
   return solutions.value.find(s => s.id === activeFilter.value) ?? null
 })
 
-const errorId = route.params.id as string
+const caseId = Number(route.params.id)
 
 async function loadData() {
   loading.value = true
   try {
-    const [errRes, stepsRes, solRes, snpRes, attRes] = await Promise.all([
-      errorApi.get(errorId),
-      stepApi.list(errorId),
-      solutionApi.list(errorId),
-      snippetApi.list(errorId),
-      attachmentApi.list(errorId),
+    const [errRes, stepsRes, solRes] = await Promise.all([
+      errorApi.get(caseId),
+      stepApi.list(caseId),
+      solutionApi.list(caseId),
     ])
-    errorCase.value = errRes.data.data
-    steps.value = stepsRes.data.data
-    solutions.value = solRes.data.data
-    snippets.value = snpRes.data.data
-    attachments.value = attRes.data.data
+    errorCase.value = errRes.data
+    steps.value = stepsRes.data
+    solutions.value = solRes.data
   } finally {
     loading.value = false
   }
 }
 
-async function addStep(data: { content: string; status: StepStatus; failureReason?: string }) {
-  const res = await stepApi.create(errorId, data)
-  steps.value.push(res.data.data)
+async function addStep(data: StepCreateRequest) {
+  const res = await stepApi.create(caseId, data)
+  steps.value.push(res.data.step)
+  if (errorCase.value) {
+    errorCase.value.status = res.data.caseStatus
+  }
 }
 
-function toggleStepSelection(id: string) {
+function toggleStepSelection(id: number) {
   if (selectedStepIds.value.has(id)) {
     selectedStepIds.value.delete(id)
   } else {
@@ -75,22 +68,14 @@ function toggleStepSelection(id: string) {
   selectedStepIds.value = new Set(selectedStepIds.value)
 }
 
-async function createSolution(name: string, rootCause: string) {
-  const res = await solutionApi.create(errorId, {
-    name,
-    rootCause,
-    selectedStepIds: [...selectedStepIds.value],
+async function createSolution(title: string) {
+  const res = await solutionApi.create(caseId, {
+    title,
+    stepIds: [...selectedStepIds.value],
   })
-  solutions.value.push(res.data.data)
+  solutions.value.push(res.data)
   selectionMode.value = false
   selectedStepIds.value = new Set()
-}
-
-async function toggleReaction() {
-  if (!errorCase.value) return
-  const res = await errorApi.react(errorId)
-  errorCase.value.hasReacted = res.data.data.hasReacted
-  errorCase.value.reactionCount = res.data.data.reactionCount
 }
 
 onMounted(loadData)
@@ -110,35 +95,15 @@ onMounted(loadData)
       <h1 class="text-xl font-semibold text-zinc-800 dark:text-zinc-100 mb-2">
         {{ errorCase.title }}
       </h1>
-      <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">{{ errorCase.errorMessage }}</p>
+      <p v-if="errorCase.scope" class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">{{ errorCase.scope }}</p>
       <BodyRenderer
-        v-if="errorCase.context"
-        :content="errorCase.context"
-        :snippets="snippets"
-        :attachments="attachments"
+        v-if="errorCase.description"
+        :content="errorCase.description"
+        :snippets="errorCase.snippets"
+        :attachments="errorCase.attachments"
         class="mb-3"
       />
-      <pre v-if="errorCase.stackTrace" class="text-xs bg-zinc-100 dark:bg-zinc-800 p-3 rounded-xl overflow-x-auto text-zinc-600 dark:text-zinc-400">{{ errorCase.stackTrace }}</pre>
-    </div>
-
-    <div class="flex items-center gap-4 mb-8">
-      <button
-        class="flex items-center gap-1.5 text-sm transition-colors"
-        :class="errorCase.hasReacted ? 'text-rose-500' : 'text-zinc-400 hover:text-rose-500'"
-        @click="toggleReaction"
-      >
-        <component :is="errorCase.hasReacted ? HeartSolidIcon : HeartIcon" class="w-4 h-4" />
-        {{ errorCase.reactionCount }}
-      </button>
-      <div class="flex flex-wrap gap-1.5">
-        <span
-          v-for="tag in errorCase.tags"
-          :key="tag.id"
-          class="px-2 py-0.5 rounded-full text-[11px] bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400"
-        >
-          {{ tag.name }}
-        </span>
-      </div>
+      <pre v-if="errorCase.snapshot?.rawStackTrace" class="text-xs bg-zinc-100 dark:bg-zinc-800 p-3 rounded-xl overflow-x-auto text-zinc-600 dark:text-zinc-400">{{ errorCase.snapshot.rawStackTrace }}</pre>
     </div>
 
     <section class="mb-8">
@@ -172,7 +137,7 @@ onMounted(loadData)
           @click="activeFilter = sol.id"
         >
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          {{ sol.name }}
+          {{ sol.title }}
         </button>
       </div>
 

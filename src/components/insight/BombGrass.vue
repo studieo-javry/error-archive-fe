@@ -14,7 +14,7 @@ const levelColors = [
 
 onMounted(async () => {
   const { data } = await insightApi.activity(new Date().getFullYear())
-  days.value = data.data
+  days.value = data
 })
 </script>
 

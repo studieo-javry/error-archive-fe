@@ -12,7 +12,7 @@ const rememberMe = ref(true)
 const loading = ref(false)
 
 if (store.isAuthenticated) {
-  router.replace((route.query.redirect as string) || '/')
+  router.replace((route.query.redirect as string) || '/home')
 }
 
 const isOfflineMode = import.meta.env.VITE_OFFLINE_MODE === 'true'
@@ -37,7 +37,7 @@ async function handleLogin() {
   <div class="flex items-center justify-center min-h-[60vh]">
     <div class="text-center">
       <div class="text-4xl text-emerald-500 mb-4 serif-title font-bold">E</div>
-      <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100 mb-2">ErrorDiary</h1>
+      <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100 mb-2">ErrorArchive</h1>
       <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-8">Track, share, and resolve errors together</p>
 
       <label class="flex items-center justify-center gap-2 mb-6 text-sm text-zinc-600 dark:text-zinc-400">

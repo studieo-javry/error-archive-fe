@@ -6,7 +6,7 @@ const entries = ref<LeaderboardEntry[]>([])
 
 onMounted(async () => {
   const { data } = await insightApi.leaderboard(5)
-  entries.value = data.data
+  entries.value = data
 })
 
 const rankColors = ['text-amber-500', 'text-zinc-400', 'text-amber-700']
@@ -24,7 +24,7 @@ const rankColors = ['text-amber-500', 'text-zinc-400', 'text-amber-700']
         <span class="text-lg font-bold w-6 text-center" :class="rankColors[entry.rank - 1] || 'text-zinc-400'">
           {{ entry.rank }}
         </span>
-        <img :src="entry.user.avatarUrl" :alt="entry.user.displayName" class="w-7 h-7 rounded-full" />
+        <img v-if="entry.user.avatarUrl" :src="entry.user.avatarUrl" :alt="entry.user.displayName" class="w-7 h-7 rounded-full" />
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">{{ entry.user.displayName }}</p>
           <p class="text-[10px] text-zinc-400">{{ entry.errorCount }} errors · {{ entry.solutionCount }} solutions</p>

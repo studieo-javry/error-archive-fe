@@ -15,8 +15,8 @@ async function doSearch() {
   if (!query.value.trim()) return
   loading.value = true
   try {
-    const { data } = await errorApi.search(query.value)
-    results.value = data.data.items
+    const { data } = await errorApi.list({ size: 50 })
+    results.value = data.items
   } finally {
     loading.value = false
   }
@@ -42,7 +42,7 @@ onMounted(() => {
       <input
         v-model="query"
         type="text"
-        placeholder="Search errors, tags, solutions..."
+        placeholder="Search errors..."
         class="raw-input w-full max-w-md text-sm"
         @keyup.enter="doSearch"
       />

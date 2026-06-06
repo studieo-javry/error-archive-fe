@@ -16,7 +16,7 @@ const route = useRoute()
 const { isDark, toggle } = useTheme()
 
 const navItems = [
-  { name: 'home', icon: HomeIcon, path: '/' },
+  { name: 'home', icon: HomeIcon, path: '/home' },
   { name: 'errorList', icon: BookOpenIcon, path: '/errors' },
   { name: 'errorCreate', icon: PlusCircleIcon, path: '/errors/new' },
   { name: 'team', icon: UserGroupIcon, path: '/team' },
@@ -25,7 +25,7 @@ const navItems = [
 ]
 
 function isActive(item: { name: string; path: string }) {
-  if (item.path === '/') return route.path === '/'
+  if (item.path === '/home') return route.path === '/home'
   return route.path.startsWith(item.path)
 }
 </script>

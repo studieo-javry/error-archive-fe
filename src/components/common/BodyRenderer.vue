@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Snippet, Attachment } from '@/types/error'
+import type { ErrorCaseSnippet, ErrorCaseAttachment } from '@/types/error'
 import SnippetInline from '@/components/snippet/SnippetInline.vue'
 import AttachmentInline from '@/components/attachment/AttachmentInline.vue'
 
 const props = defineProps<{
   content: string
-  snippets: Snippet[]
-  attachments: Attachment[]
+  snippets: ErrorCaseSnippet[]
+  attachments: ErrorCaseAttachment[]
 }>()
 
 interface TextSegment { type: 'text'; value: string }
-interface SnippetSegment { type: 'snippet'; id: string; snippet: Snippet | null }
-interface AttachmentSegment { type: 'attachment'; id: string; attachment: Attachment | null }
+interface SnippetSegment { type: 'snippet'; id: string; snippet: ErrorCaseSnippet | null }
+interface AttachmentSegment { type: 'attachment'; id: string; attachment: ErrorCaseAttachment | null }
 type Segment = TextSegment | SnippetSegment | AttachmentSegment
 
 const segments = computed<Segment[]>(() => {
@@ -28,9 +28,9 @@ const segments = computed<Segment[]>(() => {
     const kind = match[1]
     const id = match[2]
     if (kind === 'snippet') {
-      result.push({ type: 'snippet', id, snippet: props.snippets.find(s => s.id === id) ?? null })
+      result.push({ type: 'snippet', id, snippet: props.snippets.find(s => s.markerId === id) ?? null })
     } else {
-      result.push({ type: 'attachment', id, attachment: props.attachments.find(a => a.id === id) ?? null })
+      result.push({ type: 'attachment', id, attachment: props.attachments.find(a => a.markerId === id) ?? null })
     }
     lastIndex = match.index + match[0].length
   }
