@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { SnippetLanguage } from '@/types/error'
+import type { SnippetCreateRequest } from '@/types/error'
 import hljs from 'highlight.js'
 
 const emit = defineEmits<{
-  save: [data: { title?: string; language: SnippetLanguage; filePath?: string; lineRange?: string; caption?: string; code: string }]
+  save: [data: SnippetCreateRequest]
   close: []
 }>()
 
 const title = ref('')
-const language = ref<SnippetLanguage>('text')
-const filePath = ref('')
+const language = ref('text')
+const filePathOrClass = ref('')
 const lineRange = ref('')
 const caption = ref('')
 const code = ref('')
 
-const languages: { value: SnippetLanguage; label: string }[] = [
+const languages = [
   { value: 'java', label: 'Java' },
   { value: 'kotlin', label: 'Kotlin' },
   { value: 'sql', label: 'SQL' },
@@ -41,7 +41,7 @@ function onSubmit() {
   emit('save', {
     title: title.value.trim() || undefined,
     language: language.value,
-    filePath: filePath.value.trim() || undefined,
+    filePathOrClass: filePathOrClass.value.trim() || undefined,
     lineRange: lineRange.value.trim() || undefined,
     caption: caption.value.trim() || undefined,
     code: code.value,
@@ -57,16 +57,15 @@ function onSubmit() {
         <form class="space-y-4" @submit.prevent="onSubmit">
           <input v-model="title" type="text" placeholder="Title (optional)" class="raw-input w-full text-sm" />
           <div class="grid grid-cols-2 gap-3">
-            <select v-model="language" class="raw-input text-sm">
-              <option v-for="lang in languages" :key="lang.value" :value="lang.value">{{ lang.label }}</option>
-            </select>
-            <input v-model="filePath" type="text" placeholder="File path (optional)" class="raw-input text-sm" />
+            <input v-model="filePathOrClass" type="text" placeholder="File path (optional)" class="raw-input text-sm" />
+            <input v-model="lineRange" type="text" placeholder="Line range (e.g. 42-58)" class="raw-input text-sm" />
           </div>
-          <input v-model="lineRange" type="text" placeholder="Line range (e.g. 42-58)" class="raw-input w-full text-sm" />
           <input v-model="caption" type="text" placeholder="Caption (optional)" class="raw-input w-full text-sm" />
+          <select v-model="language" class="raw-input text-sm w-full">
+            <option v-for="lang in languages" :key="lang.value" :value="lang.value">{{ lang.label }}</option>
+          </select>
           <textarea v-model="code" placeholder="Paste code here *" rows="8" class="raw-textarea w-full font-mono text-xs" required />
 
-          <!-- Live preview -->
           <div v-if="code.trim()" class="rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
             <div class="px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700 flex items-center gap-2">
               <span class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Preview</span>
