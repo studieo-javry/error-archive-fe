@@ -37,7 +37,7 @@ function typeNextChar() {
   if (charIndex < fullText.length) {
     typedText.value += fullText.charAt(charIndex)
     charIndex++
-    typeTimer = setTimeout(typeNextChar, 45)
+    typeTimer = setTimeout(typeNextChar, 30)
   } else {
     setTimeout(() => { showButton.value = true }, 300)
   }
@@ -57,7 +57,7 @@ onMounted(() => {
   window.addEventListener('mousemove', onMouseMove)
   rafId = requestAnimationFrame(renderLoop)
 
-  setTimeout(() => { typeTimer = setTimeout(typeNextChar, 0) }, 500)
+  setTimeout(() => { typeTimer = setTimeout(typeNextChar, 0) }, 150)
 })
 
 onUnmounted(() => {
