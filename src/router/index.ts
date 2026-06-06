@@ -2,7 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
 const routes = [
-  { path: '/', name: 'home', component: () => import('@/pages/HomePage.vue') },
+  { path: '/', name: 'landing', component: () => import('@/pages/LandingPage.vue'), meta: { public: true, fullScreen: true } },
+  { path: '/home', name: 'home', component: () => import('@/pages/HomePage.vue') },
   { path: '/login', name: 'login', component: () => import('@/pages/LoginPage.vue'), meta: { public: true } },
   { path: '/auth/callback', name: 'authCallback', component: () => import('@/pages/AuthCallbackPage.vue'), meta: { public: true } },
   { path: '/errors', name: 'errorList', component: () => import('@/pages/ErrorListPage.vue') },

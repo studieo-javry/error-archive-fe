@@ -10,14 +10,14 @@ export const useNotificationStore = defineStore('notification', () => {
 
   async function fetchUnreadCount() {
     const { data } = await notificationApi.unreadCount()
-    unreadCount.value = data.data.count
+    unreadCount.value = data.count
   }
 
   async function fetchNotifications() {
     loading.value = true
     try {
       const { data } = await notificationApi.list({ size: 20 })
-      notifications.value = data.data.items
+      notifications.value = data.items
     } finally {
       loading.value = false
     }

@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { UserProfile } from '@/types/user'
+import type { MyProfile } from '@/types/user'
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<UserProfile | null>(null)
+  const user = ref<MyProfile | null>(null)
   const accessToken = ref<string | null>(localStorage.getItem('accessToken'))
   const userId = ref<number | null>(null)
 
@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('accessToken', token)
   }
 
-  function setUser(profile: UserProfile) {
+  function setUser(profile: MyProfile) {
     user.value = profile
   }
 
