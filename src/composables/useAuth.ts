@@ -8,10 +8,11 @@ export function useAuth() {
 
   async function startOAuthFlow(rememberMe: boolean) {
     const redirectUri = import.meta.env.VITE_GITHUB_REDIRECT_URI
+    const returnUrl = sessionStorage.getItem('oauth_return_url') || '/home'
     sessionStorage.setItem('oauth_remember_me', String(rememberMe))
     sessionStorage.setItem('oauth_redirect_uri', redirectUri)
 
-    const { data } = await authApi.authorize(redirectUri)
+    const { data } = await authApi.authorize(redirectUri, returnUrl)
     window.location.href = data.authorizationUrl
   }
 
@@ -20,15 +21,14 @@ export function useAuth() {
     const rememberMe = sessionStorage.getItem('oauth_remember_me') !== 'false'
     sessionStorage.removeItem('oauth_redirect_uri')
     sessionStorage.removeItem('oauth_remember_me')
+    sessionStorage.removeItem('oauth_return_url')
 
     const { data } = await authApi.callback(code, state, redirectUri, rememberMe)
     store.setAccessToken(data.accessToken)
     store.userId = data.userId
 
     await fetchUser()
-    const returnUrl = sessionStorage.getItem('oauth_return_url') || '/'
-    sessionStorage.removeItem('oauth_return_url')
-    router.push(returnUrl)
+    router.push(data.redirectTo || '/home')
   }
 
   async function fetchUser() {
