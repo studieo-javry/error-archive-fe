@@ -3,8 +3,8 @@ import type { Step, Solution } from '@/types/error'
 import TimelineStep from './TimelineStep.vue'
 import TimelineSolution from './TimelineSolution.vue'
 
-defineProps<{ steps: Step[]; solutions?: Solution[]; selectionMode?: boolean; selectedIds?: Set<string>; highlightedIds?: Set<string> | null }>()
-defineEmits<{ toggle: [id: string] }>()
+defineProps<{ steps: Step[]; solutions?: Solution[]; selectionMode?: boolean; selectedIds?: Set<number>; highlightedIds?: Set<number> | null }>()
+defineEmits<{ toggle: [id: number] }>()
 </script>
 
 <template>

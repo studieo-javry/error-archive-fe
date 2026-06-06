@@ -20,7 +20,7 @@ onMounted(async () => {
   }
   try {
     const { data } = await notificationApi.getSettings()
-    notifSettings.value = data.data
+    notifSettings.value = data
   } catch { /* use defaults */ }
 })
 

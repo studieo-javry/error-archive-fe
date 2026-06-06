@@ -2,16 +2,14 @@
 import { ref } from 'vue'
 
 const props = defineProps<{ selectedCount: number; active: boolean }>()
-const emit = defineEmits<{ toggle: []; create: [name: string, rootCause: string] }>()
+const emit = defineEmits<{ toggle: []; create: [title: string] }>()
 
-const name = ref('')
-const rootCause = ref('')
+const title = ref('')
 
 function onSubmit() {
-  if (!name.value.trim() || props.selectedCount === 0) return
-  emit('create', name.value, rootCause.value)
-  name.value = ''
-  rootCause.value = ''
+  if (!title.value.trim() || props.selectedCount === 0) return
+  emit('create', title.value)
+  title.value = ''
 }
 </script>
 
@@ -34,8 +32,7 @@ function onSubmit() {
       >
         <form class="flex items-center gap-4 max-w-2xl mx-auto" @submit.prevent="onSubmit">
           <span class="text-xs text-zinc-500 whitespace-nowrap">{{ selectedCount }} steps selected</span>
-          <input v-model="name" placeholder="Solution name" class="raw-input flex-1 text-sm" />
-          <input v-model="rootCause" placeholder="Root cause" class="raw-input flex-1 text-sm" />
+          <input v-model="title" placeholder="Solution title" class="raw-input flex-1 text-sm" />
           <button type="submit" class="px-4 py-1.5 text-xs font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors whitespace-nowrap">
             Save Solution
           </button>

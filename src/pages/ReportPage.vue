@@ -12,7 +12,7 @@ const error = ref('')
 onMounted(async () => {
   try {
     const { data } = await publishApi.getReport(route.params.shareToken as string)
-    report.value = data.data
+    report.value = data
   } catch {
     error.value = 'Report not found or has been removed'
   } finally {

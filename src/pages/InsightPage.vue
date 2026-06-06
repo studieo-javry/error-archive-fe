@@ -9,7 +9,7 @@ const stats = ref<KpiStats | null>(null)
 
 onMounted(async () => {
   const { data } = await insightApi.kpi()
-  stats.value = data.data
+  stats.value = data
 })
 </script>
 

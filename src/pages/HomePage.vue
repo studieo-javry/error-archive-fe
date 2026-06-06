@@ -15,8 +15,8 @@ const loading = ref(true)
 onMounted(async () => {
   try {
     const { data } = await insightApi.dashboard()
-    recentErrors.value = data.data.recentErrors as ErrorCaseSummary[]
-    stats.value = data.data.stats
+    recentErrors.value = data.recentErrors as ErrorCaseSummary[]
+    stats.value = data.stats
   } finally {
     loading.value = false
   }

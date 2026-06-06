@@ -1,13 +1,19 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useTheme } from '@/composables/useTheme'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 
 useTheme()
+
+const route = useRoute()
+const isFullScreen = computed(() => !!route.meta.fullScreen)
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-zinc-50 text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
+  <router-view v-if="isFullScreen" />
+  <div v-else class="flex h-screen overflow-hidden bg-zinc-50 text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
     <AppSidebar />
     <div class="flex-1 flex flex-col overflow-hidden">
       <AppHeader />
