@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
 import { snippetApi } from '@/services/snippetApi'
 import { attachmentApi } from '@/services/attachmentApi'
-import type { Visibility, Snippet, Attachment, SnippetLanguage, SnippetCreateRequest } from '@/types/error'
+import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse } from '@/types/error'
 import SnippetModal from '@/components/snippet/SnippetModal.vue'
 import SnippetCard from '@/components/snippet/SnippetCard.vue'
 import AttachmentModal from '@/components/attachment/AttachmentModal.vue'
@@ -14,40 +14,32 @@ import { CodeBracketIcon, PaperClipIcon } from '@heroicons/vue/24/outline'
 const route = useRoute()
 const router = useRouter()
 const isEdit = !!route.params.id
-const errorId = route.params.id as string | undefined
+const caseId = route.params.id ? Number(route.params.id) : undefined
 
 const title = ref('')
-const errorMessage = ref('')
-const context = ref('')
-const stackTrace = ref('')
+const scope = ref('')
+const paste = ref('')
+const description = ref('')
 const visibility = ref<Visibility>('PRIVATE')
-const tagsInput = ref('')
 
-const snippets = ref<Snippet[]>([])
-const attachments = ref<Attachment[]>([])
+const snippetMarkers = ref<SnippetCreateResponse[]>([])
+const attachmentMarkers = ref<AttachmentUploadResponse[]>([])
 const showSnippetModal = ref(false)
 const showAttachmentModal = ref(false)
 
-const pendingSnippets = ref<{ tempId: string; data: SnippetCreateRequest }[]>([])
-const pendingAttachments = ref<{ tempId: string; data: { title?: string; caption?: string; file: File } }[]>([])
-
-const contextRef = ref<HTMLTextAreaElement | null>(null)
-
-function generateTempId() {
-  return 'tmp-' + Math.random().toString(16).slice(2, 10)
-}
+const descriptionRef = ref<HTMLTextAreaElement | null>(null)
 
 function insertAtCursor(marker: string) {
-  const el = contextRef.value
+  const el = descriptionRef.value
   if (!el) {
-    context.value += `\n${marker}`
+    description.value += `\n${marker}`
     return
   }
   const start = el.selectionStart
   const end = el.selectionEnd
-  const before = context.value.slice(0, start)
-  const after = context.value.slice(end)
-  context.value = before + marker + after
+  const before = description.value.slice(0, start)
+  const after = description.value.slice(end)
+  description.value = before + marker + after
   nextTick(() => {
     el.selectionStart = el.selectionEnd = start + marker.length
     el.focus()
@@ -55,135 +47,84 @@ function insertAtCursor(marker: string) {
 }
 
 async function loadError() {
-  if (!isEdit || !errorId) return
-  const { data } = await errorApi.get(errorId)
-  const err = data.data
-  title.value = err.title
-  errorMessage.value = err.errorMessage
-  context.value = err.context
-  stackTrace.value = err.stackTrace ?? ''
-  visibility.value = err.visibility
-  tagsInput.value = err.tags.map((t) => t.name).join(', ')
-}
+  if (!isEdit || !caseId) return
+  const { data } = await errorApi.get(caseId)
+  title.value = data.title
+  scope.value = data.scope ?? ''
+  paste.value = data.snapshot?.rawPaste ?? ''
+  description.value = data.description ?? ''
+  visibility.value = data.visibility as Visibility
 
-async function loadSnippetsAndAttachments() {
-  if (!errorId) return
-  const [snpRes, attRes] = await Promise.all([
-    snippetApi.list(errorId),
-    attachmentApi.list(errorId),
-  ])
-  snippets.value = snpRes.data.data
-  attachments.value = attRes.data.data
-}
-
-async function persistPendingItems(createdErrorId: string) {
-  const idMap: Record<string, string> = {}
-
-  for (const pending of pendingSnippets.value) {
-    const res = await snippetApi.create(createdErrorId, pending.data)
-    idMap[pending.tempId] = res.data.data.id
-  }
-
-  for (const pending of pendingAttachments.value) {
-    const res = await attachmentApi.upload(createdErrorId, pending.data)
-    idMap[pending.tempId] = res.data.data.id
-  }
-
-  if (Object.keys(idMap).length > 0) {
-    let updatedContext = context.value
-    for (const [tempId, realId] of Object.entries(idMap)) {
-      updatedContext = updatedContext.replaceAll(tempId, realId)
-    }
-    if (updatedContext !== context.value) {
-      await errorApi.update(createdErrorId, { context: updatedContext })
-    }
-  }
+  snippetMarkers.value = data.snippets.map(s => ({
+    markerId: s.markerId,
+    embedToken: '',
+    title: s.title,
+    language: s.language,
+    caption: s.caption,
+  }))
+  attachmentMarkers.value = data.attachments.map(a => ({
+    markerId: a.markerId,
+    embedToken: '',
+    fileName: a.fileName,
+    contentType: a.contentType,
+    size: a.size,
+    kind: a.kind,
+    storageUrl: a.storageUrl,
+  }))
 }
 
 async function onSubmit() {
-  const tags = tagsInput.value.split(',').map((t) => t.trim()).filter(Boolean)
-  if (isEdit && errorId) {
-    await errorApi.update(errorId, { title: title.value, errorMessage: errorMessage.value, context: context.value, stackTrace: stackTrace.value || undefined, visibility: visibility.value, tags })
-    router.push({ name: 'errorDetail', params: { id: errorId } })
+  const snippetMarkerIds = snippetMarkers.value.map(s => s.markerId)
+  const attachmentMarkerIds = attachmentMarkers.value.map(a => a.markerId)
+
+  if (isEdit && caseId) {
+    await errorApi.update(caseId, {
+      title: title.value,
+      scope: scope.value || null,
+      paste: paste.value || null,
+      description: description.value || null,
+      visibility: visibility.value,
+      snippetMarkerIds,
+      attachmentMarkerIds,
+    })
+    router.push({ name: 'errorDetail', params: { id: caseId } })
   } else {
-    const { data } = await errorApi.create({ title: title.value, errorMessage: errorMessage.value, context: context.value, stackTrace: stackTrace.value || undefined, visibility: visibility.value, tags })
-    const createdId = data.data.id
-    await persistPendingItems(createdId)
-    router.push({ name: 'errorDetail', params: { id: createdId } })
+    const { data } = await errorApi.create({
+      title: title.value,
+      scope: scope.value,
+      paste: paste.value || '',
+      description: description.value || undefined,
+      visibility: visibility.value,
+      snippetMarkerIds,
+      attachmentMarkerIds,
+    })
+    router.push({ name: 'errorDetail', params: { id: data.id } })
   }
 }
 
-async function saveSnippet(data: { title?: string; language: SnippetLanguage; filePath?: string; lineRange?: string; caption?: string; code: string }) {
-  if (isEdit && errorId) {
-    const res = await snippetApi.create(errorId, data)
-    snippets.value.push(res.data.data)
-  } else {
-    const tempId = generateTempId()
-    pendingSnippets.value.push({ tempId, data })
-    snippets.value.push({
-      id: tempId,
-      errorCaseId: '',
-      title: data.title,
-      language: data.language,
-      filePath: data.filePath,
-      lineRange: data.lineRange,
-      caption: data.caption,
-      code: data.code,
-      authorId: 'user-1',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
-  }
+async function saveSnippet(data: SnippetCreateRequest) {
+  const res = await snippetApi.create(data)
+  snippetMarkers.value.push(res.data)
   showSnippetModal.value = false
 }
 
-async function deleteSnippet(id: string) {
-  if (isEdit && errorId) {
-    await snippetApi.delete(errorId, id)
-  } else {
-    pendingSnippets.value = pendingSnippets.value.filter(p => p.tempId !== id)
-  }
-  snippets.value = snippets.value.filter(s => s.id !== id)
+async function deleteSnippet(markerId: string) {
+  await snippetApi.delete(markerId)
+  snippetMarkers.value = snippetMarkers.value.filter(s => s.markerId !== markerId)
 }
 
 async function saveAttachment(data: { title?: string; caption?: string; file: File }) {
-  if (isEdit && errorId) {
-    const res = await attachmentApi.upload(errorId, data)
-    attachments.value.push(res.data.data)
-  } else {
-    const tempId = generateTempId()
-    pendingAttachments.value.push({ tempId, data })
-    attachments.value.push({
-      id: tempId,
-      errorCaseId: '',
-      title: data.title,
-      fileName: data.file.name,
-      mimeType: data.file.type,
-      fileSize: data.file.size,
-      url: URL.createObjectURL(data.file),
-      caption: data.caption,
-      kind: data.file.type.startsWith('image/') ? 'image' : 'file',
-      authorId: 'user-1',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
-  }
+  const res = await attachmentApi.upload(data)
+  attachmentMarkers.value.push(res.data)
   showAttachmentModal.value = false
 }
 
-async function deleteAttachment(id: string) {
-  if (isEdit && errorId) {
-    await attachmentApi.delete(errorId, id)
-  } else {
-    pendingAttachments.value = pendingAttachments.value.filter(p => p.tempId !== id)
-  }
-  attachments.value = attachments.value.filter(a => a.id !== id)
+async function deleteAttachment(markerId: string) {
+  await attachmentApi.delete(markerId)
+  attachmentMarkers.value = attachmentMarkers.value.filter(a => a.markerId !== markerId)
 }
 
-onMounted(async () => {
-  await loadError()
-  if (isEdit) await loadSnippetsAndAttachments()
-})
+onMounted(loadError)
 </script>
 
 <template>
@@ -197,11 +138,15 @@ onMounted(async () => {
         <input v-model="title" type="text" placeholder="Error title" class="raw-input w-full text-lg font-medium" required />
       </div>
       <div>
-        <input v-model="errorMessage" type="text" placeholder="Error message" class="raw-input w-full text-sm" required />
+        <input v-model="scope" type="text" placeholder="Project" class="raw-input w-full text-sm" required />
+      </div>
+      <div>
+        <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Error Trace <span class="text-zinc-400 dark:text-zinc-600">(optional)</span></label>
+        <textarea v-model="paste" placeholder="Paste error output / stack trace" rows="4" class="raw-textarea w-full font-mono text-xs" />
       </div>
       <div>
         <div class="flex items-center gap-2 mb-1">
-          <label class="text-xs text-zinc-500 dark:text-zinc-400">Context</label>
+          <label class="text-xs text-zinc-500 dark:text-zinc-400">Description</label>
           <div class="flex items-center gap-1 ml-auto">
             <button type="button" class="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" @click="showSnippetModal = true">
               <CodeBracketIcon class="w-3.5 h-3.5" />
@@ -213,21 +158,14 @@ onMounted(async () => {
             </button>
           </div>
         </div>
-        <textarea ref="contextRef" v-model="context" placeholder="Context — what were you doing?" rows="5" class="raw-textarea w-full" />
-      </div>
-      <div>
-        <textarea v-model="stackTrace" placeholder="Stack trace (optional)" rows="4" class="raw-textarea w-full font-mono text-xs" />
-      </div>
-      <div>
-        <input v-model="tagsInput" type="text" placeholder="Tags (comma separated)" class="raw-input w-full text-sm" />
+        <textarea ref="descriptionRef" v-model="description" placeholder="Description — additional context" rows="5" class="raw-textarea w-full" />
       </div>
       <div>
         <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Visibility</label>
         <select v-model="visibility" class="raw-input text-sm">
           <option value="PRIVATE">Private</option>
           <option value="WORKSPACE">Workspace</option>
-          <option value="LINK_ONLY">Link Only</option>
-          <option value="DISCOVERABLE">Discoverable</option>
+          <option value="PUBLIC">Public</option>
         </select>
       </div>
 
@@ -241,23 +179,22 @@ onMounted(async () => {
       </div>
     </form>
 
-    <!-- Snippet/Attachment cards (outside form to prevent validation tooltips) -->
-    <div v-if="snippets.length || attachments.length" class="mt-6 space-y-2">
+    <div v-if="snippetMarkers.length || attachmentMarkers.length" class="mt-6 space-y-2">
       <h3 class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Snippets & Attachments</h3>
       <SnippetCard
-        v-for="snp in snippets"
-        :key="snp.id"
+        v-for="snp in snippetMarkers"
+        :key="snp.markerId"
         :snippet="snp"
         @insert="insertAtCursor"
-        @delete="deleteSnippet"
+        @delete="() => deleteSnippet(snp.markerId)"
         @edit="() => {}"
       />
       <AttachmentCard
-        v-for="att in attachments"
-        :key="att.id"
+        v-for="att in attachmentMarkers"
+        :key="att.markerId"
         :attachment="att"
         @insert="insertAtCursor"
-        @delete="deleteAttachment"
+        @delete="() => deleteAttachment(att.markerId)"
         @edit="() => {}"
       />
     </div>
