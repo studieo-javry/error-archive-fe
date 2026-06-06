@@ -1,42 +1,78 @@
-import type { UserSummary } from './user'
-
-export type MemberRole = 'ADMIN' | 'WRITER' | 'VIEWER'
-export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'REVOKED' | 'EXPIRED'
+export type WorkspaceRole = 'READ' | 'WRITE' | 'ADMIN'
+export type InvitationType = 'EMAIL' | 'LINK'
 
 export interface Workspace {
-  id: string
+  workspaceId: number
   name: string
-  description?: string
-  memberCount: number
-  errorCount: number
-  creatorId: string
-  myRole: MemberRole
+  createdByUserId: number
+  notificationEnabled: boolean
+  defaultTimezone: string
   createdAt: string
+  updatedAt: string
+  viewerRole: string
+}
+
+export interface WorkspaceListItem {
+  workspaceId: number
+  name: string
+  role: string
+  createdByUserId: number
 }
 
 export interface WorkspaceCreateRequest {
   name: string
-  description?: string
 }
 
-export interface Member {
-  id: string
-  userId: string
-  user: UserSummary
-  role: MemberRole
+export interface WorkspaceUpdateRequest {
+  name?: string | null
+  notificationEnabled?: boolean | null
+  defaultTimezone?: string | null
+}
+
+export interface WorkspaceMember {
+  userId: number
+  displayName: string
+  avatarUrl: string | null
+  role: string
   joinedAt: string
+  profileHref: string
 }
 
-export interface Invitation {
-  id: string
-  token: string
-  role: MemberRole
-  status: InvitationStatus
+export interface CreateInvitationRequest {
+  type: InvitationType
+  role: string
+  email?: string | null
+  expiresInHours?: number | null
+}
+
+export interface CreateInvitationResponse {
+  invitationId: number
+  type: string
+  role: string
+  expiresAt: string
+  inviteToken: string | null
+  inviteUrl: string | null
+}
+
+export interface InvitationItem {
+  invitationId: number
+  type: string
+  email: string | null
+  role: string
   expiresAt: string
   createdAt: string
 }
 
-export interface InvitationCreateRequest {
-  role: MemberRole
-  expiresInDays: number
+export interface InvitationPreview {
+  workspaceId: number
+  workspaceName: string
+  role: string
+  expiresAt: string
+  usable: boolean
+}
+
+export interface AcceptInvitationResponse {
+  workspaceId: number
+  workspaceName: string
+  role: string
 }

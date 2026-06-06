@@ -1,9 +1,8 @@
 import apiClient from './apiClient'
-import type { ApiResponse } from '@/types/api'
 
 export interface Report {
-  id: string
-  errorCaseId: string
+  id: number
+  errorCaseId: number
   snapshotData: unknown
   shareToken: string
   shareUrl: string
@@ -11,19 +10,19 @@ export interface Report {
 }
 
 export const publishApi = {
-  createReport(errorId: string) {
-    return apiClient.post<ApiResponse<Report>>(`/errors/${errorId}/reports`)
+  createReport(errorId: number) {
+    return apiClient.post<Report>(`/error-cases/${errorId}/reports`)
   },
 
   getReport(shareToken: string) {
-    return apiClient.get<ApiResponse<Report>>(`/reports/${shareToken}`)
+    return apiClient.get<Report>(`/reports/${shareToken}`)
   },
 
-  forkSolution(solutionId: string) {
-    return apiClient.post<ApiResponse<{ forkedErrorId: string }>>(`/solutions/${solutionId}/fork`)
+  forkSolution(solutionId: number) {
+    return apiClient.post<{ forkedErrorId: number }>(`/solutions/${solutionId}/fork`)
   },
 
-  toggleBookmark(solutionId: string) {
-    return apiClient.post<ApiResponse<{ isBookmarked: boolean }>>(`/solutions/${solutionId}/bookmark`)
+  toggleBookmark(solutionId: number) {
+    return apiClient.post<{ isBookmarked: boolean }>(`/solutions/${solutionId}/bookmark`)
   },
 }

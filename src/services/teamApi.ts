@@ -1,45 +1,77 @@
 import apiClient from './apiClient'
-import type { ApiResponse } from '@/types/api'
-import type { Workspace, WorkspaceCreateRequest, Member, MemberRole, Invitation, InvitationCreateRequest } from '@/types/team'
+import type {
+  Workspace,
+  WorkspaceListItem,
+  WorkspaceCreateRequest,
+  WorkspaceUpdateRequest,
+  WorkspaceMember,
+  CreateInvitationRequest,
+  CreateInvitationResponse,
+  InvitationItem,
+  InvitationPreview,
+  AcceptInvitationResponse,
+} from '@/types/team'
 
 export const teamApi = {
+  // ── Workspaces ──
+
   listWorkspaces() {
-    return apiClient.get<ApiResponse<Workspace[]>>('/workspaces')
+    return apiClient.get<WorkspaceListItem[]>('/workspaces')
   },
 
   createWorkspace(data: WorkspaceCreateRequest) {
-    return apiClient.post<ApiResponse<Workspace>>('/workspaces', data)
+    return apiClient.post<Workspace>('/workspaces', data)
   },
 
-  getWorkspace(id: string) {
-    return apiClient.get<ApiResponse<Workspace>>(`/workspaces/${id}`)
+  getWorkspace(id: number) {
+    return apiClient.get<Workspace>(`/workspaces/${id}`)
   },
 
-  deleteWorkspace(id: string) {
-    return apiClient.delete<ApiResponse<null>>(`/workspaces/${id}`)
+  updateWorkspace(id: number, data: WorkspaceUpdateRequest) {
+    return apiClient.patch<Workspace>(`/workspaces/${id}`, data)
   },
 
-  getMembers(workspaceId: string) {
-    return apiClient.get<ApiResponse<Member[]>>(`/workspaces/${workspaceId}/members`)
+  deleteWorkspace(id: number) {
+    return apiClient.delete<void>(`/workspaces/${id}`)
   },
 
-  updateMemberRole(workspaceId: string, memberId: string, role: MemberRole) {
-    return apiClient.put<ApiResponse<Member>>(`/workspaces/${workspaceId}/members/${memberId}`, { role })
+  // ── Members ──
+
+  getMembers(workspaceId: number) {
+    return apiClient.get<WorkspaceMember[]>(`/workspaces/${workspaceId}/members`)
   },
 
-  removeMember(workspaceId: string, memberId: string) {
-    return apiClient.delete<ApiResponse<null>>(`/workspaces/${workspaceId}/members/${memberId}`)
+  changeMemberRole(workspaceId: number, userId: number, role: string) {
+    return apiClient.patch<void>(`/workspaces/${workspaceId}/members/${userId}`, { role })
   },
 
-  createInvitation(workspaceId: string, data: InvitationCreateRequest) {
-    return apiClient.post<ApiResponse<Invitation>>(`/workspaces/${workspaceId}/invitations`, data)
+  removeMember(workspaceId: number, userId: number) {
+    return apiClient.delete<void>(`/workspaces/${workspaceId}/members/${userId}`)
+  },
+
+  leaveWorkspace(workspaceId: number) {
+    return apiClient.delete<void>(`/workspaces/${workspaceId}/members/me`)
+  },
+
+  // ── Invitations ──
+
+  createInvitation(workspaceId: number, data: CreateInvitationRequest) {
+    return apiClient.post<CreateInvitationResponse>(`/workspaces/${workspaceId}/invitations`, data)
+  },
+
+  listInvitations(workspaceId: number) {
+    return apiClient.get<InvitationItem[]>(`/workspaces/${workspaceId}/invitations`)
+  },
+
+  revokeInvitation(workspaceId: number, invitationId: number) {
+    return apiClient.delete<void>(`/workspaces/${workspaceId}/invitations/${invitationId}`)
+  },
+
+  previewInvitation(token: string) {
+    return apiClient.get<InvitationPreview>('/invitations/preview', { params: { token } })
   },
 
   acceptInvitation(token: string) {
-    return apiClient.post<ApiResponse<{ workspace: Workspace; role: MemberRole }>>(`/invitations/${token}/accept`)
-  },
-
-  getInvitationInfo(token: string) {
-    return apiClient.get<ApiResponse<{ workspaceName: string; role: MemberRole; expiresAt: string }>>(`/invitations/${token}`)
+    return apiClient.post<AcceptInvitationResponse>('/invitations/accept', { token })
   },
 }

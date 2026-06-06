@@ -1,175 +1,307 @@
-import type { UserSummary } from './user'
+export type ErrorCaseStatus = 'DRAFT' | 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
+export type Visibility = 'PUBLIC' | 'WORKSPACE' | 'PRIVATE'
+export type StepStatus = 'SUCCESS' | 'PARTIAL' | 'FAILURE'
+export type AttemptType = 'CODE_CHANGE' | 'CONFIG' | 'DEPENDENCY' | 'ENV' | 'ROLLBACK' | 'INVESTIGATION' | 'OTHER'
+export type QuoteSourceKind = 'NONE' | 'CASE_BODY' | 'STEP'
+export type SuggestionSourceType = 'SNIPPET' | 'MARKDOWN_CODE'
+export type SuggestionStatus = 'PENDING' | 'APPLIED' | 'REJECTED'
 
-export type ErrorStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED'
-export type Visibility = 'PRIVATE' | 'WORKSPACE' | 'LINK_ONLY' | 'DISCOVERABLE'
-export type StepStatus = 'FAILED' | 'IN_PROGRESS' | 'RESOLVED'
+// ── ErrorCase ──
 
-export interface Tag {
-  id: string
-  name: string
-  usageCount: number
+export interface ErrorCaseSnapshot {
+  exceptionClass: string | null
+  exceptionMessage: string | null
+  rawStackTrace: string | null
+  fingerprint: string | null
+  rawPaste: string | null
 }
 
-export interface ErrorCase {
-  id: string
+export interface ErrorCaseSnippet {
+  markerId: string
   title: string
-  errorMessage: string
-  context: string
-  stackTrace?: string
-  status: ErrorStatus
-  visibility: Visibility
-  tags: Tag[]
-  authorId: string
-  author: UserSummary
-  workspaceId?: string
-  reactionCount: number
-  hasReacted: boolean
-  commentCount: number
-  stepCount: number
-  isWatching: boolean
+  language: string
+  filePathOrClass: string | null
+  lineRange: string | null
+  caption: string | null
+  code: string
+}
+
+export interface ErrorCaseAttachment {
+  markerId: string
+  fileName: string
+  contentType: string
+  size: number
+  kind: string
+  storageUrl: string
+  title: string | null
+  caption: string | null
+}
+
+export interface ErrorCaseDetail {
+  id: number
+  ownerUserId: number
+  title: string
+  scope: string | null
+  status: string
+  visibility: string
+  description: string | null
+  workspaceId: number | null
+  severity: number | null
+  environment: string | null
+  occurredAt: string | null
   createdAt: string
   updatedAt: string
+  snapshot: ErrorCaseSnapshot | null
+  snippets: ErrorCaseSnippet[]
+  attachments: ErrorCaseAttachment[]
 }
 
 export interface ErrorCaseSummary {
-  id: string
+  id: number
+  ownerUserId: number
   title: string
-  status: ErrorStatus
-  tags: Tag[]
-  author: UserSummary
-  reactionCount: number
-  commentCount: number
+  status: string
+  visibility: string
+  severity: number | null
+  workspaceId: number | null
+  fingerprint: string | null
+  exceptionClass: string | null
   createdAt: string
+  occurredAt: string | null
 }
 
 export interface ErrorCaseCreateRequest {
   title: string
-  errorMessage: string
-  context: string
-  stackTrace?: string
-  visibility: Visibility
-  tags: string[]
-  workspaceId?: string
+  scope: string
+  paste: string
+  description?: string | null
+  snippetMarkerIds?: string[]
+  attachmentMarkerIds?: string[]
+  workspaceId?: number | null
+  severity?: number | null
+  environment?: string | null
+  occurredAt?: string | null
+  visibility?: Visibility
+}
+
+export interface ErrorCaseCreateResponse {
+  id: number
+  title: string
+  status: string
+  fingerprint: string | null
+  snippetMarkerIds: string[]
+  attachmentMarkerIds: string[]
+  createdAt: string
 }
 
 export interface ErrorCaseUpdateRequest {
-  title?: string
-  errorMessage?: string
-  context?: string
-  stackTrace?: string
-  visibility?: Visibility
-  tags?: string[]
+  title?: string | null
+  scope?: string | null
+  paste?: string | null
+  description?: string | null
+  severity?: number | null
+  environment?: string | null
+  snippetMarkerIds?: string[] | null
+  attachmentMarkerIds?: string[] | null
+  status?: ErrorCaseStatus | null
+  visibility?: Visibility | null
 }
 
+// ── Step ──
+
 export interface Step {
-  id: string
-  errorCaseId: string
-  content: string
+  id: number
+  errorCaseId: number
+  authorUserId: number
+  orderIndex: number
+  title: string
   status: StepStatus
-  failureReason?: string
-  linkedErrorId?: string
-  linkedError?: ErrorCaseSummary
-  authorId: string
-  author: UserSummary
-  commentCount: number
-  order: number
+  attemptType: AttemptType | null
+  body: string | null
+  insight: string | null
   createdAt: string
   updatedAt: string
 }
 
 export interface StepCreateRequest {
-  content: string
+  title: string
   status: StepStatus
-  failureReason?: string
-  linkedErrorId?: string
+  attemptType?: AttemptType | null
+  body?: string | null
+  insight?: string | null
 }
 
 export interface StepUpdateRequest {
-  content?: string
-  status?: StepStatus
-  failureReason?: string
-  linkedErrorId?: string
+  title?: string | null
+  status?: StepStatus | null
+  attemptType?: AttemptType | null
+  clearAttemptType?: boolean
+  body?: string | null
+  insight?: string | null
 }
 
+export interface StepCreateResponse {
+  step: Step
+  caseStatus: ErrorCaseStatus
+  suggestResolve: boolean
+}
+
+// ── Solution ──
+
 export interface Solution {
-  id: string
-  errorCaseId: string
-  name: string
-  rootCause: string
-  selectedStepIds: string[]
-  steps: Step[]
-  authorId: string
-  author: UserSummary
-  isBookmarked: boolean
-  bookmarkCount: number
-  forkCount: number
+  id: number
+  errorCaseId: number
+  authorUserId: number
+  title: string
+  stepIds: number[]
   createdAt: string
+  updatedAt: string
 }
 
 export interface SolutionCreateRequest {
-  name: string
-  rootCause: string
-  selectedStepIds: string[]
+  title: string
+  stepIds: number[]
 }
 
-export type SnippetLanguage = 'java' | 'kotlin' | 'sql' | 'yaml' | 'json' | 'bash' | 'javascript' | 'typescript' | 'python' | 'text'
+// ── Comment ──
 
-export interface Snippet {
-  id: string
-  errorCaseId: string
-  title?: string
-  language: SnippetLanguage
-  filePath?: string
-  lineRange?: string
-  caption?: string
+export interface CommentQuote {
+  kind: QuoteSourceKind
+  sourceId: number | null
+  snapshot: string | null
+  truncated: boolean
+}
+
+export interface CommentReaction {
+  emoji: string
+  count: number
+  userIds: number[]
+  reactedByMe: boolean
+}
+
+export interface CommentHelpful {
+  count: number
+  userIds: number[]
+  helpedByMe: boolean
+}
+
+export interface DiffLine {
+  type: 'del' | 'add'
+  oldNo: number | null
+  newNo: number | null
   code: string
-  authorId: string
+}
+
+export interface CommentSuggestion {
+  id: number
+  sourceType: SuggestionSourceType
+  sourceId: string
+  startLine: number
+  endLine: number
+  oldCode: string
+  newCode: string
+  status: SuggestionStatus
+  additions: number
+  deletions: number
+  lines: DiffLine[]
   createdAt: string
   updatedAt: string
 }
 
+export interface Comment {
+  id: number
+  errorCaseId: number
+  authorUserId: number
+  isAuthorOfCase: boolean
+  parentCommentId: number | null
+  body: string
+  quote: CommentQuote | null
+  reactions: CommentReaction[]
+  helpful: CommentHelpful
+  mentions: string[]
+  suggestion: CommentSuggestion | null
+  editedAt: string | null
+  deletedAt: string | null
+  createdAt: string
+  updatedAt: string
+  replies: Comment[]
+}
+
+export interface CommentCreateRequest {
+  body: string
+  parentCommentId?: number | null
+  quoteSourceKind?: QuoteSourceKind
+  quoteSourceId?: number | null
+  quoteSnapshot?: string | null
+  suggestion?: {
+    sourceType: SuggestionSourceType
+    sourceId: string
+    startLine: number
+    endLine: number
+    oldCode: string
+    newCode: string
+  } | null
+}
+
+export interface CommentListResponse {
+  items: Comment[]
+  nextCursor: string | null
+  hasNext: boolean
+  quoteSummary: {
+    general: number
+    caseBody: number
+    steps: { sourceId: number; count: number }[]
+  }
+}
+
+// ── Snippet (independent resource) ──
+
 export interface SnippetCreateRequest {
-  title?: string
-  language: SnippetLanguage
-  filePath?: string
-  lineRange?: string
-  caption?: string
+  title?: string | null
+  language: string
+  filePathOrClass?: string | null
+  lineRange?: string | null
+  caption?: string | null
   code: string
+}
+
+export interface SnippetCreateResponse {
+  markerId: string
+  embedToken: string
+  title: string | null
+  language: string
+  caption: string | null
+}
+
+export interface SnippetDetail {
+  markerId: string
+  embedToken: string
+  title: string
+  language: string
+  filePathOrClass: string | null
+  lineRange: string | null
+  caption: string | null
+  code: string
+  errorCaseId: number | null
 }
 
 export interface SnippetUpdateRequest {
-  title?: string
-  language?: SnippetLanguage
-  filePath?: string
-  lineRange?: string
-  caption?: string
-  code?: string
+  title?: string | null
+  language?: string | null
+  filePathOrClass?: string | null
+  lineRange?: string | null
+  caption?: string | null
+  code?: string | null
 }
 
-export type AttachmentKind = 'image' | 'json' | 'text' | 'file'
+// ── Attachment (independent resource) ──
 
-export interface Attachment {
-  id: string
-  errorCaseId: string
-  title?: string
+export interface AttachmentUploadResponse {
+  markerId: string
+  embedToken: string
   fileName: string
-  mimeType: string
-  fileSize: number
-  url: string
-  caption?: string
-  kind: AttachmentKind
-  authorId: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface AttachmentCreateRequest {
-  title?: string
-  caption?: string
-  file: File
-}
-
-export interface AttachmentUpdateRequest {
-  title?: string
-  caption?: string
+  contentType: string
+  size: number
+  kind: string
+  storageUrl: string
 }
