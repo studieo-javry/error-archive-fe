@@ -16,8 +16,7 @@ const attemptTypeLabels: Record<string, string> = {
 }
 
 function ledClass(status: string) {
-  if (status === 'FAILURE') return 'led-fail'
-  if (status === 'PARTIAL') return 'led-ref'
+  if (status === 'FAILED') return 'led-fail'
   if (status === 'IN_PROGRESS') return 'led-ref'
   return 'led-success'
 }
@@ -50,7 +49,7 @@ function ledClass(status: string) {
         </p>
       </div>
       <div class="flex items-center gap-2 mt-2 text-xs text-zinc-400 dark:text-zinc-500">
-        <span class="capitalize">{{ step.status.toLowerCase().replace('_', ' ') }}</span>
+        <span>{{ { RESOLVED: 'Resolved', IN_PROGRESS: 'In Progress', FAILED: 'Failed' }[step.status] || step.status }}</span>
         <span>&middot;</span>
         <span>{{ new Date(step.createdAt).toLocaleString() }}</span>
       </div>
