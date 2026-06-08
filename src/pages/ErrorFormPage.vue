@@ -21,6 +21,21 @@ const scope = ref('')
 const paste = ref('')
 const description = ref('')
 const visibility = ref<Visibility>('PRIVATE')
+const tags = ref<string[]>([])
+const tagInput = ref('')
+
+function addTag(e: Event) {
+  e.preventDefault()
+  const val = tagInput.value.trim()
+  if (val && !tags.value.includes(val)) {
+    tags.value.push(val)
+  }
+  tagInput.value = ''
+}
+
+function removeTag(tag: string) {
+  tags.value = tags.value.filter(t => t !== tag)
+}
 
 const snippetMarkers = ref<SnippetCreateResponse[]>([])
 const attachmentMarkers = ref<AttachmentUploadResponse[]>([])
@@ -91,12 +106,13 @@ async function onSubmit() {
   } else {
     const { data } = await errorApi.create({
       title: title.value,
-      scope: scope.value,
+      scope: scope.value || undefined,
       paste: paste.value || '',
       description: description.value || undefined,
       visibility: visibility.value,
       snippetMarkerIds,
       attachmentMarkerIds,
+      tags: tags.value.length ? tags.value : undefined,
     })
     router.push({ name: 'errorDetail', params: { id: data.id } })
   }
@@ -138,7 +154,27 @@ onMounted(loadError)
         <input v-model="title" type="text" placeholder="Error title" class="raw-input w-full text-lg font-medium" required />
       </div>
       <div>
-        <input v-model="scope" type="text" placeholder="Project" class="raw-input w-full text-sm" required />
+        <input v-model="scope" type="text" placeholder="Project (optional)" class="raw-input w-full text-sm" />
+      </div>
+      <div>
+        <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Tags</label>
+        <div class="flex flex-wrap items-center gap-1.5 p-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/50 min-h-[38px]">
+          <span
+            v-for="tag in tags"
+            :key="tag"
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs"
+          >
+            {{ tag }}
+            <button type="button" class="hover:text-indigo-900 dark:hover:text-indigo-100" @click="removeTag(tag)">&times;</button>
+          </span>
+          <input
+            v-model="tagInput"
+            type="text"
+            placeholder="Add tag and press Enter"
+            class="flex-1 min-w-[120px] bg-transparent outline-none text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+            @keydown.enter="addTag"
+          />
+        </div>
       </div>
       <div>
         <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Error Trace <span class="text-zinc-400 dark:text-zinc-600">(optional)</span></label>

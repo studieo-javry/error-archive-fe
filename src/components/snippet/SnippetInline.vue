@@ -19,7 +19,7 @@ const highlightedCode = computed(() => {
   <div v-if="snippet" class="my-3 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
     <div class="flex items-center justify-between px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
       <div class="flex items-center gap-2">
-        <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300">{{ snippet.title || 'Code snippet' }}</span>
+        <span v-if="snippet.title" class="text-xs font-medium text-zinc-700 dark:text-zinc-300">{{ snippet.title }}</span>
         <span class="px-1.5 py-0.5 rounded text-[10px] bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 uppercase">{{ snippet.language }}</span>
       </div>
       <span v-if="snippet.filePathOrClass" class="text-[11px] text-zinc-400 dark:text-zinc-500 truncate max-w-48">

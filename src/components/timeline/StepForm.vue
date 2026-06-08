@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { StepStatus, AttemptType, StepCreateRequest } from '@/types/error'
+import { ref, computed } from 'vue'
+import type { StepStatus, StepCreateRequest } from '@/types/error'
 
 const emit = defineEmits<{ submit: [data: StepCreateRequest] }>()
 
 const title = ref('')
-const status = ref<StepStatus>('FAILURE')
-const attemptType = ref<AttemptType | ''>('')
+const status = ref<StepStatus>('FAILED')
+const attemptTypeSelect = ref('')
+const customAttemptType = ref('')
 const body = ref('')
 const insight = ref('')
 
-const attemptTypes: { value: AttemptType; label: string }[] = [
+const attemptTypes = [
   { value: 'CODE_CHANGE', label: 'Code Change' },
   { value: 'CONFIG', label: 'Config' },
   { value: 'DEPENDENCY', label: 'Dependency' },
@@ -20,19 +21,27 @@ const attemptTypes: { value: AttemptType; label: string }[] = [
   { value: 'OTHER', label: 'Other' },
 ]
 
+const isCustom = computed(() => attemptTypeSelect.value === '__custom__')
+
+const resolvedAttemptType = computed(() => {
+  if (isCustom.value) return customAttemptType.value.trim() || undefined
+  return attemptTypeSelect.value || undefined
+})
+
 function onSubmit() {
   if (!title.value.trim()) return
   emit('submit', {
     title: title.value,
     status: status.value,
-    attemptType: attemptType.value || undefined,
+    attemptType: resolvedAttemptType.value || undefined,
     body: body.value || undefined,
     insight: insight.value || undefined,
   })
   title.value = ''
   body.value = ''
   insight.value = ''
-  attemptType.value = ''
+  attemptTypeSelect.value = ''
+  customAttemptType.value = ''
 }
 </script>
 
@@ -46,14 +55,22 @@ function onSubmit() {
     />
     <div class="flex items-center gap-3">
       <select v-model="status" class="raw-input text-xs pr-6">
-        <option value="FAILURE">Failed</option>
-        <option value="PARTIAL">Partial</option>
-        <option value="SUCCESS">Resolved</option>
+        <option value="FAILED">Failed</option>
+        <option value="IN_PROGRESS">In Progress</option>
+        <option value="RESOLVED">Resolved</option>
       </select>
-      <select v-model="attemptType" class="raw-input text-xs pr-6">
+      <select v-model="attemptTypeSelect" class="raw-input text-xs pr-6">
         <option value="">Type (optional)</option>
         <option v-for="at in attemptTypes" :key="at.value" :value="at.value">{{ at.label }}</option>
+        <option value="__custom__">Custom…</option>
       </select>
+      <input
+        v-if="isCustom"
+        v-model="customAttemptType"
+        type="text"
+        placeholder="Custom type"
+        class="raw-input text-xs w-28"
+      />
       <button
         type="submit"
         class="ml-auto px-4 py-1.5 text-xs font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"

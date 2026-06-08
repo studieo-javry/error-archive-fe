@@ -1,6 +1,6 @@
 export type ErrorCaseStatus = 'DRAFT' | 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
 export type Visibility = 'PUBLIC' | 'WORKSPACE' | 'PRIVATE'
-export type StepStatus = 'SUCCESS' | 'PARTIAL' | 'FAILURE'
+export type StepStatus = 'RESOLVED' | 'IN_PROGRESS' | 'FAILED'
 export type AttemptType = 'CODE_CHANGE' | 'CONFIG' | 'DEPENDENCY' | 'ENV' | 'ROLLBACK' | 'INVESTIGATION' | 'OTHER'
 export type QuoteSourceKind = 'NONE' | 'CASE_BODY' | 'STEP'
 export type SuggestionSourceType = 'SNIPPET' | 'MARKDOWN_CODE'
@@ -51,6 +51,7 @@ export interface ErrorCaseDetail {
   occurredAt: string | null
   createdAt: string
   updatedAt: string
+  tags: string[]
   snapshot: ErrorCaseSnapshot | null
   snippets: ErrorCaseSnippet[]
   attachments: ErrorCaseAttachment[]
@@ -72,8 +73,9 @@ export interface ErrorCaseSummary {
 
 export interface ErrorCaseCreateRequest {
   title: string
-  scope: string
+  scope?: string | null
   paste: string
+  tags?: string[]
   description?: string | null
   snippetMarkerIds?: string[]
   attachmentMarkerIds?: string[]
@@ -116,7 +118,7 @@ export interface Step {
   orderIndex: number
   title: string
   status: StepStatus
-  attemptType: AttemptType | null
+  attemptType: string | null
   body: string | null
   insight: string | null
   createdAt: string
@@ -126,7 +128,7 @@ export interface Step {
 export interface StepCreateRequest {
   title: string
   status: StepStatus
-  attemptType?: AttemptType | null
+  attemptType?: string | null
   body?: string | null
   insight?: string | null
 }

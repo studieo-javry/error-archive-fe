@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
 import { stepApi } from '@/services/stepApi'
 import { solutionApi } from '@/services/solutionApi'
@@ -13,6 +13,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
 
 const route = useRoute()
+const router = useRouter()
 const errorCase = ref<ErrorCaseDetail | null>(null)
 const steps = ref<Step[]>([])
 const solutions = ref<Solution[]>([])
@@ -51,12 +52,25 @@ async function loadData() {
   }
 }
 
+const showResolveConfirm = ref(false)
+
 async function addStep(data: StepCreateRequest) {
   const res = await stepApi.create(caseId, data)
   steps.value.push(res.data.step)
   if (errorCase.value) {
     errorCase.value.status = res.data.caseStatus
   }
+  if (res.data.suggestResolve && errorCase.value && errorCase.value.status !== 'RESOLVED') {
+    showResolveConfirm.value = true
+  }
+}
+
+async function confirmResolve() {
+  await errorApi.update(caseId, { status: 'RESOLVED' })
+  if (errorCase.value) {
+    errorCase.value.status = 'RESOLVED'
+  }
+  showResolveConfirm.value = false
 }
 
 function toggleStepSelection(id: number) {
@@ -91,11 +105,24 @@ onMounted(loadData)
         <span class="text-xs text-zinc-400 dark:text-zinc-500">
           {{ new Date(errorCase.createdAt).toLocaleString() }}
         </span>
+        <button
+          class="ml-auto text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+          @click="router.push({ name: 'errorEdit', params: { id: caseId } })"
+        >
+          Edit
+        </button>
       </div>
       <h1 class="text-xl font-semibold text-zinc-800 dark:text-zinc-100 mb-2">
         {{ errorCase.title }}
       </h1>
       <p v-if="errorCase.scope" class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">{{ errorCase.scope }}</p>
+      <div v-if="errorCase.tags?.length" class="flex flex-wrap gap-1.5 mb-3">
+        <span
+          v-for="tag in errorCase.tags"
+          :key="tag"
+          class="inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs"
+        >{{ tag }}</span>
+      </div>
       <BodyRenderer
         v-if="errorCase.description"
         :content="errorCase.description"
@@ -103,7 +130,7 @@ onMounted(loadData)
         :attachments="errorCase.attachments"
         class="mb-3"
       />
-      <pre v-if="errorCase.snapshot?.rawStackTrace" class="text-xs bg-zinc-100 dark:bg-zinc-800 p-3 rounded-xl overflow-x-auto text-zinc-600 dark:text-zinc-400">{{ errorCase.snapshot.rawStackTrace }}</pre>
+      <pre v-if="errorCase.snapshot?.rawPaste" class="text-xs bg-zinc-100 dark:bg-zinc-800 p-3 rounded-xl overflow-x-auto text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap">{{ errorCase.snapshot.rawPaste }}</pre>
     </div>
 
     <section class="mb-8">
@@ -152,5 +179,19 @@ onMounted(loadData)
       <StepForm @submit="addStep" />
     </section>
 
+    <Teleport to="body">
+      <div v-if="showResolveConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4">
+          <h3 class="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-2">Mark as Resolved?</h3>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-5 leading-relaxed">
+            A step was marked as resolved. Would you like to update this error case's status to Resolved as well?
+          </p>
+          <div class="flex justify-end gap-2">
+            <button class="px-4 py-1.5 text-xs font-medium rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 transition-colors" @click="showResolveConfirm = false">Cancel</button>
+            <button class="px-4 py-1.5 text-xs font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors" @click="confirmResolve">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

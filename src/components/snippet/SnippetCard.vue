@@ -21,7 +21,7 @@ function copyMarker() {
     <div class="p-3 flex items-start gap-3">
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">{{ snippet.title || 'Untitled snippet' }}</span>
+          <span v-if="snippet.title" class="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">{{ snippet.title }}</span>
           <span class="px-1.5 py-0.5 rounded text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 uppercase">{{ snippet.language }}</span>
         </div>
         <code class="text-[11px] text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-1.5 py-0.5 rounded">{{ marker }}</code>
