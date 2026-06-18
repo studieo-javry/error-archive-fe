@@ -10,12 +10,14 @@ export const useErrorStore = defineStore('error', () => {
   const size = ref(20)
   const loading = ref(false)
   const statusFilter = ref<string>('')
+  const severityFilter = ref<number | undefined>(undefined)
 
   async function fetchErrors(append = false) {
     loading.value = true
     try {
       const params: Record<string, unknown> = { size: size.value }
       if (statusFilter.value) params.status = statusFilter.value
+      if (severityFilter.value) params.severity = severityFilter.value
       if (append && nextCursor.value) params.cursor = nextCursor.value
       const { data } = await errorApi.list(params as Parameters<typeof errorApi.list>[0])
       if (append) {
@@ -42,5 +44,11 @@ export const useErrorStore = defineStore('error', () => {
     fetchErrors()
   }
 
-  return { errors, nextCursor, hasNext, size, loading, statusFilter, fetchErrors, loadMore, setFilter }
+  function setSeverity(severity?: number) {
+    severityFilter.value = severity
+    nextCursor.value = null
+    fetchErrors()
+  }
+
+  return { errors, nextCursor, hasNext, size, loading, statusFilter, severityFilter, fetchErrors, loadMore, setFilter, setSeverity }
 })

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
 import { snippetApi } from '@/services/snippetApi'
 import { attachmentApi } from '@/services/attachmentApi'
+import { teamApi } from '@/services/teamApi'
 import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse } from '@/types/error'
+import type { WorkspaceListItem } from '@/types/team'
 import SnippetModal from '@/components/snippet/SnippetModal.vue'
 import SnippetCard from '@/components/snippet/SnippetCard.vue'
 import AttachmentModal from '@/components/attachment/AttachmentModal.vue'
@@ -23,6 +25,15 @@ const description = ref('')
 const visibility = ref<Visibility>('PRIVATE')
 const tags = ref<string[]>([])
 const tagInput = ref('')
+const workspaces = ref<WorkspaceListItem[]>([])
+const workspaceId = ref<number | null>(null)
+
+watch(visibility, async (val) => {
+  if (val === 'WORKSPACE' && !workspaces.value.length) {
+    const res = await teamApi.listWorkspaces()
+    workspaces.value = res.data
+  }
+})
 
 function addTag(e: Event) {
   e.preventDefault()
@@ -65,10 +76,16 @@ async function loadError() {
   if (!isEdit || !caseId) return
   const { data } = await errorApi.get(caseId)
   title.value = data.title
-  scope.value = data.scope ?? ''
+  scope.value = data.project ?? ''
   paste.value = data.snapshot?.rawPaste ?? ''
   description.value = data.description ?? ''
   visibility.value = data.visibility as Visibility
+  tags.value = data.tags ?? []
+  if (data.workspaceId) {
+    workspaceId.value = data.workspaceId
+    const wsRes = await teamApi.listWorkspaces()
+    workspaces.value = wsRes.data
+  }
 
   snippetMarkers.value = data.snippets.map(s => ({
     markerId: s.markerId,
@@ -92,24 +109,28 @@ async function onSubmit() {
   const snippetMarkerIds = snippetMarkers.value.map(s => s.markerId)
   const attachmentMarkerIds = attachmentMarkers.value.map(a => a.markerId)
 
+  const wsId = visibility.value === 'WORKSPACE' ? workspaceId.value : null
+
   if (isEdit && caseId) {
     await errorApi.update(caseId, {
       title: title.value,
-      scope: scope.value || null,
+      project: scope.value || null,
       paste: paste.value || null,
       description: description.value || null,
       visibility: visibility.value,
       snippetMarkerIds,
       attachmentMarkerIds,
+      tags: tags.value,
     })
     router.push({ name: 'errorDetail', params: { id: caseId } })
   } else {
     const { data } = await errorApi.create({
       title: title.value,
-      scope: scope.value || undefined,
+      project: scope.value || undefined,
       paste: paste.value || '',
       description: description.value || undefined,
       visibility: visibility.value,
+      workspaceId: wsId ?? undefined,
       snippetMarkerIds,
       attachmentMarkerIds,
       tags: tags.value.length ? tags.value : undefined,
@@ -162,10 +183,10 @@ onMounted(loadError)
           <span
             v-for="tag in tags"
             :key="tag"
-            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs"
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs"
           >
             {{ tag }}
-            <button type="button" class="hover:text-indigo-900 dark:hover:text-indigo-100" @click="removeTag(tag)">&times;</button>
+            <button type="button" class="hover:text-emerald-900 dark:hover:text-emerald-100" @click="removeTag(tag)">&times;</button>
           </span>
           <input
             v-model="tagInput"
@@ -204,9 +225,17 @@ onMounted(loadError)
           <option value="PUBLIC">Public</option>
         </select>
       </div>
+      <div v-if="visibility === 'WORKSPACE'">
+        <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Workspace</label>
+        <select v-model="workspaceId" class="raw-input text-sm" required>
+          <option :value="null" disabled>Select workspace</option>
+          <option v-for="ws in workspaces" :key="ws.workspaceId" :value="ws.workspaceId">{{ ws.name }}</option>
+        </select>
+        <p v-if="!workspaces.length" class="text-xs text-zinc-400 mt-1">No workspaces found. Create one first.</p>
+      </div>
 
       <div class="flex gap-3 pt-4">
-        <button type="submit" class="px-6 py-2 text-sm font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
+        <button type="submit" class="px-6 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
           {{ isEdit ? 'Update' : 'Create' }}
         </button>
         <button type="button" class="px-6 py-2 text-sm font-medium rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 transition-colors" @click="router.back()">
@@ -223,7 +252,6 @@ onMounted(loadError)
         :snippet="snp"
         @insert="insertAtCursor"
         @delete="() => deleteSnippet(snp.markerId)"
-        @edit="() => {}"
       />
       <AttachmentCard
         v-for="att in attachmentMarkers"
@@ -231,7 +259,6 @@ onMounted(loadError)
         :attachment="att"
         @insert="insertAtCursor"
         @delete="() => deleteAttachment(att.markerId)"
-        @edit="() => {}"
       />
     </div>
 

@@ -41,7 +41,7 @@ export interface ErrorCaseDetail {
   id: number
   ownerUserId: number
   title: string
-  scope: string | null
+  project: string | null
   status: string
   visibility: string
   description: string | null
@@ -61,9 +61,12 @@ export interface ErrorCaseSummary {
   id: number
   ownerUserId: number
   title: string
+  project: string | null
+  descriptionPreview: string | null
   status: string
   visibility: string
   severity: number | null
+  tags: string[]
   workspaceId: number | null
   fingerprint: string | null
   exceptionClass: string | null
@@ -73,7 +76,7 @@ export interface ErrorCaseSummary {
 
 export interface ErrorCaseCreateRequest {
   title: string
-  scope?: string | null
+  project?: string | null
   paste: string
   tags?: string[]
   description?: string | null
@@ -98,7 +101,7 @@ export interface ErrorCaseCreateResponse {
 
 export interface ErrorCaseUpdateRequest {
   title?: string | null
-  scope?: string | null
+  project?: string | null
   paste?: string | null
   description?: string | null
   severity?: number | null
@@ -107,6 +110,7 @@ export interface ErrorCaseUpdateRequest {
   attachmentMarkerIds?: string[] | null
   status?: ErrorCaseStatus | null
   visibility?: Visibility | null
+  tags?: string[]
 }
 
 // ── Step ──
