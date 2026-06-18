@@ -10,6 +10,7 @@ const mockUser: MyProfile = {
   bio: 'Full-stack developer who loves solving tricky bugs',
   status: 'ACTIVE',
   pendingDeletionAt: null,
+  createdAt: '2026-01-10T09:00:00Z',
   language: 'ko',
   timezone: 'Asia/Seoul',
   theme: 'SYSTEM',
@@ -21,9 +22,12 @@ const mockErrors: ErrorCaseSummary[] = [
     id: 1,
     ownerUserId: 1,
     title: 'CORS policy blocking API requests in production',
+    project: 'api-gateway',
+    descriptionPreview: 'Detailed analysis of CORS header issues within nginx reverse proxy configuration in production environment.',
     status: 'RESOLVED',
     visibility: 'PUBLIC',
     severity: 2,
+    tags: ['nginx', 'cors', 'production'],
     workspaceId: null,
     fingerprint: 'cors-nginx-001',
     exceptionClass: 'CORSError',
@@ -34,9 +38,12 @@ const mockErrors: ErrorCaseSummary[] = [
     id: 2,
     ownerUserId: 1,
     title: 'TypeScript strict mode breaks third-party library types',
+    project: 'error-archive-fe',
+    descriptionPreview: 'Solved by adjusting tsconfig strict flags and adding type declarations for incompatible libraries.',
     status: 'IN_PROGRESS',
     visibility: 'PRIVATE',
     severity: 3,
+    tags: ['typescript', 'strict-mode'],
     workspaceId: null,
     fingerprint: null,
     exceptionClass: 'TypeError',
@@ -47,9 +54,12 @@ const mockErrors: ErrorCaseSummary[] = [
     id: 3,
     ownerUserId: 2,
     title: 'Memory leak in WebSocket connection handler',
+    project: 'realtime-service',
+    descriptionPreview: 'Investigating memory growth in long-lived WebSocket connections under high concurrency load.',
     status: 'OPEN',
     visibility: 'PUBLIC',
     severity: 1,
+    tags: ['websocket', 'memory-leak'],
     workspaceId: null,
     fingerprint: 'ws-memleak-001',
     exceptionClass: 'OutOfMemoryError',
@@ -132,6 +142,15 @@ export const handlers = [
   }),
 
   // Error cases
+  http.get('/api/v1/error-cases/search', ({ request }) => {
+    const url = new URL(request.url)
+    const q = url.searchParams.get('q')?.toLowerCase() || ''
+    const filtered = q
+      ? mockErrors.filter(e => e.title.toLowerCase().includes(q) || e.project?.toLowerCase().includes(q) || e.tags?.some(t => t.toLowerCase().includes(q)))
+      : mockErrors
+    return HttpResponse.json({ items: filtered, nextCursor: null, hasNext: false })
+  }),
+
   http.get('/api/v1/error-cases', () => {
     return HttpResponse.json({
       items: mockErrors,
@@ -145,7 +164,7 @@ export const handlers = [
     if (!found) return HttpResponse.json({ message: 'Not found' }, { status: 404 })
     return HttpResponse.json({
       ...found,
-      scope: 'production',
+      project: 'production',
       description: 'Occurred during production deployment after nginx config change',
       snapshot: {
         exceptionClass: found.exceptionClass,
@@ -181,7 +200,7 @@ export const handlers = [
       id: Number(params.id),
       ownerUserId: 1,
       title: body.title || 'Updated',
-      scope: body.scope || null,
+      project: body.project || null,
       status: 'OPEN',
       visibility: body.visibility || 'PRIVATE',
       description: body.description || null,
@@ -263,7 +282,11 @@ export const handlers = [
   http.get('/api/v1/error-cases/:caseId/comments', () => {
     return HttpResponse.json({
       items: [
-        { id: 1, errorCaseId: 1, authorUserId: 2, isAuthorOfCase: false, parentCommentId: null, body: 'Have you tried checking the upstream proxy headers?', quote: null, reactions: [], helpful: { count: 1, userIds: [1], helpedByMe: true }, mentions: [], suggestion: null, editedAt: null, deletedAt: null, createdAt: '2026-04-28T16:00:00Z', updatedAt: '2026-04-28T16:00:00Z', replies: [] },
+        { id: 1, errorCaseId: 1, authorUserId: 1, isAuthorOfCase: true, parentCommentId: null, body: 'I spent hours debugging this. The root cause was the **upstream proxy** overwriting the CORS headers silently.', quote: { kind: 'CASE_BODY', sourceId: null, snapshot: 'Occurred during production deployment after nginx config change', truncated: false }, reactions: [], helpful: { count: 6, userIds: [2, 3, 5, 7, 8, 11], helpedByMe: false }, mentions: [], suggestion: null, editedAt: null, deletedAt: null, createdAt: '2026-04-28T16:00:00Z', updatedAt: '2026-04-28T16:00:00Z', replies: [
+          { id: 3, errorCaseId: 1, authorUserId: 2, isAuthorOfCase: false, parentCommentId: 1, body: 'That makes sense. Did you also check the `Access-Control-Allow-Origin` header?', quote: null, reactions: [], helpful: { count: 0, userIds: [], helpedByMe: false }, mentions: [], suggestion: null, editedAt: null, deletedAt: null, createdAt: '2026-04-28T17:30:00Z', updatedAt: '2026-04-28T17:30:00Z', replies: [] },
+        ] },
+        { id: 2, errorCaseId: 1, authorUserId: 2, isAuthorOfCase: false, parentCommentId: null, body: 'Have you tried checking the upstream proxy headers? The `map $http_origin` approach is much cleaner than hardcoding.', quote: { kind: 'STEP', sourceId: 1, snapshot: 'Headers were overwritten by upstream proxy', truncated: false }, reactions: [], helpful: { count: 4, userIds: [1, 4, 6, 9], helpedByMe: true }, mentions: [], suggestion: null, editedAt: '2026-04-28T18:00:00Z', deletedAt: null, createdAt: '2026-04-28T17:00:00Z', updatedAt: '2026-04-28T18:00:00Z', replies: [] },
+        { id: 4, errorCaseId: 1, authorUserId: 3, isAuthorOfCase: false, parentCommentId: null, body: 'Deleted test comment', quote: null, reactions: [], helpful: { count: 0, userIds: [], helpedByMe: false }, mentions: [], suggestion: null, editedAt: null, deletedAt: '2026-04-29T10:00:00Z', createdAt: '2026-04-29T09:00:00Z', updatedAt: '2026-04-29T10:00:00Z', replies: [] },
       ],
       nextCursor: null,
       hasNext: false,
