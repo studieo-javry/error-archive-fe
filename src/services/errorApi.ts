@@ -35,4 +35,14 @@ export const errorApi = {
   delete(id: number) {
     return apiClient.delete<void>(`/error-cases/${id}`)
   },
+
+  search(params?: {
+    q?: string
+    status?: string
+    severity?: number
+    cursor?: string
+    size?: number
+  }) {
+    return apiClient.get<CursorPaginatedResponse<ErrorCaseSummary>>('/error-cases/search', { params })
+  },
 }
