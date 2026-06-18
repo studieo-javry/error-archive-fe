@@ -14,7 +14,7 @@ const routes = [
   { path: '/team', name: 'team', component: () => import('@/pages/TeamDashboardPage.vue') },
   { path: '/insights', name: 'insights', component: () => import('@/pages/InsightPage.vue') },
   { path: '/profile/:id?', name: 'profile', component: () => import('@/pages/ProfilePage.vue') },
-  { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
+  { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true } },
   { path: '/report/:shareToken', name: 'report', component: () => import('@/pages/ReportPage.vue'), meta: { public: true } },
 ]
 

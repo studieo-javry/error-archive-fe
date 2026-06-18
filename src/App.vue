@@ -9,6 +9,7 @@ useTheme()
 
 const route = useRoute()
 const isFullScreen = computed(() => !!route.meta.fullScreen)
+const isWideLayout = computed(() => !!route.meta.wideLayout)
 </script>
 
 <template>
@@ -18,7 +19,10 @@ const isFullScreen = computed(() => !!route.meta.fullScreen)
     <div class="flex-1 flex flex-col overflow-hidden">
       <AppHeader />
       <main class="flex-1 overflow-y-auto">
-        <div class="max-w-5xl mx-auto p-10 pb-32">
+        <div v-if="isWideLayout" class="h-full p-6">
+          <router-view />
+        </div>
+        <div v-else class="max-w-5xl mx-auto p-10 pb-32">
           <router-view />
         </div>
       </main>

@@ -19,10 +19,10 @@ export const notificationApi = {
   },
 
   getSettings() {
-    return apiClient.get<NotificationSettings>('/notifications/settings')
+    return apiClient.get<NotificationSettings>('/users/me/notification-settings')
   },
 
-  updateSettings(settings: NotificationSettings) {
-    return apiClient.put<NotificationSettings>('/notifications/settings', settings)
+  updateSettings(settings: Partial<NotificationSettings>) {
+    return apiClient.patch<NotificationSettings>('/users/me/notification-settings', settings)
   },
 }
