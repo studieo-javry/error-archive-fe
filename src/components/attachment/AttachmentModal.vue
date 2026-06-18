@@ -60,7 +60,7 @@ function onSubmit() {
           <input v-model="caption" type="text" placeholder="Caption (optional)" class="raw-input w-full text-sm" />
           <div class="flex justify-end gap-3 pt-2">
             <button type="button" class="px-4 py-2 text-sm rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 transition-colors" @click="emit('close')">Cancel</button>
-            <button type="submit" :disabled="!file" class="px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors">Upload</button>
+            <button type="submit" :disabled="!file" class="px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">Upload</button>
           </div>
         </form>
       </div>

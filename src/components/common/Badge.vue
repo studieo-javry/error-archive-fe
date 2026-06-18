@@ -9,7 +9,7 @@ const variantClasses: Record<string, string> = {
   success: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   warning: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   danger: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
-  info: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+  info: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
 }
 </script>
 

@@ -8,16 +8,14 @@ const searchQuery = ref('')
 const unreadCount = ref(3)
 
 function onSearch() {
-  if (searchQuery.value.trim()) {
-    router.push({ name: 'search', query: { q: searchQuery.value } })
-  }
+  router.push({ name: 'search', query: searchQuery.value.trim() ? { q: searchQuery.value } : undefined })
 }
 </script>
 
 <template>
   <header class="glass sticky top-0 z-10 px-6 py-3 flex items-center justify-between">
     <div class="flex items-center gap-3 flex-1 max-w-md">
-      <MagnifyingGlassIcon class="w-4 h-4 text-zinc-400" />
+      <MagnifyingGlassIcon class="w-4 h-4 text-zinc-400 cursor-pointer" @click="onSearch" />
       <input
         v-model="searchQuery"
         type="text"

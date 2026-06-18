@@ -29,7 +29,7 @@ const rankColors = ['text-amber-500', 'text-zinc-400', 'text-amber-700']
           <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">{{ entry.user.displayName }}</p>
           <p class="text-[10px] text-zinc-400">{{ entry.errorCount }} errors · {{ entry.solutionCount }} solutions</p>
         </div>
-        <span class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{{ entry.score }}</span>
+        <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ entry.score }}</span>
       </div>
     </div>
   </div>

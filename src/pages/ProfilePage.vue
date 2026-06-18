@@ -69,7 +69,7 @@ onMounted(loadProfile)
           class="mt-3 px-4 py-1.5 text-xs font-medium rounded-xl transition-colors"
           :class="followStatus.viewerFollowsTarget
             ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
-            : 'bg-indigo-600 text-white hover:bg-indigo-700'"
+            : 'bg-emerald-600 text-white hover:bg-emerald-700'"
           @click="toggleFollow"
         >
           {{ followStatus.viewerFollowsTarget ? 'Following' : 'Follow' }}

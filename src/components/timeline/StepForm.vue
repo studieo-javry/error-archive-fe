@@ -73,7 +73,7 @@ function onSubmit() {
       />
       <button
         type="submit"
-        class="ml-auto px-4 py-1.5 text-xs font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+        class="ml-auto px-4 py-1.5 text-xs font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
       >
         Add Step
       </button>
@@ -81,8 +81,8 @@ function onSubmit() {
     <textarea
       v-model="body"
       placeholder="Details — what happened, what you observed (markdown supported)"
-      rows="3"
-      class="raw-textarea w-full text-sm"
+      rows="5"
+      class="raw-textarea w-full text-sm !resize-y"
     />
     <textarea
       v-model="insight"

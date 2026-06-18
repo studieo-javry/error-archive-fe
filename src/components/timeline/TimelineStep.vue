@@ -23,7 +23,7 @@ function ledClass(status: string) {
 </script>
 
 <template>
-  <div class="step-item flex gap-4 relative pb-6 transition-opacity duration-300" :class="{ 'is-checked': selected, 'opacity-25': dimmed }">
+  <div class="step-item flex gap-4 relative pb-6 transition-opacity duration-300" :data-step-id="step.id" :class="{ 'is-checked': selected, 'opacity-25': dimmed }">
     <div class="cb-wrapper">
       <input
         v-if="selectionMode"

@@ -26,7 +26,7 @@ function handleClick(id: string, deepLink: string) {
       <h3 class="text-sm font-medium text-zinc-800 dark:text-zinc-100">Notifications</h3>
       <button
         v-if="store.unreadCount > 0"
-        class="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline"
+        class="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline"
         @click="store.markAllRead()"
       >
         Mark all read

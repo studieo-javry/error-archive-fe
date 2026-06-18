@@ -19,7 +19,7 @@ const isOfflineMode = import.meta.env.VITE_OFFLINE_MODE === 'true'
 
 async function handleLogin() {
   loading.value = true
-  const redirectPath = (route.query.redirect as string) || '/'
+  const redirectPath = (route.query.redirect as string) || '/home'
   sessionStorage.setItem('oauth_return_url', redirectPath)
   try {
     if (isOfflineMode) {
