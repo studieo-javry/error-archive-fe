@@ -1,43 +1,36 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import type { Comment } from '@/types/error'
-import CommentForm from './CommentForm.vue'
+import CommentItem from './CommentItem.vue'
+import type { QuoteInfo } from './CommentForm.vue'
 
-defineProps<{ comments: Comment[] }>()
-const emit = defineEmits<{ reply: [parentId: number, content: string]; delete: [id: number] }>()
+defineProps<{
+  comments: Comment[]
+  caseOwnerUserId: number
+  stepIndexMap?: Map<number, number>
+}>()
 
-const replyingTo = ref<number | null>(null)
-
-function handleReply(parentId: number, content: string) {
-  emit('reply', parentId, content)
-  replyingTo.value = null
-}
+defineEmits<{
+  reply: [parentId: number, body: string, quote: QuoteInfo | null]
+  edit: [commentId: number, body: string]
+  delete: [commentId: number]
+  helpful: [commentId: number]
+  scrollToQuote: [kind: string, sourceId: number | null]
+}>()
 </script>
 
 <template>
-  <div class="space-y-4">
-    <div v-for="comment in comments" :key="comment.id" class="group">
-      <div v-if="!comment.deletedAt" class="flex gap-3">
-        <div class="w-6 h-6 rounded-full mt-0.5 bg-zinc-200 dark:bg-zinc-700 shrink-0" />
-        <div class="flex-1">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300">User #{{ comment.authorUserId }}</span>
-            <span class="text-[10px] text-zinc-400">{{ new Date(comment.createdAt).toLocaleDateString() }}</span>
-          </div>
-          <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">{{ comment.body }}</p>
-          <div class="flex gap-3 mt-1">
-            <button class="text-[10px] text-zinc-400 hover:text-indigo-500" @click="replyingTo = comment.id">Reply</button>
-            <button class="text-[10px] text-zinc-400 hover:text-rose-500 opacity-0 group-hover:opacity-100" @click="emit('delete', comment.id)">Delete</button>
-          </div>
-          <div v-if="replyingTo === comment.id" class="mt-2">
-            <CommentForm @submit="handleReply(comment.id, $event)" />
-          </div>
-          <div v-if="comment.replies?.length" class="mt-3 ml-4 border-l border-zinc-200 dark:border-zinc-700 pl-4">
-            <CommentThread :comments="comment.replies" @reply="(parentId: number, content: string) => emit('reply', parentId, content)" @delete="(id: number) => emit('delete', id)" />
-          </div>
-        </div>
-      </div>
-      <div v-else class="text-xs text-zinc-400 italic pl-9">This comment has been deleted</div>
-    </div>
+  <div class="divide-y divide-zinc-200 dark:divide-zinc-800">
+    <CommentItem
+      v-for="comment in comments"
+      :key="comment.id"
+      :comment="comment"
+      :case-owner-user-id="caseOwnerUserId"
+      :step-index-map="stepIndexMap"
+      @reply="(parentId, body, quote) => $emit('reply', parentId, body, quote)"
+      @edit="(id, body) => $emit('edit', id, body)"
+      @delete="(id) => $emit('delete', id)"
+      @helpful="(id) => $emit('helpful', id)"
+      @scroll-to-quote="(kind, sourceId) => $emit('scrollToQuote', kind, sourceId)"
+    />
   </div>
 </template>
