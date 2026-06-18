@@ -6,10 +6,22 @@ export interface MyProfile {
   bio: string | null
   status: 'ACTIVE' | 'PENDING_DELETION' | 'SUSPENDED' | 'DELETED'
   pendingDeletionAt: string | null
+  createdAt: string
   language: string | null
   timezone: string | null
   theme: 'LIGHT' | 'DARK' | 'SYSTEM'
   defaultWorkspaceId: number | null
+}
+
+export interface Session {
+  sessionId: string
+  deviceLabel: string
+  userAgent: string
+  ipAddress: string
+  createdAt: string
+  lastUsedAt: string
+  expiresAt: string
+  rememberMe: boolean
 }
 
 export interface PublicProfile {

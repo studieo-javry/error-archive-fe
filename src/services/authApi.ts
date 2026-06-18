@@ -5,6 +5,7 @@ import type {
   MyProfile,
   PublicProfile,
   Connection,
+  Session,
   FollowActionResponse,
   FollowStatusResponse,
 } from '@/types/user'
@@ -59,6 +60,34 @@ export const authApi = {
 
   getConnections() {
     return apiClient.get<Connection[]>('/users/me/connections')
+  },
+
+  disconnectProvider(provider: string) {
+    return apiClient.delete<void>(`/users/me/connections/${provider}`)
+  },
+
+  uploadAvatar(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.post<MyProfile>('/users/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+
+  removeAvatar() {
+    return apiClient.delete<MyProfile>('/users/me/avatar')
+  },
+
+  getSessions() {
+    return apiClient.get<Session[]>('/users/me/sessions')
+  },
+
+  revokeSession(sessionId: string) {
+    return apiClient.delete<void>(`/users/me/sessions/${sessionId}`)
+  },
+
+  revokeAllSessions() {
+    return apiClient.post<void>('/users/me/sessions/revoke-all')
   },
 
   getUser(id: number) {
