@@ -12,8 +12,12 @@ export const attachmentApi = {
     })
   },
 
-  downloadUrl(markerId: string) {
-    return `/api/v1/error-attachments/${markerId}`
+  async download(markerId: string, forceDownload = false): Promise<Blob> {
+    const res = await apiClient.get<Blob>(`/error-attachments/${markerId}`, {
+      params: forceDownload ? { download: true } : undefined,
+      responseType: 'blob',
+    })
+    return res.data
   },
 
   delete(markerId: string) {
