@@ -30,7 +30,7 @@ onMounted(async () => {
     </div>
 
     <div v-else-if="report">
-      <div class="mb-4 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-xs text-indigo-600 dark:text-indigo-400">
+      <div class="mb-4 px-4 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-xs text-emerald-600 dark:text-emerald-400">
         Shared Report Snapshot · Created {{ new Date(report.createdAt).toLocaleDateString() }}
       </div>
       <div class="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/40">

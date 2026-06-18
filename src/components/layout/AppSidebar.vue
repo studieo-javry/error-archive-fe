@@ -5,9 +5,11 @@ import {
   HomeIcon,
   BookOpenIcon,
   PlusCircleIcon,
+  MagnifyingGlassIcon,
   UserGroupIcon,
   UserIcon,
   ChartBarIcon,
+  Cog6ToothIcon,
   SunIcon,
   MoonIcon,
 } from '@heroicons/vue/24/outline'
@@ -19,13 +21,16 @@ const navItems = [
   { name: 'home', icon: HomeIcon, path: '/home' },
   { name: 'errorList', icon: BookOpenIcon, path: '/errors' },
   { name: 'errorCreate', icon: PlusCircleIcon, path: '/errors/new' },
+  { name: 'search', icon: MagnifyingGlassIcon, path: '/search' },
   { name: 'team', icon: UserGroupIcon, path: '/team' },
   { name: 'insights', icon: ChartBarIcon, path: '/insights' },
   { name: 'profile', icon: UserIcon, path: '/profile' },
+  { name: 'settings', icon: Cog6ToothIcon, path: '/settings' },
 ]
 
 function isActive(item: { name: string; path: string }) {
   if (item.path === '/home') return route.path === '/home'
+  if (item.path === '/errors') return route.path === '/errors'
   return route.path.startsWith(item.path)
 }
 </script>
@@ -40,7 +45,7 @@ function isActive(item: { name: string; path: string }) {
         :to="item.path"
         class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
         :class="isActive(item)
-          ? 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-950'
+          ? 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950'
           : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:text-zinc-200 dark:hover:bg-zinc-800'"
       >
         <component :is="item.icon" class="w-5 h-5" />

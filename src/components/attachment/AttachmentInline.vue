@@ -13,7 +13,7 @@ defineProps<{ attachment: ErrorCaseAttachment | null }>()
     <div v-else class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 flex items-center gap-3">
       <div class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs text-zinc-500">📎</div>
       <div class="flex-1 min-w-0">
-        <a :href="attachment.storageUrl" target="_blank" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline truncate block">{{ attachment.title || attachment.fileName }}</a>
+        <a :href="attachment.storageUrl" target="_blank" class="text-sm text-emerald-600 dark:text-emerald-400 hover:underline truncate block">{{ attachment.title || attachment.fileName }}</a>
         <span class="text-[11px] text-zinc-400">{{ (attachment.size / 1024).toFixed(1) }}KB</span>
       </div>
     </div>

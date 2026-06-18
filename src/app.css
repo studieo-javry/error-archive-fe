@@ -5,7 +5,6 @@
 
 @theme {
   --font-sans: "Inter", sans-serif;
-  --font-serif: "Merriweather", serif;
 }
 
 body {
@@ -38,7 +37,9 @@ body {
 
 /* Serif Title */
 .serif-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* LED Timeline Nodes */

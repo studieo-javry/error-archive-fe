@@ -76,7 +76,7 @@ function onSubmit() {
 
           <div class="flex justify-end gap-3 pt-2">
             <button type="button" class="px-4 py-2 text-sm rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 transition-colors" @click="emit('close')">Cancel</button>
-            <button type="submit" class="px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">Save Snippet</button>
+            <button type="submit" class="px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">Save Snippet</button>
           </div>
         </form>
       </div>
