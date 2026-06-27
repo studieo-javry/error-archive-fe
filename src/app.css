@@ -4,7 +4,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", sans-serif;
+  --font-sans: "Inter", "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-serif: "Fraunces", "Nanum Myeongjo", "Noto Serif KR", serif;
 }
 
 body {
@@ -37,9 +38,10 @@ body {
 
 /* Serif Title */
 .serif-title {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 /* LED Timeline Nodes */
