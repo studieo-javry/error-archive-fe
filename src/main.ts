@@ -24,7 +24,9 @@ async function bootstrap() {
   app.use(router)
   app.mount('#app')
 
-  if (isOfflineMode() && localStorage.getItem('accessToken')) {
+  // Restore the signed-in user's profile on startup whenever a token exists (both modes),
+  // so the sidebar avatar and other profile-dependent UI render after a refresh.
+  if (localStorage.getItem('accessToken')) {
     const { useAuthStore } = await import('@/stores/authStore')
     const { authApi } = await import('@/services/authApi')
     const authStore = useAuthStore()
@@ -32,7 +34,7 @@ async function bootstrap() {
     try {
       const { data } = await authApi.getMe()
       authStore.setUser(data)
-    } catch { /* MSW will handle */ }
+    } catch { /* not authenticated or backend unavailable */ }
   }
 }
 
