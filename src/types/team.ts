@@ -17,10 +17,14 @@ export interface WorkspaceListItem {
   name: string
   role: string
   createdByUserId: number
+  slug: string
 }
 
 export interface WorkspaceCreateRequest {
   name: string
+  slug: string
+  defaultTimezone?: string
+  notificationEnabled?: boolean
 }
 
 export interface WorkspaceUpdateRequest {

@@ -2,12 +2,14 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
+import { useTeamStore } from '@/stores/teamStore'
 import type { ErrorCaseSummary } from '@/types/error'
 import ErrorCard from '@/components/error/ErrorCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()
+const teamStore = useTeamStore()
 const results = ref<ErrorCaseSummary[]>([])
 const loading = ref(false)
 const query = ref((route.query.q as string) || '')
@@ -28,6 +30,7 @@ async function doSearch(append = false) {
   loading.value = true
   try {
     const params: Record<string, unknown> = { size: 20 }
+    if (teamStore.currentWorkspaceId != null) params.workspaceId = teamStore.currentWorkspaceId
     if (query.value.trim()) params.q = query.value.trim()
     if (statusFilter.value) params.status = statusFilter.value
     if (append && nextCursor.value) params.cursor = nextCursor.value
@@ -57,9 +60,9 @@ function setStatus(val: string) {
 function submitSearch() {
   nextCursor.value = null
   if (query.value.trim()) {
-    router.replace({ name: 'search', query: { q: query.value } })
+    router.replace({ name: 'search', params: { slug: teamStore.currentSlug }, query: { q: query.value } })
   } else {
-    router.replace({ name: 'search' })
+    router.replace({ name: 'search', params: { slug: teamStore.currentSlug } })
   }
   doSearch()
 }

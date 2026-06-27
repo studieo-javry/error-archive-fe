@@ -66,7 +66,88 @@ const mockErrors: ErrorCaseSummary[] = [
     createdAt: '2026-05-03T16:45:00Z',
     occurredAt: '2026-05-03T16:00:00Z',
   },
+  {
+    id: 4,
+    ownerUserId: 1,
+    title: 'Vite HMR full reload loop on case-sensitive paths',
+    project: 'frontend-team-app',
+    descriptionPreview: 'HMR repeatedly triggers full page reloads due to a case mismatch in import paths.',
+    status: 'RESOLVED',
+    visibility: 'PUBLIC',
+    severity: 3,
+    tags: ['vite', 'hmr'],
+    workspaceId: 1,
+    fingerprint: null,
+    exceptionClass: 'Error',
+    createdAt: '2026-05-04T09:00:00Z',
+    occurredAt: null,
+  },
+  {
+    id: 5,
+    ownerUserId: 2,
+    title: 'Pinia store state reset on nested route change',
+    project: 'frontend-team-app',
+    descriptionPreview: 'Store unexpectedly reset when navigating between nested child routes.',
+    status: 'OPEN',
+    visibility: 'PRIVATE',
+    severity: 2,
+    tags: ['pinia', 'vue-router'],
+    workspaceId: 1,
+    fingerprint: null,
+    exceptionClass: 'TypeError',
+    createdAt: '2026-05-05T11:00:00Z',
+    occurredAt: null,
+  },
+  {
+    id: 6,
+    ownerUserId: 2,
+    title: 'JPA N+1 query on order aggregation endpoint',
+    project: 'backend-team-svc',
+    descriptionPreview: 'Lazy associations triggering N+1 selects under load; resolved with a fetch join.',
+    status: 'RESOLVED',
+    visibility: 'PUBLIC',
+    severity: 1,
+    tags: ['jpa', 'performance'],
+    workspaceId: 2,
+    fingerprint: null,
+    exceptionClass: 'LazyInitializationException',
+    createdAt: '2026-05-06T13:00:00Z',
+    occurredAt: null,
+  },
+  {
+    id: 7,
+    ownerUserId: 1,
+    title: 'Kafka consumer rebalance storms during rolling deploy',
+    project: 'backend-team-svc',
+    descriptionPreview: 'Frequent rebalances during deploys causing consumer lag spikes.',
+    status: 'IN_PROGRESS',
+    visibility: 'PRIVATE',
+    severity: 2,
+    tags: ['kafka', 'deploy'],
+    workspaceId: 2,
+    fingerprint: null,
+    exceptionClass: 'RebalanceInProgressException',
+    createdAt: '2026-05-07T15:00:00Z',
+    occurredAt: null,
+  },
 ]
+
+// Author display info per owner (search shows other users' cases too).
+const MOCK_AUTHORS: Record<number, { userId: number; displayName: string; avatarUrl: string }> = {
+  1: { userId: 1, displayName: 'Kim Developer', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devkim' },
+  2: { userId: 2, displayName: 'Park Dev', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=parkdev' },
+}
+
+function withAuthor(e: ErrorCaseSummary) {
+  return { ...e, author: MOCK_AUTHORS[e.ownerUserId] ?? null }
+}
+
+// Mutable so newly created workspaces show up in the switcher and resolve by slug.
+const mockWorkspaces = [
+  { workspaceId: 1, name: 'Frontend Team', role: 'ADMIN', createdByUserId: 1, slug: 'frontend-team' },
+  { workspaceId: 2, name: 'Backend Team', role: 'WRITE', createdByUserId: 2, slug: 'backend-team' },
+]
+let nextWorkspaceId = 3
 
 export const handlers = [
   // Auth - OAuth flow
@@ -145,15 +226,28 @@ export const handlers = [
   http.get('/api/v1/error-cases/search', ({ request }) => {
     const url = new URL(request.url)
     const q = url.searchParams.get('q')?.toLowerCase() || ''
+    const wsParam = url.searchParams.get('workspaceId')
+    // Team search → that workspace's cases; Public search → all PUBLIC cases (community discovery).
+    const pool = wsParam != null
+      ? mockErrors.filter(e => e.workspaceId === Number(wsParam))
+      : mockErrors.filter(e => e.visibility === 'PUBLIC')
     const filtered = q
-      ? mockErrors.filter(e => e.title.toLowerCase().includes(q) || e.project?.toLowerCase().includes(q) || e.tags?.some(t => t.toLowerCase().includes(q)))
-      : mockErrors
-    return HttpResponse.json({ items: filtered, nextCursor: null, hasNext: false })
+      ? pool.filter(e => e.title.toLowerCase().includes(q) || e.project?.toLowerCase().includes(q) || e.tags?.some(t => t.toLowerCase().includes(q)))
+      : pool
+    return HttpResponse.json({ items: filtered.map(withAuthor), nextCursor: null, hasNext: false })
   }),
 
-  http.get('/api/v1/error-cases', () => {
+  http.get('/api/v1/error-cases', ({ request }) => {
+    const url = new URL(request.url)
+    const wsParam = url.searchParams.get('workspaceId')
+    const status = url.searchParams.get('status')
+    // workspaceId present → that workspace's cases; absent → personal (null workspace).
+    let items = wsParam != null
+      ? mockErrors.filter((e) => e.workspaceId === Number(wsParam))
+      : mockErrors.filter((e) => e.workspaceId == null)
+    if (status) items = items.filter((e) => e.status === status)
     return HttpResponse.json({
-      items: mockErrors,
+      items: items.map(withAuthor),
       nextCursor: null,
       hasNext: false,
     })
@@ -341,20 +435,22 @@ export const handlers = [
 
   // Workspaces
   http.get('/api/v1/workspaces', () => {
-    return HttpResponse.json([
-      { workspaceId: 1, name: 'Frontend Team', role: 'ADMIN', createdByUserId: 1 },
-      { workspaceId: 2, name: 'Backend Team', role: 'WRITE', createdByUserId: 2 },
-    ])
+    return HttpResponse.json(mockWorkspaces)
   }),
 
   http.post('/api/v1/workspaces', async ({ request }) => {
     const body = await request.json() as Record<string, unknown>
+    const workspaceId = nextWorkspaceId++
+    const slug = String(body.slug || `workspace-${workspaceId}`)
+    // Persist so the new workspace appears in the switcher and is reachable by slug.
+    mockWorkspaces.push({ workspaceId, name: String(body.name), role: 'ADMIN', createdByUserId: 1, slug })
     return HttpResponse.json({
-      workspaceId: Date.now(),
+      workspaceId,
       name: body.name,
+      slug,
       createdByUserId: 1,
-      notificationEnabled: true,
-      defaultTimezone: 'Asia/Seoul',
+      notificationEnabled: body.notificationEnabled ?? true,
+      defaultTimezone: body.defaultTimezone || 'Asia/Seoul',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       viewerRole: 'ADMIN',

@@ -5,6 +5,7 @@ import { errorApi } from '@/services/errorApi'
 import { snippetApi } from '@/services/snippetApi'
 import { attachmentApi } from '@/services/attachmentApi'
 import { teamApi } from '@/services/teamApi'
+import { useTeamStore } from '@/stores/teamStore'
 import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse } from '@/types/error'
 import type { WorkspaceListItem } from '@/types/team'
 import SnippetModal from '@/components/snippet/SnippetModal.vue'
@@ -15,6 +16,7 @@ import { CodeBracketIcon, PaperClipIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
+const teamStore = useTeamStore()
 const isEdit = !!route.params.id
 const caseId = route.params.id ? Number(route.params.id) : undefined
 
@@ -122,7 +124,7 @@ async function onSubmit() {
       attachmentMarkerIds,
       tags: tags.value,
     })
-    router.push({ name: 'errorDetail', params: { id: caseId } })
+    router.push({ name: 'errorDetail', params: { slug: teamStore.currentSlug, id: caseId } })
   } else {
     const { data } = await errorApi.create({
       title: title.value,
@@ -135,7 +137,7 @@ async function onSubmit() {
       attachmentMarkerIds,
       tags: tags.value.length ? tags.value : undefined,
     })
-    router.push({ name: 'errorDetail', params: { id: data.id } })
+    router.push({ name: 'errorDetail', params: { slug: teamStore.currentSlug, id: data.id } })
   }
 }
 

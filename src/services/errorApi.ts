@@ -40,6 +40,7 @@ export const errorApi = {
     q?: string
     status?: string
     severity?: number
+    workspaceId?: number
     cursor?: string
     size?: number
   }) {

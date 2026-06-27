@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { errorApi } from '@/services/errorApi'
+import { useTeamStore } from '@/stores/teamStore'
 import type { ErrorCaseSummary } from '@/types/error'
 
 export const useErrorStore = defineStore('error', () => {
@@ -15,7 +16,9 @@ export const useErrorStore = defineStore('error', () => {
   async function fetchErrors(append = false) {
     loading.value = true
     try {
+      const teamStore = useTeamStore()
       const params: Record<string, unknown> = { size: size.value }
+      if (teamStore.currentWorkspaceId != null) params.workspaceId = teamStore.currentWorkspaceId
       if (statusFilter.value) params.status = statusFilter.value
       if (severityFilter.value) params.severity = severityFilter.value
       if (append && nextCursor.value) params.cursor = nextCursor.value
