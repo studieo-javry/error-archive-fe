@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useErrorStore } from '@/stores/errorStore'
+import { useTeamStore } from '@/stores/teamStore'
 import ErrorCard from '@/components/error/ErrorCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { ErrorCaseStatus } from '@/types/error'
 
 const store = useErrorStore()
+const teamStore = useTeamStore()
 
 const statusOptions: { value: ErrorCaseStatus | ''; label: string }[] = [
   { value: '', label: 'All' },
@@ -29,6 +31,18 @@ function setSeverity(val: number) {
   store.setSeverity(val || undefined)
 }
 
+// Keyword search within the current space's library (client-side filter).
+const query = ref('')
+const filteredErrors = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return store.errors
+  return store.errors.filter(e =>
+    e.title.toLowerCase().includes(q) ||
+    (e.project?.toLowerCase().includes(q) ?? false) ||
+    (e.tags?.some(t => t.toLowerCase().includes(q)) ?? false),
+  )
+})
+
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
@@ -46,18 +60,35 @@ onMounted(() => {
 onUnmounted(() => {
   observer?.disconnect()
 })
+
+// Re-fetch (and clear the keyword) when the active workspace changes.
+watch(() => teamStore.currentWorkspaceId, () => {
+  query.value = ''
+  store.fetchErrors()
+})
 </script>
 
 <template>
   <div>
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100">Library</h1>
+      <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100">
+        {{ teamStore.currentWorkspace?.name ?? 'Library' }}
+      </h1>
       <router-link
-        to="/errors/new"
+        :to="{ name: 'errorCreate', params: { slug: teamStore.currentSlug } }"
         class="px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
       >
         + New Error
       </router-link>
+    </div>
+
+    <div class="mb-4">
+      <input
+        v-model="query"
+        type="text"
+        placeholder="Search in this library..."
+        class="raw-input w-full max-w-md text-sm"
+      />
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -92,23 +123,29 @@ onUnmounted(() => {
 
     <LoadingSpinner v-if="store.loading && !store.errors.length" size="lg" />
 
-    <div v-else-if="store.errors.length" class="divide-y divide-zinc-200 dark:divide-zinc-800">
-      <ErrorCard v-for="error in store.errors" :key="error.id" :error="error" />
-    </div>
+    <template v-else>
+      <div v-if="filteredErrors.length" class="divide-y divide-zinc-200 dark:divide-zinc-800">
+        <ErrorCard v-for="error in filteredErrors" :key="error.id" :error="error" />
+      </div>
 
-    <div v-else class="flex flex-col items-center justify-center py-24 text-center border-t border-zinc-200 dark:border-zinc-800 mt-8">
-      <h3 class="serif-title text-3xl text-zinc-800 dark:text-zinc-200 mb-6">Every Expert Was Once a Beginner</h3>
-      <p class="text-zinc-500 font-light text-sm max-w-md mx-auto mb-10 leading-relaxed">
-        The best developers don't avoid errors — they learn from them. Start documenting your journey, and turn every stumble into a stepping stone.
+      <p v-else-if="store.errors.length" class="text-sm text-zinc-400 dark:text-zinc-500 py-16 text-center">
+        No cases match "{{ query }}".
       </p>
-      <router-link
-        to="/errors/new"
-        class="group text-xs font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 transition-colors flex items-center gap-3"
-      >
-        Start Logging
-        <svg class="w-4 h-4 transition-transform group-hover:translate-x-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-      </router-link>
-    </div>
+
+      <div v-else class="flex flex-col items-center justify-center py-24 text-center border-t border-zinc-200 dark:border-zinc-800 mt-8">
+        <h3 class="serif-title text-3xl text-zinc-800 dark:text-zinc-200 mb-6">Every Expert Was Once a Beginner</h3>
+        <p class="text-zinc-500 font-light text-sm max-w-md mx-auto mb-10 leading-relaxed">
+          The best developers don't avoid errors — they learn from them. Start documenting your journey, and turn every stumble into a stepping stone.
+        </p>
+        <router-link
+          :to="{ name: 'errorCreate', params: { slug: teamStore.currentSlug } }"
+          class="group text-xs font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 transition-colors flex items-center gap-3"
+        >
+          Start Logging
+          <svg class="w-4 h-4 transition-transform group-hover:translate-x-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+        </router-link>
+      </div>
+    </template>
 
     <div ref="sentinel" class="h-1" />
     <LoadingSpinner v-if="store.loading && store.errors.length" size="sm" class="py-4" />

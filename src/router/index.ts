@@ -1,21 +1,34 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { useTeamStore } from '@/stores/teamStore'
 
 const routes = [
   { path: '/', name: 'landing', component: () => import('@/pages/LandingPage.vue'), meta: { public: true, fullScreen: true } },
-  { path: '/home', name: 'home', component: () => import('@/pages/HomePage.vue') },
   { path: '/login', name: 'login', component: () => import('@/pages/LoginPage.vue'), meta: { public: true } },
   { path: '/auth/callback', name: 'authCallback', component: () => import('@/pages/AuthCallbackPage.vue'), meta: { public: true } },
-  { path: '/errors', name: 'errorList', component: () => import('@/pages/ErrorListPage.vue') },
-  { path: '/errors/new', name: 'errorCreate', component: () => import('@/pages/ErrorFormPage.vue') },
-  { path: '/errors/:id', name: 'errorDetail', component: () => import('@/pages/ErrorDetailPage.vue') },
-  { path: '/errors/:id/edit', name: 'errorEdit', component: () => import('@/pages/ErrorFormPage.vue') },
-  { path: '/search', name: 'search', component: () => import('@/pages/SearchPage.vue') },
-  { path: '/team', name: 'team', component: () => import('@/pages/TeamDashboardPage.vue') },
-  { path: '/insights', name: 'insights', component: () => import('@/pages/InsightPage.vue') },
+
+  // Workspace-scoped routes — the workspace slug is carried in the URL (/w/:slug/...).
+  { path: '/w/:slug/home', name: 'home', component: () => import('@/pages/HomePage.vue') },
+  { path: '/w/:slug/errors', name: 'errorList', component: () => import('@/pages/ErrorListPage.vue') },
+  { path: '/w/:slug/errors/new', name: 'errorCreate', component: () => import('@/pages/ErrorFormPage.vue') },
+  { path: '/w/:slug/errors/:id', name: 'errorDetail', component: () => import('@/pages/ErrorDetailPage.vue') },
+  { path: '/w/:slug/errors/:id/edit', name: 'errorEdit', component: () => import('@/pages/ErrorFormPage.vue') },
+  { path: '/w/:slug/search', name: 'search', component: () => import('@/pages/SearchPage.vue') },
+  { path: '/w/:slug/insights', name: 'insights', component: () => import('@/pages/InsightPage.vue') },
+  { path: '/w/:slug/members', name: 'team', component: () => import('@/pages/TeamDashboardPage.vue') },
+
+  // Global routes — shared across all workspaces.
   { path: '/profile/:id?', name: 'profile', component: () => import('@/pages/ProfilePage.vue') },
   { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true } },
   { path: '/report/:shareToken', name: 'report', component: () => import('@/pages/ReportPage.vue'), meta: { public: true } },
+
+  // Legacy path redirects → public workspace.
+  { path: '/home', redirect: '/w/public/home' },
+  { path: '/errors', redirect: '/w/public/errors' },
+  { path: '/errors/new', redirect: '/w/public/errors/new' },
+  { path: '/search', redirect: '/w/public/search' },
+  { path: '/insights', redirect: '/w/public/insights' },
+  { path: '/team', redirect: '/w/public/members' },
 ]
 
 const router = createRouter({
@@ -23,10 +36,15 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
   if (!to.meta.public && !authStore.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  // Sync the current workspace from the URL slug on workspace-scoped routes.
+  const slug = to.params.slug as string | undefined
+  if (slug) {
+    await useTeamStore().resolveSlug(slug)
   }
 })
 

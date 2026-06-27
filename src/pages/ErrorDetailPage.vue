@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { formatAbsolute } from '@/utils/timeAgo'
 import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
+import { useTeamStore } from '@/stores/teamStore'
 import { stepApi } from '@/services/stepApi'
 import { solutionApi } from '@/services/solutionApi'
 import { commentApi } from '@/services/commentApi'
@@ -20,6 +21,7 @@ import type { QuoteInfo } from '@/components/comment/CommentForm.vue'
 
 const route = useRoute()
 const router = useRouter()
+const teamStore = useTeamStore()
 const errorCase = ref<ErrorCaseDetail | null>(null)
 const steps = ref<Step[]>([])
 const solutions = ref<Solution[]>([])
@@ -72,7 +74,7 @@ const showDeleteConfirm = ref(false)
 
 async function deleteCase() {
   await errorApi.delete(caseId)
-  router.push({ name: 'errorList' })
+  router.push({ name: 'errorList', params: { slug: teamStore.currentSlug } })
 }
 
 async function addStep(data: StepCreateRequest) {
@@ -279,7 +281,7 @@ onUnmounted(() => {
       <div class="mt-6 flex items-center justify-center gap-3">
         <button
           class="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-colors"
-          @click="router.push({ name: 'errorEdit', params: { id: caseId } })"
+          @click="router.push({ name: 'errorEdit', params: { slug: teamStore.currentSlug, id: caseId } })"
         >Edit</button>
         <button
           class="text-xs text-zinc-400 hover:text-rose-500 transition-colors"

@@ -72,6 +72,11 @@ export interface ErrorCaseSummary {
   exceptionClass: string | null
   createdAt: string
   occurredAt: string | null
+  author?: {
+    userId: number
+    displayName: string
+    avatarUrl: string | null
+  }
 }
 
 export interface ErrorCaseCreateRequest {

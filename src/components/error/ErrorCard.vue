@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import type { ErrorCaseSummary } from '@/types/error'
 import { formatAbsolute } from '@/utils/timeAgo'
+import { useTeamStore } from '@/stores/teamStore'
 
 defineProps<{ error: ErrorCaseSummary }>()
+
+const teamStore = useTeamStore()
 
 const statusLabel: Record<string, string> = {
   OPEN: 'Open',
@@ -19,8 +22,8 @@ const statusTextColor: Record<string, string> = {
 
 <template>
   <router-link
-    :to="{ name: 'errorDetail', params: { id: error.id } }"
-    class="block py-5 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 -mx-4 px-4 rounded-lg transition-colors"
+    :to="{ name: 'errorDetail', params: { slug: teamStore.currentSlug, id: error.id } }"
+    class="block py-5 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 -mx-4 px-4 rounded-lg transition-colors cursor-pointer"
   >
     <div class="flex items-start gap-3">
       <div class="flex-1 min-w-0">
@@ -29,6 +32,18 @@ const statusTextColor: Record<string, string> = {
         </div>
         <h3 class="text-base font-medium text-zinc-800 dark:text-zinc-200 mb-1 line-clamp-2">{{ error.title }}</h3>
         <p v-if="error.descriptionPreview" class="text-sm text-zinc-500 dark:text-zinc-400 font-light line-clamp-2 leading-relaxed">{{ error.descriptionPreview }}</p>
+        <div v-if="error.author" class="flex items-center gap-1.5 mt-2.5">
+          <img
+            v-if="error.author.avatarUrl"
+            :src="error.author.avatarUrl"
+            :alt="error.author.displayName"
+            class="w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 object-cover"
+          />
+          <span v-else class="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[9px] font-semibold text-zinc-500 dark:text-zinc-300">
+            {{ error.author.displayName.charAt(0).toUpperCase() }}
+          </span>
+          <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ error.author.displayName }}</span>
+        </div>
       </div>
       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
         <span class="text-xs text-zinc-400 dark:text-zinc-600">{{ formatAbsolute(error.createdAt) }}</span>
