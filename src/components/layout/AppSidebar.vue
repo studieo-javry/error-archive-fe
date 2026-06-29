@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Component } from 'vue'
 import { useTheme } from '@/composables/useTheme'
+import { useAuth } from '@/composables/useAuth'
 import { useTeamStore } from '@/stores/teamStore'
 import { useAuthStore } from '@/stores/authStore'
 import {
@@ -14,6 +15,7 @@ import {
   UserGroupIcon,
   UserCircleIcon,
   Cog6ToothIcon,
+  ArrowRightOnRectangleIcon,
   SunIcon,
   MoonIcon,
 } from '@heroicons/vue/24/outline'
@@ -21,6 +23,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const { isDark, toggle } = useTheme()
+const { logout } = useAuth()
 const teamStore = useTeamStore()
 const authStore = useAuthStore()
 
@@ -58,6 +61,10 @@ function goProfile() {
 function goSettings() {
   menuOpen.value = false
   router.push({ name: 'settings' })
+}
+async function onLogout() {
+  menuOpen.value = false
+  await logout()
 }
 </script>
 
@@ -112,6 +119,13 @@ function goSettings() {
           <Cog6ToothIcon class="w-4 h-4 text-zinc-400" />
           Settings
         </button>
+        <button role="menuitem" class="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors" @click="onLogout">
+          <ArrowRightOnRectangleIcon class="w-4 h-4 text-zinc-400" />
+          Logout
+        </button>
+
+        <div class="border-t border-zinc-100 dark:border-zinc-700 my-1" />
+
         <button role="menuitem" class="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors" @click="toggle">
           <component :is="isDark ? SunIcon : MoonIcon" class="w-4 h-4 text-zinc-400" />
           {{ isDark ? 'Light mode' : 'Dark mode' }}

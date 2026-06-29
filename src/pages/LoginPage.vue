@@ -34,7 +34,7 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="flex items-center justify-center min-h-[60vh]">
+  <div class="flex items-center justify-center min-h-screen">
     <div class="text-center">
       <div class="text-4xl text-emerald-500 mb-4 serif-title font-bold">E</div>
       <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100 mb-2">ErrorArchive</h1>

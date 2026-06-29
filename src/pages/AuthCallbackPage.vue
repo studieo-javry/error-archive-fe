@@ -33,7 +33,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+  <div class="flex flex-col items-center justify-center min-h-screen gap-4">
     <template v-if="error">
       <div class="text-center">
         <p class="text-sm text-rose-500 mb-4">{{ error }}</p>

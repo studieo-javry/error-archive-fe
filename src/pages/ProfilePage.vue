@@ -59,6 +59,7 @@ onMounted(loadProfile)
       <img v-if="profile.avatarUrl" :src="profile.avatarUrl" :alt="profile.displayName" class="w-20 h-20 rounded-full" />
       <div class="flex-1">
         <h1 class="text-xl font-semibold text-zinc-800 dark:text-zinc-100">{{ profile.displayName }}</h1>
+        <p v-if="profile.handle" class="text-sm text-zinc-500 dark:text-zinc-400">@{{ profile.handle }}</p>
         <p v-if="profile.bio" class="text-sm text-zinc-600 dark:text-zinc-300 mt-2">{{ profile.bio }}</p>
         <div v-if="followStatus" class="flex gap-4 mt-3 text-sm text-zinc-500 dark:text-zinc-400">
           <span><strong class="text-zinc-800 dark:text-zinc-200">{{ followStatus.followersCount }}</strong> followers</span>

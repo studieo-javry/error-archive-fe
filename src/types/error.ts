@@ -282,6 +282,7 @@ export interface SnippetCreateResponse {
   title: string | null
   language: string
   caption: string | null
+  code?: string
 }
 
 export interface SnippetDetail {

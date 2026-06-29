@@ -34,7 +34,11 @@ async function bootstrap() {
     try {
       const { data } = await authApi.getMe()
       authStore.setUser(data)
-    } catch { /* not authenticated or backend unavailable */ }
+    } catch {
+      // Stale / invalid token (e.g. the backend user was removed). Drop it so the router
+      // treats us as logged out and renders the public landing instead of bouncing to /login.
+      authStore.logout()
+    }
   }
 }
 

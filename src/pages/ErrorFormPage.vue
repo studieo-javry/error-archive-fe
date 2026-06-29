@@ -95,6 +95,7 @@ async function loadError() {
     title: s.title,
     language: s.language,
     caption: s.caption,
+    code: s.code,
   }))
   attachmentMarkers.value = data.attachments.map(a => ({
     markerId: a.markerId,
@@ -143,7 +144,8 @@ async function onSubmit() {
 
 async function saveSnippet(data: SnippetCreateRequest) {
   const res = await snippetApi.create(data)
-  snippetMarkers.value.push(res.data)
+  // Keep the just-entered code locally so the card can preview it (create response omits code).
+  snippetMarkers.value.push({ ...res.data, code: data.code })
   showSnippetModal.value = false
 }
 

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { formatAbsolute } from '@/utils/timeAgo'
 import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
+import { meApi } from '@/services/meApi'
 import { useTeamStore } from '@/stores/teamStore'
 import { stepApi } from '@/services/stepApi'
 import { solutionApi } from '@/services/solutionApi'
@@ -18,6 +19,8 @@ import CommentThread from '@/components/comment/CommentThread.vue'
 import CommentForm from '@/components/comment/CommentForm.vue'
 import QuotePopup from '@/components/comment/QuotePopup.vue'
 import type { QuoteInfo } from '@/components/comment/CommentForm.vue'
+import { StarIcon as StarOutlineIcon } from '@heroicons/vue/24/outline'
+import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,6 +74,28 @@ async function loadData() {
 
 const showResolveConfirm = ref(false)
 const showDeleteConfirm = ref(false)
+
+// ── Watchlist toggle (FR-007) — reflects state immediately ──
+const watching = ref(false)
+const watchBusy = ref(false)
+
+async function toggleWatch() {
+  if (watchBusy.value) return
+  watchBusy.value = true
+  const next = !watching.value
+  watching.value = next // reflect immediately
+  try {
+    if (next) {
+      await meApi.addWatchlist(caseId)
+    } else {
+      await meApi.removeWatchlist(caseId)
+    }
+  } catch {
+    watching.value = !next // revert on failure
+  } finally {
+    watchBusy.value = false
+  }
+}
 
 async function deleteCase() {
   await errorApi.delete(caseId)
@@ -279,6 +304,17 @@ onUnmounted(() => {
       </div>
 
       <div class="mt-6 flex items-center justify-center gap-3">
+        <button
+          class="inline-flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
+          :class="watching ? 'text-amber-500 hover:text-amber-600' : 'text-zinc-400 hover:text-amber-500'"
+          :disabled="watchBusy"
+          :aria-pressed="watching"
+          :title="watching ? 'Remove from watchlist' : 'Add to watchlist'"
+          @click="toggleWatch"
+        >
+          <component :is="watching ? StarSolidIcon : StarOutlineIcon" class="w-3.5 h-3.5" />
+          {{ watching ? 'Watching' : 'Watch' }}
+        </button>
         <button
           class="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-colors"
           @click="router.push({ name: 'errorEdit', params: { slug: teamStore.currentSlug, id: caseId } })"

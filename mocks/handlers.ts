@@ -6,6 +6,7 @@ const mockUser: MyProfile = {
   userId: 1,
   email: 'devkim@example.com',
   displayName: 'Kim Developer',
+  handle: 'devkim',
   avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devkim',
   bio: 'Full-stack developer who loves solving tricky bugs',
   status: 'ACTIVE',
@@ -142,6 +143,73 @@ function withAuthor(e: ErrorCaseSummary) {
   return { ...e, author: MOCK_AUTHORS[e.ownerUserId] ?? null }
 }
 
+// ── Insight Home (ERR-33) in-memory mock state ──
+// Toggles change subsequent responses within a session.
+const watchlistSet = new Set<number>([1, 3]) // caseIds I'm watching
+const followingSet = new Set<number>() // userIds I follow (starts empty → recommendations shown)
+
+const HOUR = 3600_000
+const DAY = 24 * HOUR
+function isoAgo(ms: number) {
+  return new Date(Date.now() - ms).toISOString()
+}
+
+// Recent my active cases — owner (userId 1) cases with simulated unread/delta/lastActivity.
+const recentActiveCases = [
+  { caseId: 2, title: 'TypeScript strict mode breaks third-party library types', status: 'IN_PROGRESS', unread: 3, delta24h: 2, delta7d: 5, lastActivityAt: isoAgo(2 * HOUR) },
+  { caseId: 7, title: 'Kafka consumer rebalance storms during rolling deploy', status: 'IN_PROGRESS', unread: 1, delta24h: 1, delta7d: 4, lastActivityAt: isoAgo(8 * HOUR) },
+  { caseId: 1, title: 'CORS policy blocking API requests in production', status: 'RESOLVED', unread: 0, delta24h: 0, delta7d: 2, lastActivityAt: isoAgo(3 * DAY) },
+  { caseId: 4, title: 'Vite HMR full reload loop on case-sensitive paths', status: 'RESOLVED', unread: 0, delta24h: 0, delta7d: 1, lastActivityAt: isoAgo(5 * DAY) },
+]
+
+// Recent my activities — timeline + per-source summary.
+const recentActivities = [
+  { id: 101, type: 'SOLUTION_REGISTERED', caseId: 1, caseTitle: 'CORS policy blocking API requests in production', preview: 'Nginx CORS Origin Map', createdAt: isoAgo(1 * HOUR) },
+  { id: 102, type: 'COMMENT_POSTED', caseId: 2, caseTitle: 'TypeScript strict mode breaks third-party library types', preview: 'Adjusted tsconfig strict flags and it compiled.', createdAt: isoAgo(5 * HOUR) },
+  { id: 103, type: 'STEP_ADDED', caseId: 7, caseTitle: 'Kafka consumer rebalance storms during rolling deploy', preview: 'Increased session.timeout.ms to reduce rebalances', createdAt: isoAgo(1 * DAY) },
+  { id: 104, type: 'CASE_RESOLVED', caseId: 4, caseTitle: 'Vite HMR full reload loop on case-sensitive paths', preview: null, createdAt: isoAgo(2 * DAY) },
+  { id: 105, type: 'COMMENT_POSTED', caseId: 1, caseTitle: 'CORS policy blocking API requests in production', preview: 'Confirmed the upstream proxy was overwriting headers.', createdAt: isoAgo(4 * DAY) },
+  { id: 106, type: 'STEP_ADDED', caseId: 1, caseTitle: 'CORS policy blocking API requests in production', preview: 'Added map $http_origin to allowed origins', createdAt: isoAgo(6 * DAY) },
+] as const
+
+const activitySummary = [
+  { source: 'CASE_RESOLVED', count: 1 },
+  { source: 'COMMENT_POSTED', count: 2 },
+  { source: 'STEP_ADDED', count: 2 },
+  { source: 'SOLUTION_REGISTERED', count: 1 },
+] as const
+
+// Watchlist activity feed (per caseId). Filtered by watchlistSet; sorted lastUpdated desc.
+const watchlistFeedAll = [
+  { caseId: 3, title: 'Memory leak in WebSocket connection handler', activityType: 'STEP', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=parkdev', displayName: 'Park Dev', lastUpdated: isoAgo(3 * HOUR) },
+  { caseId: 1, title: 'CORS policy blocking API requests in production', activityType: 'SOLUTION', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devkim', displayName: 'Kim Developer', lastUpdated: isoAgo(1 * DAY) },
+  { caseId: 6, title: 'JPA N+1 query on order aggregation endpoint', activityType: 'RESOLVED', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=parkdev', displayName: 'Park Dev', lastUpdated: isoAgo(2 * DAY) },
+  { caseId: 5, title: 'Pinia store state reset on nested route change', activityType: 'COMMENT', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=leedev', displayName: 'Lee Dev', lastUpdated: isoAgo(4 * DAY) },
+] as const
+
+// Simple watchlist case summaries (per caseId).
+const watchlistItemsAll = [
+  { caseId: 1, title: 'CORS policy blocking API requests in production', status: 'RESOLVED' },
+  { caseId: 3, title: 'Memory leak in WebSocket connection handler', status: 'OPEN' },
+  { caseId: 5, title: 'Pinia store state reset on nested route change', status: 'OPEN' },
+  { caseId: 6, title: 'JPA N+1 query on order aggregation endpoint', status: 'RESOLVED' },
+] as const
+
+// Recommended users (ids 2–5). Excludes those in followingSet.
+const recommendedUsersAll = [
+  { userId: 2, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=parkdev', displayName: 'Park Dev', handle: 'parkdev', bio: 'Backend developer focused on JVM performance', tags: ['java', 'kafka', 'performance'] },
+  { userId: 3, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=leedev', displayName: 'Lee Dev', handle: 'leedev', bio: 'Frontend engineer, Vue & TypeScript enthusiast', tags: ['vue', 'typescript', 'vite'] },
+  { userId: 4, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=choidev', displayName: 'Choi Dev', handle: 'choidev', bio: 'SRE — observability and incident response', tags: ['k8s', 'nginx', 'devops'] },
+  { userId: 5, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=jungdev', displayName: 'Jung Dev', handle: 'jungdev', bio: 'Data engineer wrangling pipelines and queues', tags: ['python', 'kafka', 'etl'] },
+] as const
+
+// Following feed — new cases authored by users I follow.
+const followingFeedAll = [
+  { caseId: 3, title: 'Memory leak in WebSocket connection handler', createdAt: isoAgo(6 * HOUR), author: { userId: 2, displayName: 'Park Dev', handle: 'parkdev', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=parkdev' } },
+  { caseId: 8, title: 'Connection pool exhaustion under burst traffic', createdAt: isoAgo(1 * DAY), author: { userId: 3, displayName: 'Lee Dev', handle: 'leedev', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=leedev' } },
+  { caseId: 9, title: 'Flaky e2e test caused by race in auth redirect', createdAt: isoAgo(3 * DAY), author: { userId: 4, displayName: 'Choi Dev', handle: 'choidev', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=choidev' } },
+] as const
+
 // Mutable so newly created workspaces show up in the switcher and resolve by slug.
 const mockWorkspaces = [
   { workspaceId: 1, name: 'Frontend Team', role: 'ADMIN', createdByUserId: 1, slug: 'frontend-team' },
@@ -214,12 +282,60 @@ export const handlers = [
     })
   }),
 
-  http.put('/api/v1/users/:id/follow', () => {
-    return HttpResponse.json({ followerId: 1, followeeId: 2, following: true, changed: true })
+  http.put('/api/v1/users/:id/follow', ({ params }) => {
+    const id = Number(params.id)
+    const changed = !followingSet.has(id)
+    followingSet.add(id)
+    return HttpResponse.json({ followerId: 1, followeeId: id, following: true, changed })
   }),
 
-  http.delete('/api/v1/users/:id/follow', () => {
-    return HttpResponse.json({ followerId: 1, followeeId: 2, following: false, changed: true })
+  http.delete('/api/v1/users/:id/follow', ({ params }) => {
+    const id = Number(params.id)
+    const changed = followingSet.delete(id)
+    return HttpResponse.json({ followerId: 1, followeeId: id, following: false, changed })
+  }),
+
+  // ── Insight Home (ERR-33) ──
+  http.get('/api/v1/users/me/recent-active-cases', () => {
+    return HttpResponse.json(recentActiveCases)
+  }),
+
+  http.get('/api/v1/users/me/recent-activities', () => {
+    return HttpResponse.json({ items: recentActivities, summary: activitySummary })
+  }),
+
+  http.get('/api/v1/users/me/watchlist', () => {
+    return HttpResponse.json(watchlistItemsAll.filter((w) => watchlistSet.has(w.caseId)))
+  }),
+
+  http.get('/api/v1/users/me/watchlist-feed', () => {
+    const feed = watchlistFeedAll
+      .filter((f) => watchlistSet.has(f.caseId))
+      .slice()
+      .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
+    return HttpResponse.json(feed)
+  }),
+
+  http.post('/api/v1/error-cases/:id/watchlist', ({ params }) => {
+    watchlistSet.add(Number(params.id))
+    return HttpResponse.json({ watching: true })
+  }),
+
+  http.delete('/api/v1/error-cases/:id/watchlist', ({ params }) => {
+    watchlistSet.delete(Number(params.id))
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('/api/v1/users/me/following-feed', () => {
+    const feed = followingFeedAll.filter((f) => followingSet.has(f.author.userId))
+    return HttpResponse.json(feed)
+  }),
+
+  http.get('/api/v1/users/me/recommended-users', () => {
+    const recs = recommendedUsersAll
+      .filter((u) => !followingSet.has(u.userId))
+      .map((u) => ({ ...u, tags: [...u.tags], following: false }))
+    return HttpResponse.json(recs)
   }),
 
   // Error cases

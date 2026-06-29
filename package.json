@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "build:single": "VITE_OFFLINE_MODE=true vite build --config vite.singlefile.config.ts && node scripts/inline-singlefile.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

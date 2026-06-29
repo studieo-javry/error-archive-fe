@@ -10,10 +10,17 @@ useTheme()
 const route = useRoute()
 const isFullScreen = computed(() => !!route.meta.fullScreen)
 const isWideLayout = computed(() => !!route.meta.wideLayout)
+// Public, pre-auth pages (login / OAuth callback / shared report) render WITHOUT the app chrome.
+// The sidebar/header eagerly call authenticated APIs (e.g. /workspaces), which 401 while logged
+// out — so they must not mount on public routes.
+const isPublic = computed(() => !!route.meta.public)
 </script>
 
 <template>
   <router-view v-if="isFullScreen" />
+  <div v-else-if="isPublic" class="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
+    <router-view />
+  </div>
   <div v-else class="flex h-screen overflow-hidden bg-zinc-50 text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
     <AppSidebar />
     <div class="flex-1 flex flex-col overflow-hidden">

@@ -2,6 +2,7 @@ export interface MyProfile {
   userId: number
   email: string | null
   displayName: string
+  handle: string
   avatarUrl: string | null
   bio: string | null
   status: 'ACTIVE' | 'PENDING_DELETION' | 'SUSPENDED' | 'DELETED'
@@ -26,6 +27,7 @@ export interface Session {
 
 export interface PublicProfile {
   userId: number
+  handle: string
   displayName: string
   avatarUrl: string | null
   bio: string | null
@@ -35,6 +37,7 @@ export interface PublicProfile {
 
 export interface UserSummary {
   userId: number
+  handle: string
   displayName: string
   avatarUrl: string | null
 }

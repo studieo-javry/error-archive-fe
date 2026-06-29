@@ -108,26 +108,49 @@ body {
   opacity: 0.2;
 }
 
-/* Custom Checkbox */
+/* Custom Checkbox — unfilled; on check the border thickens & rounds, emerald check pops in */
 .custom-checkbox {
   appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
   width: 18px;
   height: 18px;
-  border: 1px solid #d4d4d8;
-  border-radius: 4px;
-  background: transparent;
+  border: 1.5px solid #d4d4d8;
+  border-radius: 5px;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 0 0; /* checkmark scaled to nothing until checked */
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
+  transition:
+    border-color 0.18s ease,
+    border-width 0.18s ease,
+    border-radius 0.18s ease,
+    box-shadow 0.18s ease,
+    /* spring easing makes the check "pop" in */
+    background-size 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .dark .custom-checkbox {
   border-color: #52525b;
 }
-.custom-checkbox:checked {
-  background-color: #10b981;
+.custom-checkbox:hover:not(:checked):not(:disabled) {
   border-color: #10b981;
+}
+.custom-checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+}
+.custom-checkbox:checked {
+  border-width: 2.5px;
+  border-color: #10b981;
+  border-radius: 7px;
+  /* emerald check drawn over the (unfilled) box */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+  background-size: 11px 11px;
+}
+.custom-checkbox:disabled {
+  cursor: not-allowed;
 }
 
 /* Borderless Inputs */

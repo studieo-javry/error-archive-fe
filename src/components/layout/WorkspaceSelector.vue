@@ -183,7 +183,7 @@ async function joinWorkspace() {
           <input v-model="newTimezone" placeholder="Asia/Seoul" class="raw-input w-full text-sm" />
         </div>
         <label class="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
-          <input v-model="newNotifications" type="checkbox" class="w-4 h-4 accent-emerald-600" />
+          <input v-model="newNotifications" type="checkbox" class="custom-checkbox" />
           Enable notifications
         </label>
         <button

@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import type { SnippetCreateResponse } from '@/types/error'
-import { ClipboardDocumentIcon, TrashIcon, DocumentTextIcon } from '@heroicons/vue/24/outline'
+import { ClipboardDocumentIcon, TrashIcon, DocumentTextIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/vue/24/outline'
+import hljs from 'highlight.js'
 
 const props = defineProps<{ snippet: SnippetCreateResponse }>()
 const emit = defineEmits<{
@@ -9,6 +11,17 @@ const emit = defineEmits<{
 }>()
 
 const marker = `@snippet(${props.snippet.markerId})`
+const expanded = ref(false)
+
+const highlightedCode = computed(() => {
+  const code = props.snippet.code
+  if (!code) return ''
+  const lang = props.snippet.language
+  if (lang && lang !== 'text' && hljs.getLanguage(lang)) {
+    return hljs.highlight(code, { language: lang }).value
+  }
+  return hljs.highlightAuto(code).value
+})
 
 function copyMarker() {
   navigator.clipboard.writeText(marker)
@@ -26,6 +39,14 @@ function copyMarker() {
         <code class="text-[11px] text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">{{ marker }}</code>
       </div>
       <div class="flex items-center gap-1 shrink-0">
+        <button
+          v-if="snippet.code"
+          class="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+          :title="expanded ? 'Hide code' : 'Preview code'"
+          @click="expanded = !expanded"
+        >
+          <component :is="expanded ? ChevronUpIcon : ChevronDownIcon" class="w-4 h-4" />
+        </button>
         <button class="p-1 text-zinc-400 hover:text-emerald-600 transition-colors" title="Insert marker" @click="emit('insert', marker)">
           <DocumentTextIcon class="w-4 h-4" />
         </button>
@@ -36,6 +57,9 @@ function copyMarker() {
           <TrashIcon class="w-4 h-4" />
         </button>
       </div>
+    </div>
+    <div v-if="expanded && snippet.code" class="border-t border-zinc-200 dark:border-zinc-700">
+      <pre class="p-3 text-xs font-mono overflow-x-auto bg-zinc-50 dark:bg-zinc-900"><code v-html="highlightedCode" /></pre>
     </div>
   </div>
 </template>
