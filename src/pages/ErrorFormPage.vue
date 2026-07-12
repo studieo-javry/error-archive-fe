@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
 import { snippetApi } from '@/services/snippetApi'
 import { attachmentApi } from '@/services/attachmentApi'
 import { teamApi } from '@/services/teamApi'
 import { useTeamStore } from '@/stores/teamStore'
-import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse } from '@/types/error'
+import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse, ErrorCaseSnippet, ErrorCaseAttachment } from '@/types/error'
 import type { WorkspaceListItem } from '@/types/team'
+import BodyRenderer from '@/components/common/BodyRenderer.vue'
 import SnippetModal from '@/components/snippet/SnippetModal.vue'
 import SnippetCard from '@/components/snippet/SnippetCard.vue'
 import AttachmentModal from '@/components/attachment/AttachmentModal.vue'
@@ -56,6 +57,38 @@ const showSnippetModal = ref(false)
 const showAttachmentModal = ref(false)
 
 const descriptionRef = ref<HTMLTextAreaElement | null>(null)
+const previewMode = ref(false)
+
+// Adapt the form's in-progress markers to the shapes BodyRenderer expects.
+const previewSnippets = computed<ErrorCaseSnippet[]>(() =>
+  snippetMarkers.value.map(s => ({
+    markerId: s.markerId,
+    title: s.title ?? '',
+    language: s.language,
+    filePathOrClass: null,
+    lineRange: null,
+    caption: s.caption ?? null,
+    code: s.code ?? '',
+  })),
+)
+const previewAttachments = computed<ErrorCaseAttachment[]>(() =>
+  attachmentMarkers.value.map(a => ({
+    markerId: a.markerId,
+    fileName: a.fileName,
+    contentType: a.contentType,
+    size: a.size,
+    kind: a.kind,
+    storageUrl: a.storageUrl,
+    title: null,
+    caption: null,
+  })),
+)
+
+// Drag-resize in the preview rewrites the image marker's width: @attach(id|width).
+function onImageResize(markerId: string, width: number) {
+  const re = new RegExp(`@attach\\(${markerId}(?:\\|\\d+)?\\)`, 'g')
+  description.value = description.value.replace(re, `@attach(${markerId}|${width})`)
+}
 
 function insertAtCursor(marker: string) {
   const el = descriptionRef.value
@@ -170,19 +203,19 @@ onMounted(loadError)
 
 <template>
   <div class="max-w-2xl mx-auto">
-    <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100 mb-6">
+    <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100 mb-10">
       {{ isEdit ? 'Edit Error' : 'New Entry' }}
     </h1>
 
-    <form class="space-y-5" @submit.prevent="onSubmit">
+    <form class="space-y-10" @submit.prevent="onSubmit">
       <div>
         <input v-model="title" type="text" placeholder="Error title" class="raw-input w-full text-lg font-medium" required />
       </div>
       <div>
         <input v-model="scope" type="text" placeholder="Project (optional)" class="raw-input w-full text-sm" />
       </div>
-      <div>
-        <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Tags</label>
+      <div class="group">
+        <label class="text-sm font-medium text-zinc-500 dark:text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-white block mb-3">Tags</label>
         <div class="flex flex-wrap items-center gap-1.5 p-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/50 min-h-[38px]">
           <span
             v-for="tag in tags"
@@ -201,13 +234,23 @@ onMounted(loadError)
           />
         </div>
       </div>
-      <div>
-        <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Error Trace <span class="text-zinc-400 dark:text-zinc-600">(optional)</span></label>
+      <div class="group">
+        <label class="text-sm font-medium text-zinc-500 dark:text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-white block mb-3">Error Trace <span class="text-zinc-400 dark:text-zinc-600">(optional)</span></label>
         <textarea v-model="paste" placeholder="Paste error output / stack trace" rows="4" class="raw-textarea w-full font-mono text-xs" />
       </div>
-      <div>
-        <div class="flex items-center gap-2 mb-1">
-          <label class="text-xs text-zinc-500 dark:text-zinc-400">Description</label>
+      <div class="group">
+        <label class="text-sm font-medium text-zinc-500 dark:text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-white block mb-3">Description</label>
+        <div class="flex items-center gap-4 mb-2">
+          <div class="flex items-center gap-4 text-xs">
+            <button type="button" class="relative pb-0.5 transition-colors" :class="!previewMode ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'" @click="previewMode = false">
+              Write
+              <span v-if="!previewMode" class="absolute left-0 right-0 -bottom-px h-px bg-emerald-500" />
+            </button>
+            <button type="button" class="relative pb-0.5 transition-colors" :class="previewMode ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'" @click="previewMode = true">
+              Preview
+              <span v-if="previewMode" class="absolute left-0 right-0 -bottom-px h-px bg-emerald-500" />
+            </button>
+          </div>
           <div class="flex items-center gap-1 ml-auto">
             <button type="button" class="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" @click="showSnippetModal = true">
               <CodeBracketIcon class="w-3.5 h-3.5" />
@@ -219,18 +262,30 @@ onMounted(loadError)
             </button>
           </div>
         </div>
-        <textarea ref="descriptionRef" v-model="description" placeholder="Description — additional context" rows="5" class="raw-textarea w-full" />
+        <textarea v-show="!previewMode" ref="descriptionRef" v-model="description" placeholder="Description — additional context" rows="5" class="raw-textarea w-full" />
+        <div v-show="previewMode" class="min-h-[7rem] border-l-2 border-zinc-200 dark:border-zinc-700 pl-4">
+          <BodyRenderer
+            v-if="previewMode && description.trim()"
+            :content="description"
+            :snippets="previewSnippets"
+            :attachments="previewAttachments"
+            editable
+            @resize="onImageResize"
+          />
+          <p v-else class="text-sm text-zinc-400 dark:text-zinc-500">Nothing to preview yet — write a description or insert a snippet/attachment.</p>
+          <p v-if="previewMode && description.trim()" class="mt-3 text-[11px] text-zinc-400 dark:text-zinc-500">Tip: drag the handle on an image's right edge to resize it.</p>
+        </div>
       </div>
-      <div>
-        <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Visibility</label>
+      <div class="group">
+        <label class="text-sm font-medium text-zinc-500 dark:text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-white block mb-3">Visibility</label>
         <select v-model="visibility" class="raw-input text-sm">
           <option value="PRIVATE">Private</option>
           <option value="WORKSPACE">Workspace</option>
           <option value="PUBLIC">Public</option>
         </select>
       </div>
-      <div v-if="visibility === 'WORKSPACE'">
-        <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Workspace</label>
+      <div v-if="visibility === 'WORKSPACE'" class="group">
+        <label class="text-sm font-medium text-zinc-500 dark:text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-white block mb-3">Workspace</label>
         <select v-model="workspaceId" class="raw-input text-sm" required>
           <option :value="null" disabled>Select workspace</option>
           <option v-for="ws in workspaces" :key="ws.workspaceId" :value="ws.workspaceId">{{ ws.name }}</option>
@@ -238,7 +293,7 @@ onMounted(loadError)
         <p v-if="!workspaces.length" class="text-xs text-zinc-400 mt-1">No workspaces found. Create one first.</p>
       </div>
 
-      <div class="flex gap-3 pt-4">
+      <div class="flex gap-3 pt-6">
         <button type="submit" class="px-6 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
           {{ isEdit ? 'Update' : 'Create' }}
         </button>
@@ -248,7 +303,7 @@ onMounted(loadError)
       </div>
     </form>
 
-    <div v-if="snippetMarkers.length || attachmentMarkers.length" class="mt-6 space-y-2">
+    <div v-if="snippetMarkers.length || attachmentMarkers.length" class="mt-10 space-y-2">
       <h3 class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Snippets & Attachments</h3>
       <SnippetCard
         v-for="snp in snippetMarkers"
