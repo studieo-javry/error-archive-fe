@@ -4,6 +4,7 @@ export type InvitationType = 'EMAIL' | 'LINK'
 export interface Workspace {
   workspaceId: number
   name: string
+  slug: string
   createdByUserId: number
   notificationEnabled: boolean
   defaultTimezone: string
@@ -20,11 +21,11 @@ export interface WorkspaceListItem {
   slug: string
 }
 
+// iam-api CreateWorkspaceRequest takes only name + slug. Timezone/notifications are
+// workspace settings adjusted after creation via PATCH (WorkspaceUpdateRequest).
 export interface WorkspaceCreateRequest {
   name: string
   slug: string
-  defaultTimezone?: string
-  notificationEnabled?: boolean
 }
 
 export interface WorkspaceUpdateRequest {

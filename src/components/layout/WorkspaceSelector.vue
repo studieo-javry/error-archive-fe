@@ -15,8 +15,7 @@ const showJoin = ref(false)
 const newName = ref('')
 const newSlug = ref('')
 const slugTouched = ref(false)
-const newTimezone = ref('')
-const newNotifications = ref(true)
+const createError = ref('')
 const joinToken = ref('')
 const creating = ref(false)
 const joining = ref(false)
@@ -25,8 +24,16 @@ function slugify(s: string): string {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
 }
 
+// Mirror iam-api validation: name = ASCII letters/digits/space/hyphen (1-50);
+// slug = kebab-case (lowercase alnum, single hyphens, no leading/trailing/double), 2-40.
+const nameValid = computed(() => {
+  const n = newName.value.trim()
+  return n.length >= 1 && n.length <= 50 && /^[A-Za-z0-9 -]+$/.test(n)
+})
+const slugValid = computed(() =>
+  newSlug.value.length >= 2 && newSlug.value.length <= 40 && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(newSlug.value),
+)
 // Auto-derive the slug from the name until the user edits it manually.
-const slugValid = computed(() => /^[a-z0-9][a-z0-9-]*$/.test(newSlug.value))
 watch(newName, (name) => {
   if (!slugTouched.value) newSlug.value = slugify(name)
 })
@@ -46,8 +53,7 @@ function openCreate() {
   newName.value = ''
   newSlug.value = ''
   slugTouched.value = false
-  newTimezone.value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul'
-  newNotifications.value = true
+  createError.value = ''
   showCreate.value = true
 }
 
@@ -57,20 +63,21 @@ function openJoin() {
 }
 
 async function createWorkspace() {
-  const name = newName.value.trim()
-  if (!name || !slugValid.value) return
+  if (!nameValid.value || !slugValid.value) return
   creating.value = true
+  createError.value = ''
   try {
-    await teamApi.createWorkspace({
-      name,
-      slug: newSlug.value,
-      defaultTimezone: newTimezone.value || undefined,
-      notificationEnabled: newNotifications.value,
-    })
+    // iam-api takes only { name, slug }; the response (WorkspaceResponse) carries the slug.
+    const { data } = await teamApi.createWorkspace({ name: newName.value.trim(), slug: newSlug.value })
     await teamStore.fetchWorkspaces()
-    const created = teamStore.workspaces.find(w => w.slug === newSlug.value)
     showCreate.value = false
-    if (created) router.push({ name: 'errorList', params: { slug: created.slug } })
+    router.push({ name: 'errorList', params: { slug: data.slug } })
+  } catch (e) {
+    const status = (e as { response?: { status?: number } })?.response?.status
+    createError.value =
+      status === 409 ? 'That slug is already taken. Try another.'
+      : status === 400 ? 'Check the name and slug format.'
+      : 'Could not create the workspace. Please try again.'
   } finally {
     creating.value = false
   }
@@ -162,6 +169,9 @@ async function joinWorkspace() {
         <div>
           <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Name</label>
           <input v-model="newName" placeholder="e.g. Frontend Team" class="raw-input w-full text-sm" />
+          <p v-if="newName && !nameValid" class="text-[11px] mt-1 text-rose-500">
+            Letters, numbers, spaces, and hyphens only (max 50).
+          </p>
         </div>
         <div>
           <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">URL slug</label>
@@ -175,20 +185,13 @@ async function joinWorkspace() {
             />
           </div>
           <p class="text-[11px] mt-1" :class="newSlug && !slugValid ? 'text-rose-500' : 'text-zinc-400 dark:text-zinc-500'">
-            Lowercase letters, numbers, and hyphens. Used in the workspace URL.
+            Lowercase letters, numbers, and single hyphens (2–40). Fixed after creation.
           </p>
         </div>
-        <div>
-          <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Default timezone</label>
-          <input v-model="newTimezone" placeholder="Asia/Seoul" class="raw-input w-full text-sm" />
-        </div>
-        <label class="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
-          <input v-model="newNotifications" type="checkbox" class="custom-checkbox" />
-          Enable notifications
-        </label>
+        <p v-if="createError" class="text-[11px] text-rose-500">{{ createError }}</p>
         <button
           class="w-full px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
-          :disabled="creating || !newName.trim() || !slugValid"
+          :disabled="creating || !nameValid || !slugValid"
           @click="createWorkspace"
         >
           {{ creating ? 'Creating...' : 'Create' }}
