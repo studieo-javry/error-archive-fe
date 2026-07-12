@@ -1,35 +1,30 @@
-import type { ErrorCaseSummary } from './error'
+// noti-api notification inbox + realtime SSE.
 
 export type NotificationType =
-  | 'COMMENT'
-  | 'REACTION'
-  | 'INVITATION'
-  | 'FOLLOW'
-  | 'WATCH_UPDATE'
-  | 'STEP_ADDED'
-  | 'STATUS_CHANGED'
+  | 'MENTION_IN_COMMENT'
+  | 'COMMENT_REPLY'
+  | 'COMMENT_ON_ERROR_CASE'
+  | 'NEW_FOLLOWER'
+  | 'WORKSPACE_INVITATION'
+  | 'CASE_RESOLVED'
 
-export interface Notification {
-  id: string
+/** NotificationResponse (GET /users/me/notifications, SSE 'notification' event). */
+export interface AppNotification {
+  id: number
   type: NotificationType
-  title: string
-  message: string
-  deepLink: string
-  isRead: boolean
+  actorUserId: number | null
+  payload: Record<string, unknown>
+  /** in-app URL built by the server per type (core path, e.g. /error-cases/12#comment-3). Null = no navigation. */
+  deepLink: string | null
+  readAt: string | null
   createdAt: string
 }
 
+// ── Settings (still on the legacy shape; BE alignment is a separate task) ──
 export interface NotificationSettings {
   comment: boolean
   reaction: boolean
   invitation: boolean
   follow: boolean
   watchUpdate: boolean
-}
-
-export interface Watch {
-  id: string
-  errorCaseId: string
-  errorCase: ErrorCaseSummary
-  createdAt: string
 }

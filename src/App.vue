@@ -1,11 +1,23 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTheme } from '@/composables/useTheme'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
+import NotificationToasts from '@/components/layout/NotificationToasts.vue'
+import { useAuthStore } from '@/stores/authStore'
+import { useNotificationStore } from '@/stores/notificationStore'
 
 useTheme()
+
+// Open/close the realtime notification stream with the auth session.
+const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
+watch(
+  () => authStore.isAuthenticated,
+  (authed) => { authed ? notificationStore.connect() : notificationStore.disconnect() },
+  { immediate: true },
+)
 
 const route = useRoute()
 const isFullScreen = computed(() => !!route.meta.fullScreen)
@@ -18,10 +30,10 @@ const isPublic = computed(() => !!route.meta.public)
 
 <template>
   <router-view v-if="isFullScreen" />
-  <div v-else-if="isPublic" class="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
+  <div v-else-if="isPublic" class="min-h-screen bg-[#f7f7f5] text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
     <router-view />
   </div>
-  <div v-else class="flex h-screen overflow-hidden bg-zinc-50 text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
+  <div v-else class="flex h-screen overflow-hidden bg-[#f7f7f5] text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
     <AppSidebar />
     <div class="flex-1 flex flex-col overflow-hidden">
       <AppHeader />
@@ -34,5 +46,6 @@ const isPublic = computed(() => !!route.meta.public)
         </div>
       </main>
     </div>
+    <NotificationToasts />
   </div>
 </template>
