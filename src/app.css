@@ -13,6 +13,16 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
+/* Main scroll area: scrollbar fully hidden (rail + thumb); scrolling still works. */
+main {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+main::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 /* Glassmorphism Header */
 .glass {
   background: rgba(255, 255, 255, 0.8);
@@ -63,7 +73,7 @@ body {
   background-color: #e4e4e7;
   position: absolute;
   top: 16px;
-  bottom: -24px;
+  bottom: -40px;
 }
 .dark .tl-line {
   background-color: #27272a;
