@@ -2,8 +2,12 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { authApi } from '@/services/authApi'
+import { insightApi, type MyKpis } from '@/services/insightApi'
+import { meApi } from '@/services/meApi'
 import { useAuthStore } from '@/stores/authStore'
 import type { PublicProfile, MyProfile, FollowStatusResponse } from '@/types/user'
+import type { RecentActivity } from '@/types/home'
+import RecentActivities from '@/components/profile/RecentActivities.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const route = useRoute()
@@ -13,6 +17,35 @@ const followStatus = ref<FollowStatusResponse | null>(null)
 const loading = ref(true)
 
 const isOwnProfile = computed(() => !route.params.id || Number(route.params.id) === authStore.user?.userId)
+
+// ── My-page dashboard (own profile only) ──
+const kpis = ref<MyKpis | null>(null)
+const activities = ref<RecentActivity[]>([])
+const activitySummary = ref<Record<string, number>>({})
+
+const kpiCards = computed(() => {
+  const k = kpis.value
+  if (!k) return []
+  return [
+    { label: 'Errors raised', metric: k.errorsRaised },
+    { label: 'Resolved', metric: k.resolved },
+    { label: 'Steps added', metric: k.stepsAdded },
+    { label: 'Solutions', metric: k.solutions },
+    { label: 'Published', metric: k.published },
+  ]
+})
+const resolutionRatePct = computed(() => Math.round((kpis.value?.resolutionRate ?? 0) * 100))
+const publishRatePct = computed(() => Math.round((kpis.value?.publishRate ?? 0) * 100))
+
+function loadDashboard() {
+  // insight-api KPIs + core-api recent activities. Load independently so one failing
+  // (e.g. a service down) doesn't hide the other.
+  insightApi.myKpis().then(({ data }) => { kpis.value = data }).catch(() => {})
+  meApi.recentActivities().then(({ data }) => {
+    activities.value = data.items
+    activitySummary.value = data.summary.byType
+  }).catch(() => {})
+}
 
 async function loadProfile() {
   loading.value = true
@@ -32,6 +65,7 @@ async function loadProfile() {
   } finally {
     loading.value = false
   }
+  if (isOwnProfile.value) loadDashboard()
 }
 
 async function toggleFollow() {
@@ -84,5 +118,30 @@ onMounted(loadProfile)
         </router-link>
       </div>
     </div>
+
+    <!-- My-page dashboard (own profile only) -->
+    <template v-if="isOwnProfile">
+      <section v-if="kpis" class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
+        <h2 class="text-lg font-light serif-title text-zinc-800 dark:text-zinc-100 mb-4">Activity</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <div v-for="c in kpiCards" :key="c.label" class="rounded-xl bg-zinc-50 dark:bg-zinc-800/40 p-3">
+            <p class="text-[11px] text-zinc-500 dark:text-zinc-400">{{ c.label }}</p>
+            <p class="text-2xl font-light text-zinc-800 dark:text-zinc-100 mt-1">{{ c.metric.total }}</p>
+            <p
+              class="text-[11px] mt-0.5"
+              :class="c.metric.weeklyDelta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-transparent'"
+            >+{{ c.metric.weeklyDelta }} this week</p>
+          </div>
+        </div>
+        <div class="flex gap-6 mt-4 text-sm text-zinc-500 dark:text-zinc-400">
+          <span>Resolution rate <strong class="text-zinc-800 dark:text-zinc-200">{{ resolutionRatePct }}%</strong></span>
+          <span>Publish rate <strong class="text-zinc-800 dark:text-zinc-200">{{ publishRatePct }}%</strong></span>
+        </div>
+      </section>
+
+      <section v-if="activities.length" class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
+        <RecentActivities :items="activities" :by-type="activitySummary" />
+      </section>
+    </template>
   </div>
 </template>

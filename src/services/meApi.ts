@@ -1,44 +1,34 @@
 import apiClient from './apiClient'
 import type {
-  ActiveCaseCard,
   RecentActivitiesResponse,
-  WatchlistItem,
-  WatchlistFeedItem,
-  RecommendedUser,
-  FollowingFeedItem,
+  WatchlistFeedResponse,
 } from '@/types/home'
+import type { ErrorCaseSummary } from '@/types/error'
 
-/** Insight Home dashboard endpoints (mocked via MSW until BE is ready). */
+/**
+ * Current-user dashboard endpoints (core-api /users/me/*).
+ */
 export const meApi = {
-  recentActiveCases() {
-    return apiClient.get<ActiveCaseCard[]>('/users/me/recent-active-cases')
+  // Home / My-page recent activity timeline (core-api).
+  recentActivities(params?: { windowDays?: number; limit?: number }) {
+    return apiClient.get<RecentActivitiesResponse>('/users/me/recent-activities', { params })
   },
 
-  recentActivities() {
-    return apiClient.get<RecentActivitiesResponse>('/users/me/recent-activities')
+  // Cases the user explicitly watches (core-api). Returns full case summaries.
+  watchlist(params?: { limit?: number }) {
+    return apiClient.get<ErrorCaseSummary[]>('/users/me/watchlist', { params })
   },
 
-  watchlist() {
-    return apiClient.get<WatchlistItem[]>('/users/me/watchlist')
+  // Home "Watchlist · updates" feed (core-api).
+  watchlistFeed(params?: { limit?: number }) {
+    return apiClient.get<WatchlistFeedResponse>('/users/me/watchlist-feed', { params })
   },
 
-  watchlistFeed() {
-    return apiClient.get<WatchlistFeedItem[]>('/users/me/watchlist-feed')
-  },
-
+  // Watchlist toggle (core-api). Both return 204 (idempotent) — no body.
   addWatchlist(caseId: number) {
-    return apiClient.post<{ watching: boolean }>(`/error-cases/${caseId}/watchlist`)
+    return apiClient.post<void>(`/error-cases/${caseId}/watchlist`)
   },
-
   removeWatchlist(caseId: number) {
     return apiClient.delete<void>(`/error-cases/${caseId}/watchlist`)
-  },
-
-  followingFeed() {
-    return apiClient.get<FollowingFeedItem[]>('/users/me/following-feed')
-  },
-
-  recommendedUsers() {
-    return apiClient.get<RecommendedUser[]>('/users/me/recommended-users')
   },
 }

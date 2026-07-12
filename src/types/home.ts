@@ -1,82 +1,49 @@
-// Insight Home (ERR-33) DTOs — shapes per specs/005-insight-home/plan.md Contracts.
-// FE consumes these from MSW mocks (backend not running).
+// Home / My-page dashboard DTOs.
+// Real endpoints (core-api): GET /users/me/{recent-activities, watchlist, watchlist-feed}.
 
-export type CaseActivitySource =
+// ── Recent activities (core-api GET /users/me/recent-activities) ──
+export type RecentActivityType =
+  | 'CASE_CREATED'
   | 'CASE_RESOLVED'
   | 'COMMENT_POSTED'
   | 'STEP_ADDED'
   | 'SOLUTION_REGISTERED'
 
-/** Recent my active cases — owner's case with unread (others' activity since last view) + deltas. */
-export interface ActiveCaseCard {
-  caseId: number
-  title: string
-  status: string
-  unread: number
-  delta24h: number
-  delta7d: number
-  lastActivityAt: string
-}
-
-/** A single entry in my recent-activity timeline. */
 export interface RecentActivity {
-  id: number
-  type: CaseActivitySource
+  type: RecentActivityType
   caseId: number
-  caseTitle: string
-  preview: string | null
-  createdAt: string
+  caseTitle: string | null
+  occurredAt: string
 }
 
-/** Per-source count for the summary pills. */
-export interface ActivitySummary {
-  source: CaseActivitySource
-  count: number
-}
-
-/** Response shape for GET /users/me/recent-activities. */
 export interface RecentActivitiesResponse {
   items: RecentActivity[]
-  summary: ActivitySummary[]
+  windowDays: number
+  summary: { byType: Record<string, number> }
 }
 
-/** Simple watchlist case summary. */
-export interface WatchlistItem {
-  caseId: number
+// ── Watchlist feed (core-api GET /users/me/watchlist-feed) ──
+export type WatchlistActivitySource =
+  | 'CASE_RESOLVED'
+  | 'COMMENT_POSTED'
+  | 'STEP_ADDED'
+  | 'SOLUTION_REGISTERED'
+
+export interface WatchlistFeedItem {
+  id: number
   title: string
   status: string
+  visibility: string
+  severity: number | null
+  workspaceId: number | null
+  latestActivitySource: WatchlistActivitySource
+  latestActivityActorUserId: number | null
+  lastActivityAt: string
+  unreadActivityCount: number
+  /** core-api path (+ optional #anchor). FE maps caseId → /w/:slug/errors/:id. */
+  detailUrl: string
 }
 
-/** Watchlist activity feed entry (sorted by lastUpdated desc). */
-export interface WatchlistFeedItem {
-  caseId: number
-  title: string
-  activityType: 'SOLUTION' | 'RESOLVED' | 'STEP' | 'COMMENT'
-  avatarUrl: string | null
-  displayName: string
-  lastUpdated: string
-}
-
-/** Recommended user shown when not following anyone. */
-export interface RecommendedUser {
-  userId: number
-  avatarUrl: string | null
-  displayName: string
-  handle: string
-  bio: string | null
-  tags: string[]
-  following: boolean
-}
-
-/** New-case feed entry from a user I follow. */
-export interface FollowingFeedItem {
-  caseId: number
-  title: string
-  createdAt: string
-  author: {
-    userId: number
-    displayName: string
-    handle: string
-    avatarUrl: string | null
-  }
+export interface WatchlistFeedResponse {
+  items: WatchlistFeedItem[]
 }
