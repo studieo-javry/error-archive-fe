@@ -5,7 +5,7 @@ defineProps<{ solution: Solution }>()
 </script>
 
 <template>
-  <div class="step-item flex gap-4 relative pb-6 is-checked">
+  <div class="step-item flex gap-4 relative pb-6 is-checked" :data-solution-id="solution.id">
     <div class="cb-wrapper" />
     <div class="flex flex-col items-center">
       <div class="tl-node led-success" />

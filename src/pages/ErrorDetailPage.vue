@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { formatAbsolute } from '@/utils/timeAgo'
 import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
@@ -70,6 +70,26 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+}
+
+// Watchlist / notification deep links land on /error-cases/{id}#{step|solution|comment}-{id} —
+// once the timeline is rendered, scroll to the referenced item and flash it briefly.
+async function scrollToHash() {
+  if (!route.hash) return
+  await nextTick()
+  const m = route.hash.match(/^#(step|solution|comment)-(\d+)$/)
+  let el: Element | null = null
+  if (m) {
+    const [, kind, id] = m
+    if (kind === 'step') el = document.querySelector(`[data-step-id="${id}"]`)
+    else if (kind === 'solution') el = document.querySelector(`[data-solution-id="${id}"]`)
+    else el = document.getElementById(`comment-${id}`)
+  }
+  el ||= document.getElementById(route.hash.slice(1))
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  el.classList.add('anchor-flash')
+  setTimeout(() => el?.classList.remove('anchor-flash'), 1600)
 }
 
 const showResolveConfirm = ref(false)
@@ -271,9 +291,10 @@ function scrollToQuote(kind: string, sourceId: number | null) {
   }
 }
 
-onMounted(() => {
-  loadData()
+onMounted(async () => {
+  await loadData()
   document.addEventListener('mouseup', onMouseUp)
+  scrollToHash()
 })
 onUnmounted(() => {
   document.removeEventListener('mouseup', onMouseUp)

@@ -51,7 +51,7 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
 </script>
 
 <template>
-  <div class="py-4" :class="{ 'ml-4 border-l border-zinc-200 dark:border-zinc-800 pl-3': (depth ?? 0) > 0 }">
+  <div :id="'comment-' + comment.id" class="py-4" :class="{ 'ml-4 border-l border-zinc-200 dark:border-zinc-800 pl-3': (depth ?? 0) > 0 }">
     <div v-if="isDeleted" class="text-xs text-zinc-400 dark:text-zinc-600 italic py-2">
       This comment has been deleted.
     </div>

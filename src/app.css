@@ -46,6 +46,16 @@ main::-webkit-scrollbar {
   box-shadow: none;
 }
 
+/* Deep-link target flash — brief emerald wash when scrolled to from a watchlist/notification link */
+.anchor-flash {
+  animation: anchor-flash 1.6s ease-out;
+  border-radius: 8px;
+}
+@keyframes anchor-flash {
+  0% { background-color: rgba(16, 185, 129, 0.16); }
+  100% { background-color: transparent; }
+}
+
 /* Serif Title */
 .serif-title {
   font-family: var(--font-serif);
