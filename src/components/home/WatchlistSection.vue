@@ -6,6 +6,7 @@ import type { WatchlistFeedItem, WatchlistActivitySource } from '@/types/home'
 import { timeAgo } from '@/utils/timeAgo'
 import { useTeamStore } from '@/stores/teamStore'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { StarIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const teamStore = useTeamStore()
@@ -13,18 +14,23 @@ const teamStore = useTeamStore()
 const feed = ref<WatchlistFeedItem[]>([])
 const loading = ref(true)
 
-const activityLabel: Record<WatchlistActivitySource, string> = {
-  CASE_RESOLVED: 'Resolved',
-  COMMENT_POSTED: 'New comment',
-  STEP_ADDED: 'New step',
-  SOLUTION_REGISTERED: 'New solution',
+// "[actor] [verb] [chip]" — the chip is the activity type, colored like the design.
+const verb: Record<WatchlistActivitySource, string> = {
+  SOLUTION_REGISTERED: 'added a',
+  STEP_ADDED: 'added a',
+  COMMENT_POSTED: 'posted a',
+  CASE_RESOLVED: 'marked',
 }
-
-const activityColor: Record<WatchlistActivitySource, string> = {
-  CASE_RESOLVED: 'text-emerald-600 dark:text-emerald-400',
-  COMMENT_POSTED: 'text-blue-500 dark:text-blue-400',
-  STEP_ADDED: 'text-amber-600 dark:text-amber-400',
-  SOLUTION_REGISTERED: 'text-violet-600 dark:text-violet-400',
+const chipLabel: Record<WatchlistActivitySource, string> = {
+  SOLUTION_REGISTERED: 'Solution',
+  STEP_ADDED: 'Step',
+  COMMENT_POSTED: 'Comment',
+  CASE_RESOLVED: 'Resolved',
+}
+function chipClass(source: WatchlistActivitySource) {
+  if (source === 'STEP_ADDED') return 'text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-500/10'
+  if (source === 'COMMENT_POSTED') return 'text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800/50'
+  return 'text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 bg-emerald-100 dark:bg-emerald-500/10'
 }
 
 onMounted(async () => {
@@ -37,13 +43,8 @@ onMounted(async () => {
 })
 
 function open(item: WatchlistFeedItem) {
-  // detailUrl is a core-api path (/error-cases/{id}#anchor) — map caseId to the FE route, keep the hash.
   const hash = item.detailUrl.includes('#') ? item.detailUrl.slice(item.detailUrl.indexOf('#')) : ''
   router.push({ name: 'errorDetail', params: { slug: teamStore.currentSlug, id: item.id }, hash })
-}
-
-function goToSearch() {
-  router.push({ name: 'search', params: { slug: 'public' } })
 }
 </script>
 
@@ -51,35 +52,43 @@ function goToSearch() {
   <LoadingSpinner v-if="loading" size="md" />
 
   <template v-else>
-    <div v-if="!feed.length" class="py-8 text-center">
-      <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Watch cases to track their updates here.</p>
-      <button
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-medium hover:opacity-90 transition-opacity"
-        @click="goToSearch"
-      >Find cases to watch</button>
+    <!-- data -->
+    <div v-if="feed.length" class="flex flex-col gap-6">
+      <div v-for="item in feed" :key="item.id" class="nudge-row group" @click="open(item)">
+        <div class="inner-content">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 min-w-0">
+              <span class="font-medium text-zinc-800 dark:text-zinc-200 truncate">{{ item.actor?.displayName ?? 'Someone' }}</span>
+              <span class="font-light shrink-0">{{ verb[item.latestActivitySource] }}</span>
+              <span class="shrink-0 font-mono text-[10px] font-bold tracking-widest uppercase border px-1.5 py-0.5 rounded" :class="chipClass(item.latestActivitySource)">{{ chipLabel[item.latestActivitySource] }}</span>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <span v-if="item.unreadActivityCount > 0" class="text-rose-600 dark:text-rose-400 font-mono text-[10px] font-bold bg-rose-100 dark:bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-200 dark:border-transparent">{{ item.unreadActivityCount }} new</span>
+              <span class="text-[11px] font-mono text-zinc-500 dark:text-zinc-600">{{ timeAgo(item.lastActivityAt) }}</span>
+            </div>
+          </div>
+
+          <div class="ml-4 pl-4 border-l-2 border-zinc-200 dark:border-zinc-800 group-hover:border-emerald-500 transition-colors py-1">
+            <div class="flex items-center gap-2 text-[10px] font-mono text-zinc-400 dark:text-zinc-500 mb-1">
+              <span>{{ item.status.replace('_', ' ') }}</span>
+              <span>·</span>
+              <span>#{{ item.id }}</span>
+            </div>
+            <h3 class="text-base font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-950 dark:group-hover:text-emerald-400 transition-colors leading-snug">
+              {{ item.title }}
+            </h3>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div v-else class="divide-y divide-zinc-100 dark:divide-zinc-800/60">
-      <button
-        v-for="item in feed"
-        :key="item.id"
-        type="button"
-        class="w-full text-left flex items-center gap-3 py-3.5 px-3 -mx-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors"
-        @click="open(item)"
-      >
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200 line-clamp-1">{{ item.title }}</p>
-          <p class="text-xs text-zinc-500 dark:text-zinc-400">
-            <span class="font-medium" :class="activityColor[item.latestActivitySource]">{{ activityLabel[item.latestActivitySource] }}</span>
-          </p>
-        </div>
-        <span
-          v-if="item.unreadActivityCount > 0"
-          class="shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-emerald-600 text-white text-[10px] font-semibold inline-flex items-center justify-center"
-          :title="`${item.unreadActivityCount} unread`"
-        >{{ item.unreadActivityCount }}</span>
-        <span class="text-[11px] text-zinc-400 dark:text-zinc-600 shrink-0">{{ timeAgo(item.lastActivityAt) }}</span>
-      </button>
+    <!-- empty -->
+    <div v-else class="py-12 flex flex-col items-center justify-center text-center">
+      <div class="w-12 h-12 rounded-full bg-white dark:bg-zinc-900/50 flex items-center justify-center mb-4 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-none">
+        <StarIcon class="w-6 h-6 text-zinc-400 dark:text-zinc-500" />
+      </div>
+      <p class="text-zinc-500 dark:text-zinc-400 font-light text-sm">No starred cases yet.</p>
+      <p class="text-zinc-400 dark:text-zinc-600 font-mono text-[11px] mt-2">Click ★ on any case to track it here.</p>
     </div>
   </template>
 </template>

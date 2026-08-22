@@ -64,6 +64,99 @@ main::-webkit-scrollbar {
   letter-spacing: -0.01em;
 }
 
+/* ── Home dashboard (design-home) — dividers, ambient glow, row hover motions ── */
+.gradient-divider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0%, transparent 100%);
+}
+.dark .gradient-divider {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+}
+
+.ambient-glow {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 100vh;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(99, 102, 241, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Active Cases — center-expanding 1px emerald bar + content nudge */
+.focus-row {
+  position: relative;
+  padding-left: 0.75rem;
+  margin-left: -0.75rem;
+  cursor: pointer;
+}
+.focus-row .inner-content {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.focus-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10%;
+  bottom: 10%;
+  width: 1px;
+  background-color: #10b981;
+  transform-origin: center;
+  transform: scaleY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.focus-row:hover::before { transform: scaleY(1); }
+.focus-row:hover .inner-content { transform: translateX(8px); }
+
+/* Watchlist — pure nudge (no bar) */
+.nudge-row {
+  position: relative;
+  cursor: pointer;
+}
+.nudge-row .inner-content {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nudge-row:hover .inner-content { transform: translateX(8px); }
+
+/* Following feed — tree with a spine + branching hover */
+.feed-tree-group { position: relative; margin-bottom: 2.5rem; }
+.feed-tree-spine {
+  position: absolute;
+  left: 1.25rem;
+  top: 2.5rem;
+  bottom: 0;
+  width: 1px;
+  z-index: 0;
+}
+.feed-tree-items {
+  padding-left: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.feed-tree-item {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.feed-tree-item::before {
+  content: '';
+  position: absolute;
+  left: -1.75rem;
+  top: 0.75rem;
+  width: 0;
+  height: 1px;
+  background-color: #10b981;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+.feed-tree-item:hover { transform: translateX(8px); }
+.feed-tree-item:hover::before { width: 1.25rem; transform: translateX(-8px); }
+
 /* LED Timeline Nodes */
 .tl-node {
   width: 10px;

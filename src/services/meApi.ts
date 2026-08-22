@@ -2,6 +2,9 @@ import apiClient from './apiClient'
 import type {
   RecentActivitiesResponse,
   WatchlistFeedResponse,
+  RecentActiveCasesResponse,
+  FollowingFeedResponse,
+  SuggestedFolloweesResponse,
 } from '@/types/home'
 import type { ErrorCaseSummary } from '@/types/error'
 
@@ -22,6 +25,21 @@ export const meApi = {
   // Home "Watchlist · updates" feed (core-api).
   watchlistFeed(params?: { limit?: number }) {
     return apiClient.get<WatchlistFeedResponse>('/users/me/watchlist-feed', { params })
+  },
+
+  // Home "My recent active cases" widget (core-api).
+  recentActiveCases(params?: { windowDays?: number; limit?: number }) {
+    return apiClient.get<RecentActiveCasesResponse>('/users/me/recent-active-cases', { params })
+  },
+
+  // Home "Following · new cases" feed (core-api). Empty items → show suggested followees.
+  followingFeed(params?: { limit?: number }) {
+    return apiClient.get<FollowingFeedResponse>('/users/me/following-feed', { params })
+  },
+
+  // Suggested people to follow when the following feed is empty (core-api).
+  suggestedFollowees(params?: { limit?: number }) {
+    return apiClient.get<SuggestedFolloweesResponse>('/users/me/suggested-followees', { params })
   },
 
   // Watchlist toggle (core-api). Both return 204 (idempotent) — no body.

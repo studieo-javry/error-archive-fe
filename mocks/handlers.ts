@@ -189,7 +189,7 @@ function withAuthor(e: ErrorCaseSummary) {
 // ── Insight Home (ERR-33) in-memory mock state ──
 // Toggles change subsequent responses within a session.
 const watchlistSet = new Set<number>([1, 3]) // caseIds I'm watching
-const followingSet = new Set<number>() // userIds I follow (starts empty)
+const followingSet = new Set<number>([3, 1]) // userIds I follow (seeded so the following feed shows)
 
 const HOUR = 3600_000
 const DAY = 24 * HOUR
@@ -218,11 +218,37 @@ const activityByType: Record<string, number> = {
 
 // Watchlist feed cards (core-api /users/me/watchlist-feed). Filtered by watchlistSet.
 const watchlistFeedAll = [
-  { id: 3, title: 'Memory leak in WebSocket connection handler', status: 'IN_PROGRESS', visibility: 'PUBLIC', severity: 2, workspaceId: null, latestActivitySource: 'STEP_ADDED', latestActivityActorUserId: 2, lastActivityAt: isoAgo(3 * HOUR), unreadActivityCount: 2, detailUrl: '/error-cases/3#step-31' },
-  { id: 1, title: 'CORS policy blocking API requests in production', status: 'RESOLVED', visibility: 'PUBLIC', severity: 2, workspaceId: null, latestActivitySource: 'SOLUTION_REGISTERED', latestActivityActorUserId: 1, lastActivityAt: isoAgo(1 * DAY), unreadActivityCount: 0, detailUrl: '/error-cases/1#solution-11' },
-  { id: 6, title: 'JPA N+1 query on order aggregation endpoint', status: 'RESOLVED', visibility: 'PUBLIC', severity: 3, workspaceId: null, latestActivitySource: 'CASE_RESOLVED', latestActivityActorUserId: 2, lastActivityAt: isoAgo(2 * DAY), unreadActivityCount: 1, detailUrl: '/error-cases/6' },
-  { id: 5, title: 'Pinia store state reset on nested route change', status: 'OPEN', visibility: 'PUBLIC', severity: null, workspaceId: null, latestActivitySource: 'COMMENT_POSTED', latestActivityActorUserId: 3, lastActivityAt: isoAgo(4 * DAY), unreadActivityCount: 0, detailUrl: '/error-cases/5#comment-51' },
-] as const
+  { id: 3, title: 'Memory leak in WebSocket connection handler', status: 'IN_PROGRESS', visibility: 'PUBLIC', severity: 2, workspaceId: null, latestActivitySource: 'STEP_ADDED', latestActivityActorUserId: 4, actor: { userId: 4, handle: 'dohyun.han', displayName: '한도윤', avatarUrl: null }, lastActivityAt: isoAgo(3 * HOUR), unreadActivityCount: 4, detailUrl: '/error-cases/3#step-31' },
+  { id: 1, title: 'CORS policy blocking API requests in production', status: 'RESOLVED', visibility: 'PUBLIC', severity: 2, workspaceId: null, latestActivitySource: 'SOLUTION_REGISTERED', latestActivityActorUserId: 1, actor: { userId: 1, handle: 'johndoe', displayName: 'John Doe', avatarUrl: null }, lastActivityAt: isoAgo(1 * DAY), unreadActivityCount: 2, detailUrl: '/error-cases/1#solution-11' },
+  { id: 6, title: 'JPA N+1 query on order aggregation endpoint', status: 'RESOLVED', visibility: 'PUBLIC', severity: 3, workspaceId: null, latestActivitySource: 'CASE_RESOLVED', latestActivityActorUserId: 3, actor: { userId: 3, handle: 'jiyeon.park', displayName: '박지연', avatarUrl: null }, lastActivityAt: isoAgo(2 * DAY), unreadActivityCount: 1, detailUrl: '/error-cases/6' },
+  { id: 5, title: 'Pinia store state reset on nested route change', status: 'OPEN', visibility: 'PUBLIC', severity: null, workspaceId: null, latestActivitySource: 'COMMENT_POSTED', latestActivityActorUserId: 5, actor: { userId: 5, handle: 'mira.k', displayName: 'Mira K.', avatarUrl: null }, lastActivityAt: isoAgo(4 * DAY), unreadActivityCount: 0, detailUrl: '/error-cases/5#comment-51' },
+]
+
+// My recent active cases (core-api /users/me/recent-active-cases) — my cases with recent activity, unread first.
+const recentActiveCasesMock = [
+  { id: 42, title: 'NullPointerException in KafkaProducer.send during broker restart', status: 'IN_PROGRESS', visibility: 'PUBLIC', workspaceId: null, stepCount: 3, commentCount: 12, solutionCount: 1, meTooCount: 8, createdAt: isoAgo(20 * DAY), lastActivityAt: isoAgo(2 * HOUR), unreadCount: 5, commentDelta24h: 3, commentDelta7d: 9, meTooDelta24h: 2, meTooDelta7d: 6 },
+  { id: 47, title: 'Redis cluster 7.4 PubSub subscriber reconnects every 5s', status: 'OPEN', visibility: 'PUBLIC', workspaceId: null, stepCount: 1, commentCount: 5, solutionCount: 0, meTooCount: 3, createdAt: isoAgo(12 * DAY), lastActivityAt: isoAgo(1 * DAY), unreadCount: 2, commentDelta24h: 0, commentDelta7d: 1, meTooDelta24h: 0, meTooDelta7d: 3 },
+  { id: 15, title: 'Hikari pool leak — connection 30/30 used, idle 0', status: 'RESOLVED', visibility: 'PUBLIC', workspaceId: null, stepCount: 5, commentCount: 9, solutionCount: 2, meTooCount: 11, createdAt: isoAgo(30 * DAY), lastActivityAt: isoAgo(2 * DAY), unreadCount: 1, commentDelta24h: 0, commentDelta7d: 2, meTooDelta24h: 0, meTooDelta7d: 5 },
+  { id: 38, title: 'Spring Boot 3.2 -> 4.0: Jackson 2 -> 3 ObjectMapper conflict', status: 'RESOLVED', visibility: 'PUBLIC', workspaceId: null, stepCount: 4, commentCount: 7, solutionCount: 1, meTooCount: 6, createdAt: isoAgo(40 * DAY), lastActivityAt: isoAgo(3 * DAY), unreadCount: 0, commentDelta24h: 0, commentDelta7d: 1, meTooDelta24h: 0, meTooDelta7d: 4 },
+  { id: 33, title: "React Server Components — missing 'use client' blocks hydration", status: 'RESOLVED', visibility: 'PUBLIC', workspaceId: null, stepCount: 2, commentCount: 3, solutionCount: 1, meTooCount: 2, createdAt: isoAgo(22 * DAY), lastActivityAt: isoAgo(5 * DAY), unreadCount: 0, commentDelta24h: 0, commentDelta7d: 0, meTooDelta24h: 0, meTooDelta7d: 2 },
+]
+
+// Following feed — recent cases from people I follow (core-api /users/me/following-feed).
+const followingFeedMock = [
+  { id: 312, ownerUserId: 3, title: 'Kotlin coroutine NPE not caught — throw in supervisorScope propagates to root scope', status: 'OPEN', createdAt: isoAgo(3 * HOUR), tags: ['kotlin', 'coroutine'], author: { userId: 3, handle: 'jiyeon.park', displayName: '박지연', avatarUrl: null, bio: 'Backend · Kotlin · Spring' } },
+  { id: 256, ownerUserId: 1, title: 'Spring AOP proxy self-invocation skips @Transactional, causing NPE', status: 'RESOLVED', createdAt: isoAgo(6 * HOUR), tags: ['spring', 'aop', 'transaction'], author: { userId: 1, handle: 'johndoe', displayName: 'John Doe', avatarUrl: null, bio: 'DevOps · k8s' } },
+  { id: 198, ownerUserId: 4, title: 'Postgres 16 logical replication large-txn delay — wal sender memory spike', status: 'IN_PROGRESS', createdAt: isoAgo(1 * DAY), tags: ['postgres', 'replication'], author: { userId: 4, handle: 'dohyun.han', displayName: '한도윤', avatarUrl: null, bio: 'DBA · Postgres' } },
+  { id: 177, ownerUserId: 5, title: 'Next.js App Router — cookie set dropped on a streaming response', status: 'OPEN', createdAt: isoAgo(2 * DAY), tags: ['nextjs', 'ssr', 'cookie'], author: { userId: 5, handle: 'mira.k', displayName: 'Mira K.', avatarUrl: null, bio: 'Frontend · Next.js' } },
+  { id: 154, ownerUserId: 3, title: 'Redis pipeline partial reply on network hiccup — lettuce vs jedis behavior', status: 'IN_PROGRESS', createdAt: isoAgo(3 * DAY), tags: ['redis', 'lettuce'], author: { userId: 3, handle: 'jiyeon.park', displayName: '박지연', avatarUrl: null, bio: 'Backend · Kotlin · Spring' } },
+  { id: 98, ownerUserId: 1, title: 'Kafka consumer rebalance storm — cooperative-sticky transition hang', status: 'RESOLVED', createdAt: isoAgo(4 * DAY), tags: ['kafka', 'rebalance'], author: { userId: 1, handle: 'johndoe', displayName: 'John Doe', avatarUrl: null, bio: 'DevOps · k8s' } },
+]
+
+// Suggested people to follow (AuthorSummary; shown when following nobody).
+const suggestedFolloweesMock = [
+  { userId: 3, handle: 'jiyeon.park', displayName: '박지연', avatarUrl: null, bio: 'Backend · Kotlin · Spring · Kafka', isFollowing: false },
+  { userId: 1, handle: 'johndoe', displayName: 'John Doe', avatarUrl: null, bio: 'DevOps · Kubernetes · observability', isFollowing: false },
+  { userId: 4, handle: 'dohyun.han', displayName: '한도윤', avatarUrl: null, bio: 'DBA · Postgres · replication internals', isFollowing: false },
+]
 
 // Mutable so newly created workspaces show up in the switcher and resolve by slug.
 const mockWorkspaces = [
@@ -348,6 +374,21 @@ export const handlers = [
       .sort((a, b) =>
         ((b.unreadActivityCount > 0 ? 1 : 0) - (a.unreadActivityCount > 0 ? 1 : 0))
         || (new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime()))
+    return HttpResponse.json({ items })
+  }),
+
+  http.get('/api/v1/users/me/recent-active-cases', () => {
+    return HttpResponse.json({ items: recentActiveCasesMock })
+  }),
+
+  http.get('/api/v1/users/me/following-feed', () => {
+    // No follows → empty feed; the FE then shows suggested followees.
+    const items = followingSet.size > 0 ? followingFeedMock : []
+    return HttpResponse.json({ items })
+  }),
+
+  http.get('/api/v1/users/me/suggested-followees', () => {
+    const items = suggestedFolloweesMock.filter((s) => !followingSet.has(s.userId))
     return HttpResponse.json({ items })
   }),
 
