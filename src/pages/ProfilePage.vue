@@ -70,17 +70,20 @@ async function loadProfile() {
   if (isOwnProfile.value) loadDashboard()
 }
 
+const followBusy = ref(false)
+
 async function toggleFollow() {
-  if (!profile.value || isOwnProfile.value || !followStatus.value) return
+  if (followBusy.value || !profile.value || isOwnProfile.value || !followStatus.value) return
+  followBusy.value = true
   const userId = profile.value.userId
-  if (followStatus.value.viewerFollowsTarget) {
-    const { data } = await authApi.unfollow(userId)
-    followStatus.value.viewerFollowsTarget = !data.following
-    followStatus.value.followersCount -= data.changed ? 1 : 0
-  } else {
-    const { data } = await authApi.follow(userId)
+  const wasFollowing = followStatus.value.viewerFollowsTarget
+  try {
+    // Both endpoints report the resulting state in `following` — mirror it as-is.
+    const { data } = wasFollowing ? await authApi.unfollow(userId) : await authApi.follow(userId)
     followStatus.value.viewerFollowsTarget = data.following
-    followStatus.value.followersCount += data.changed ? 1 : 0
+    if (data.changed) followStatus.value.followersCount += data.following ? 1 : -1
+  } finally {
+    followBusy.value = false
   }
 }
 
@@ -103,13 +106,19 @@ onMounted(loadProfile)
         </div>
         <button
           v-if="!isOwnProfile && followStatus"
-          class="mt-3 px-4 py-1.5 text-xs font-medium rounded-xl transition-colors"
+          class="group mt-3 px-4 py-1.5 text-xs font-medium rounded-xl transition-colors disabled:opacity-60"
           :class="followStatus.viewerFollowsTarget
-            ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
+            ? 'bg-zinc-200 text-zinc-700 hover:bg-rose-100 hover:text-rose-700 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-rose-500/15 dark:hover:text-rose-400'
             : 'bg-emerald-600 text-white hover:bg-emerald-700'"
+          :disabled="followBusy"
           @click="toggleFollow"
         >
-          {{ followStatus.viewerFollowsTarget ? 'Following' : 'Follow' }}
+          <!-- while following, hovering reveals the destructive action it will perform -->
+          <template v-if="followStatus.viewerFollowsTarget">
+            <span class="group-hover:hidden">Following</span>
+            <span class="hidden group-hover:inline">Unfollow</span>
+          </template>
+          <template v-else>Follow</template>
         </button>
         <router-link
           v-else-if="isOwnProfile"
