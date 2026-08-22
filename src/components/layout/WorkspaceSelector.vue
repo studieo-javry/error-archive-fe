@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronDownIcon, PlusIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline'
 import { useTeamStore, PUBLIC_SLUG } from '@/stores/teamStore'
@@ -9,6 +9,29 @@ import Modal from '@/components/common/Modal.vue'
 const teamStore = useTeamStore()
 const router = useRouter()
 const open = ref(false)
+const wrap = ref<HTMLElement | null>(null)
+
+// Outside-click via document listener — a full-viewport overlay would also eat wheel events
+// and make the page behind the dropdown unscrollable.
+function onDocPointerDown(e: PointerEvent) {
+  if (wrap.value && !wrap.value.contains(e.target as Node)) open.value = false
+}
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') open.value = false
+}
+watch(open, (isOpen) => {
+  if (isOpen) {
+    document.addEventListener('pointerdown', onDocPointerDown)
+    document.addEventListener('keydown', onKeydown)
+  } else {
+    document.removeEventListener('pointerdown', onDocPointerDown)
+    document.removeEventListener('keydown', onKeydown)
+  }
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onDocPointerDown)
+  document.removeEventListener('keydown', onKeydown)
+})
 
 const showCreate = ref(false)
 const showJoin = ref(false)
@@ -99,7 +122,7 @@ async function joinWorkspace() {
 </script>
 
 <template>
-  <div class="relative">
+  <div ref="wrap" class="relative">
     <button
       type="button"
       class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
@@ -109,8 +132,6 @@ async function joinWorkspace() {
       <span class="truncate max-w-[140px]">{{ teamStore.currentWorkspace?.name ?? 'Public' }}</span>
       <ChevronDownIcon class="w-4 h-4 text-zinc-400 shrink-0" />
     </button>
-
-    <div v-if="open" class="fixed inset-0 z-40" @click="open = false" />
 
     <div
       v-if="open"

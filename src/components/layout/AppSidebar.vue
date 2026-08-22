@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Component } from 'vue'
 import { useTheme } from '@/composables/useTheme'
@@ -54,6 +54,29 @@ function isActive(item: NavItem) {
 
 // Account menu (global, shared across workspaces).
 const menuOpen = ref(false)
+const menuWrap = ref<HTMLElement | null>(null)
+
+// Close on outside click via a document listener rather than a full-viewport overlay —
+// an overlay would also swallow wheel events and freeze scrolling behind the menu.
+function onDocPointerDown(e: PointerEvent) {
+  if (menuWrap.value && !menuWrap.value.contains(e.target as Node)) menuOpen.value = false
+}
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') menuOpen.value = false
+}
+watch(menuOpen, (open) => {
+  if (open) {
+    document.addEventListener('pointerdown', onDocPointerDown)
+    document.addEventListener('keydown', onKeydown)
+  } else {
+    document.removeEventListener('pointerdown', onDocPointerDown)
+    document.removeEventListener('keydown', onKeydown)
+  }
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onDocPointerDown)
+  document.removeEventListener('keydown', onKeydown)
+})
 function goProfile() {
   menuOpen.value = false
   router.push({ name: 'profile' })
@@ -86,7 +109,7 @@ async function onLogout() {
     </div>
 
     <!-- Account menu: profile / settings / theme (global, shared across workspaces) -->
-    <div class="relative">
+    <div ref="menuWrap" class="relative">
       <button
         class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 hover:ring-2 hover:ring-emerald-400 transition"
         aria-label="Account menu"
@@ -103,8 +126,6 @@ async function onLogout() {
           {{ (authStore.user?.displayName ?? '?').charAt(0).toUpperCase() }}
         </span>
       </button>
-
-      <div v-if="menuOpen" class="fixed inset-0 z-40" @click="menuOpen = false" />
 
       <div
         v-if="menuOpen"

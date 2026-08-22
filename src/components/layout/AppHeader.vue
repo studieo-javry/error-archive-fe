@@ -41,7 +41,8 @@ watch(() => store.ringSignal, () => {
 </script>
 
 <template>
-  <header class="glass sticky top-0 z-10 px-6 py-3 flex items-center justify-between">
+  <!-- z-30: the header owns overlays (notification panel), so it must stack above page content -->
+  <header class="glass sticky top-0 z-30 px-6 py-3 flex items-center justify-between">
     <WorkspaceSelector class="shrink-0" />
 
     <div ref="wrap" class="relative">
