@@ -78,7 +78,7 @@ onMounted(async () => {
     <LoadingSpinner v-if="loading" size="lg" class="mt-20" />
 
     <p v-else-if="failed || !grass" class="text-sm text-zinc-400 dark:text-zinc-500 mt-20 text-center font-light">
-      No signal yet — start resolving errors and your patterns will surface here.
+      No activity yet — log and resolve a few errors, and your statistics will show up here.
     </p>
 
     <template v-else>
@@ -86,11 +86,14 @@ onMounted(async () => {
       <div class="mb-16 border-b border-zinc-200 dark:border-zinc-800 pb-12 pt-4 transition-colors">
         <div class="font-mono text-[11px] leading-relaxed mb-6 border-l-[3px] border-emerald-500/50 pl-4 transition-colors">
           <span class="text-zinc-400 dark:text-zinc-500">/**</span><br />
-          <span class="text-zinc-400 dark:text-zinc-500"> *</span> <span class="text-emerald-600 dark:text-emerald-500">@title</span> <span class="text-zinc-500 dark:text-zinc-400">Signal &amp; Noise</span><br />
-          <span class="text-zinc-400 dark:text-zinc-500"> *</span> <span class="text-emerald-600 dark:text-emerald-500">@desc</span>&nbsp; <span class="text-zinc-500 dark:text-zinc-400">Analyzes and visualizes your annual error resolution patterns.</span><br />
+          <span class="text-zinc-400 dark:text-zinc-500"> *</span> <span class="text-emerald-600 dark:text-emerald-500">@title</span> <span class="text-zinc-500 dark:text-zinc-400">Activity Insights</span><br />
+          <span class="text-zinc-400 dark:text-zinc-500"> *</span> <span class="text-emerald-600 dark:text-emerald-500">@desc</span>&nbsp; <span class="text-zinc-500 dark:text-zinc-400">How much you logged, resolved, and discussed over the past year — as statistics.</span><br />
           <span class="text-zinc-400 dark:text-zinc-500"> */</span>
         </div>
-        <h1 class="serif-title text-4xl md:text-5xl text-zinc-900 dark:text-zinc-100 tracking-tight">Signal &amp; Noise</h1>
+        <h1 class="serif-title text-4xl md:text-5xl text-zinc-900 dark:text-zinc-100 tracking-tight">Activity Insights</h1>
+        <p class="mt-4 text-sm text-zinc-500 dark:text-zinc-400 font-light">
+          Your error activity and resolution statistics for the past year.
+        </p>
       </div>
 
       <!-- Narrative timeline -->

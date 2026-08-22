@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref, watch, nextTick, onMounted } from 'vue'
 import type { GrassDay, GrassBestDay } from '@/services/insightApi'
 
 const props = defineProps<{
@@ -65,6 +65,17 @@ function onLeave() {
   tip.show = false
 }
 
+// The grid runs oldest -> newest, so today sits at the far right. Default the horizontal
+// scroll to the end; otherwise the panel opens on data from a year ago.
+const gridWrap = ref<HTMLElement | null>(null)
+async function scrollToToday() {
+  await nextTick()
+  const el = gridWrap.value
+  if (el) el.scrollLeft = el.scrollWidth
+}
+onMounted(scrollToToday)
+watch(() => props.days, scrollToToday)
+
 // Bomb hover: a shockwave ring blooms from the cell, scaled by the day's density.
 // High-density days also nudge the whole scroll panel for kinetic feedback.
 function detonate(cellEl: HTMLElement, score: number) {
@@ -104,7 +115,7 @@ function detonate(cellEl: HTMLElement, score: number) {
       <div class="ins-day-labels mt-4 text-zinc-400 dark:text-zinc-500">
         <span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span>
       </div>
-      <div class="ins-grid-wrap w-full">
+      <div ref="gridWrap" class="ins-grid-wrap w-full">
         <div class="ins-month-labels text-zinc-400 dark:text-zinc-500">
           <div v-for="m in monthLabels" :key="m.left" class="ins-month-label" :style="{ left: m.left + 'px' }">{{ m.label }}</div>
         </div>
