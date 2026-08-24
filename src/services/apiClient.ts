@@ -1,9 +1,10 @@
 import axios from 'axios'
 import router from '@/router'
 import { useAuthStore } from '@/stores/authStore'
+import { API_BASE } from './apiBase'
 
 const apiClient = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE,
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,

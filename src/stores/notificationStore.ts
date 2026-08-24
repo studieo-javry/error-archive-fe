@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { notificationApi } from '@/services/notificationApi'
+import { API_BASE } from '@/services/apiBase'
 import { useAuthStore } from '@/stores/authStore'
 import type { AppNotification } from '@/types/notification'
 
@@ -83,7 +84,7 @@ export const useNotificationStore = defineStore('notification', () => {
     try {
       const { data } = await notificationApi.sseTicket()
       // EventSource can't set headers → ticket rides the query string (gateway extracts it).
-      es = new EventSource(`/api/v1/users/me/notifications/stream?ticket=${encodeURIComponent(data.ticket)}`)
+      es = new EventSource(`${API_BASE}/users/me/notifications/stream?ticket=${encodeURIComponent(data.ticket)}`)
       es.addEventListener('open', () => {
         streamConnected.value = true
         reconnectDelay = 1000

@@ -25,6 +25,10 @@ dist-ssr
 
 # Environment
 .env*
+!.env.example
+
+# Cloudflare Wrangler 로컬 캐시
+.wrangler/
 
 # Coverage
 coverage/

@@ -1,0 +1,60 @@
+name: Deploy FE
+
+on:
+  push:
+    branches: [master]          # master 머지 = push 이벤트 → 프로덕션 배포
+  pull_request:                 # PR → 프리뷰 버전 업로드
+  workflow_dispatch:            # 수동 실행
+    inputs:
+      target:
+        description: '배포 대상'
+        type: choice
+        options: [preview, production]
+        default: preview
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # `npm run lint` / `npm run test` 는 현재 실행 불가 (eslint.config.js 없음 / 테스트 0개 +
+      # jsdom 미설치). 복구되면 이 위치에 추가한다. 지금은 build 의 vue-tsc 가 유일한 게이트다.
+      # 상세: docs/fe-deploy-runbook.md 4-4
+      - run: npm run build
+        env:
+          VITE_OFFLINE_MODE: 'false'
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
+          VITE_GITHUB_REDIRECT_URI: ${{ vars.VITE_GITHUB_REDIRECT_URI }}
+
+      - name: Deploy to production
+        if: >-
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.target == 'production')
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Upload preview version
+        if: >-
+          github.event_name == 'pull_request' ||
+          (github.event_name == 'workflow_dispatch' && inputs.target == 'preview')
+        run: npx wrangler versions upload
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

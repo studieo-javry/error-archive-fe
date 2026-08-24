@@ -4,12 +4,10 @@ import App from './App.vue'
 import router from './router'
 import './app.css'
 
-function isOfflineMode() {
-  return import.meta.env.VITE_OFFLINE_MODE === 'true'
-}
-
 async function bootstrap() {
-  if (isOfflineMode()) {
+  // Inlined on purpose: a function call here would hide the constant from Rollup, keeping the
+  // MSW chunk (440 kB) in production builds. Written this way the branch folds away entirely.
+  if (import.meta.env.VITE_OFFLINE_MODE === 'true') {
     const { worker } = await import('../mocks/browser')
     await worker.start({ onUnhandledRequest: 'bypass' })
 

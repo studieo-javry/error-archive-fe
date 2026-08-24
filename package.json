@@ -17,7 +17,6 @@
     "@heroicons/vue": "^2.2.0",
     "axios": "^1.16.0",
     "highlight.js": "^11.11.1",
-    "msw": "^2.14.2",
     "pinia": "^3.0.4",
     "vue": "^3.5.32",
     "vue-router": "^4.6.4"
@@ -30,12 +29,14 @@
     "@vue/tsconfig": "^0.9.1",
     "eslint": "^10.3.0",
     "eslint-plugin-vue": "^10.9.0",
+    "msw": "^2.15.0",
     "prettier": "^3.8.3",
     "tailwindcss": "^4.2.4",
     "typescript": "~6.0.2",
     "vite": "^8.0.10",
     "vitest": "^4.1.5",
-    "vue-tsc": "^3.2.7"
+    "vue-tsc": "^3.2.7",
+    "wrangler": "^4.124.0"
   },
   "msw": {
     "workerDirectory": [
