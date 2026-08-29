@@ -36,6 +36,34 @@ function handleAuthFailure() {
   }
 }
 
+/**
+ * Single-flight refresh. Concurrent 401s (a page load fires several requests at once, all
+ * expiring together) must NOT each POST /auth/refresh with the same cookie: the server rotates
+ * the refresh token and treats a *second* presentation of the now-revoked token as reuse,
+ * revoking the whole session family → the user is logged out despite a valid remember-me cookie.
+ * So all callers share one in-flight promise: exactly one rotation happens, the rest await it.
+ *
+ * Uses apiClient (not bare axios) so it hits API_BASE (e.g. https://api.error-archive.com/api/v1)
+ * with credentials — a relative bare-axios call would resolve against the document origin, where
+ * no refresh endpoint exists. The interceptor's `isRefreshCall` guard prevents recursion.
+ */
+let refreshInFlight: Promise<string> | null = null
+
+function refreshAccessToken(): Promise<string> {
+  if (!refreshInFlight) {
+    refreshInFlight = apiClient
+      .post<{ accessToken: string }>('/auth/refresh')
+      .then(({ data }) => {
+        localStorage.setItem('accessToken', data.accessToken)
+        return data.accessToken
+      })
+      .finally(() => {
+        refreshInFlight = null
+      })
+  }
+  return refreshInFlight
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -49,15 +77,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && wasAuthenticated && !isRefreshCall && !originalRequest._retry) {
       originalRequest._retry = true
       try {
-        // Use apiClient (not bare axios) so the refresh hits the configured API origin
-        // (baseURL = API_BASE, e.g. https://api.error-archive.com/api/v1) with credentials.
-        // A bare axios call resolves the relative path against the *document* origin
-        // (error-archive.com), where no refresh endpoint exists — silently breaking the
-        // 15-min access-token renewal and logging the user out despite a valid 30-day
-        // remember-me cookie. The `isRefreshCall` guard above prevents recursion.
-        const { data } = await apiClient.post<{ accessToken: string }>('/auth/refresh')
-        localStorage.setItem('accessToken', data.accessToken)
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
+        const accessToken = await refreshAccessToken()
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`
         return apiClient(originalRequest)
       } catch {
         handleAuthFailure()
