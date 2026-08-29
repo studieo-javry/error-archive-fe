@@ -33,6 +33,10 @@ export interface ErrorCaseAttachment {
   size: number
   kind: string
   storageUrl: string
+  /** presigned inline URL — 브라우저가 `<img src>` / 새 탭 미리보기로 직접 사용. */
+  url: string
+  /** presigned attachment URL — Content-Disposition: attachment 라 클릭 시 다운로드. */
+  downloadUrl: string
   title: string | null
   caption: string | null
 }

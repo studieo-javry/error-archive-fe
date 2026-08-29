@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { attachmentApi } from '@/services/attachmentApi'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import type { ErrorCaseAttachment } from '@/types/error'
 
 const props = defineProps<{
@@ -13,10 +12,12 @@ const emit = defineEmits<{ resize: [markerId: string, width: number] }>()
 // BE kind is an enum name (uppercase): IMAGE / JSON / TEXT / DOCUMENT / OTHER.
 const isImage = computed(() => props.attachment?.kind === 'IMAGE')
 
-// storageUrl is a storage reference (e.g. "local:xxxx"), not a browser URL — and the download
-// endpoint needs an Authorization header (which <img> can't send). So fetch the bytes via the
-// authenticated API and render an object URL.
-const imgUrl = ref<string | null>(null)
+// Object storage replaced the old authenticated download API. The detail response now carries
+// presigned URLs directly:
+//   - `url`         : Content-Disposition: inline  → usable as <img src> and new-tab preview
+//   - `downloadUrl` : Content-Disposition: attachment → clicking it downloads the file
+// The signature lives in the query string, so no Authorization header is needed (and <img> works).
+const imgUrl = computed(() => props.attachment?.url ?? null)
 const imgFailed = ref(false)
 const figureEl = ref<HTMLElement | null>(null)
 
@@ -24,19 +25,7 @@ const figureEl = ref<HTMLElement | null>(null)
 const dragWidth = ref<number | null>(null)
 const maxWidthCss = computed(() => `min(100%, ${dragWidth.value ?? props.width ?? 560}px)`)
 
-onMounted(async () => {
-  if (props.attachment && isImage.value) {
-    try {
-      const blob = await attachmentApi.download(props.attachment.markerId, false)
-      imgUrl.value = URL.createObjectURL(blob)
-    } catch {
-      imgFailed.value = true
-    }
-  }
-})
-
 onUnmounted(() => {
-  if (imgUrl.value) URL.revokeObjectURL(imgUrl.value)
   window.removeEventListener('pointermove', onMove)
   window.removeEventListener('pointerup', onUp)
 })
@@ -45,13 +34,16 @@ onUnmounted(() => {
 watch(() => props.width, () => { dragWidth.value = null })
 
 function onImageClick() {
-  if (!props.editable && imgUrl.value) window.open(imgUrl.value, '_blank')
+  if (!props.editable && props.attachment?.url) window.open(props.attachment.url, '_blank', 'noopener')
 }
 
-async function openFile() {
+// Non-image (or image that failed to render): download via the presigned attachment URL.
+function downloadFile() {
   if (!props.attachment) return
-  const blob = await attachmentApi.download(props.attachment.markerId, false)
-  window.open(URL.createObjectURL(blob), '_blank')
+  const a = document.createElement('a')
+  a.href = props.attachment.downloadUrl
+  a.rel = 'noopener'
+  a.click()
 }
 
 // ── drag resize (editable image only) ──
@@ -81,8 +73,8 @@ function startResize(e: PointerEvent) {
 
 <template>
   <div v-if="attachment" class="my-3">
-    <!-- image: rendered inline, no frame -->
-    <figure v-if="isImage && imgUrl" ref="figureEl" class="relative w-fit max-w-full">
+    <!-- image: rendered inline via presigned inline URL, no frame -->
+    <figure v-if="isImage && imgUrl && !imgFailed" ref="figureEl" class="relative w-fit max-w-full">
       <img
         :src="imgUrl"
         :alt="attachment.title || attachment.fileName"
@@ -92,6 +84,7 @@ function startResize(e: PointerEvent) {
         :title="editable ? '' : 'Click to view full size'"
         draggable="false"
         @click="onImageClick"
+        @error="imgFailed = true"
       />
       <figcaption v-if="attachment.caption" class="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">{{ attachment.caption }}</figcaption>
 
@@ -104,13 +97,10 @@ function startResize(e: PointerEvent) {
       />
     </figure>
 
-    <!-- image still loading -->
-    <div v-else-if="isImage && !imgFailed" class="h-32 max-w-sm bg-zinc-100 dark:bg-zinc-800/50 animate-pulse" />
-
-    <!-- non-image file (or image that failed to load) -->
+    <!-- non-image file (or image that failed to load): click to download -->
     <div v-else class="flex items-center gap-2 text-sm">
       <span class="text-zinc-400">📎</span>
-      <button type="button" class="text-emerald-600 dark:text-emerald-400 hover:underline truncate" @click="openFile">{{ attachment.title || attachment.fileName }}</button>
+      <button type="button" class="text-emerald-600 dark:text-emerald-400 hover:underline truncate" title="Download" @click="downloadFile">{{ attachment.title || attachment.fileName }}</button>
       <span class="text-[11px] text-zinc-400">{{ (attachment.size / 1024).toFixed(1) }}KB</span>
     </div>
   </div>
