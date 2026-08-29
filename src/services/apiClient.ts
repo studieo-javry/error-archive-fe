@@ -49,9 +49,13 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && wasAuthenticated && !isRefreshCall && !originalRequest._retry) {
       originalRequest._retry = true
       try {
-        const { data } = await axios.post<{ accessToken: string }>('/api/v1/auth/refresh', null, {
-          withCredentials: true,
-        })
+        // Use apiClient (not bare axios) so the refresh hits the configured API origin
+        // (baseURL = API_BASE, e.g. https://api.error-archive.com/api/v1) with credentials.
+        // A bare axios call resolves the relative path against the *document* origin
+        // (error-archive.com), where no refresh endpoint exists — silently breaking the
+        // 15-min access-token renewal and logging the user out despite a valid 30-day
+        // remember-me cookie. The `isRefreshCall` guard above prevents recursion.
+        const { data } = await apiClient.post<{ accessToken: string }>('/auth/refresh')
         localStorage.setItem('accessToken', data.accessToken)
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
         return apiClient(originalRequest)
