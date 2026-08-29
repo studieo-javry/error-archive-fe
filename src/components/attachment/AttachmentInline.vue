@@ -38,10 +38,12 @@ function onImageClick() {
 }
 
 // Non-image (or image that failed to render): download via the presigned attachment URL.
+// downloadUrl is absent only for freshly-uploaded (unsaved) attachments in the editor preview.
 function downloadFile() {
-  if (!props.attachment) return
+  const href = props.attachment?.downloadUrl
+  if (!href) return
   const a = document.createElement('a')
-  a.href = props.attachment.downloadUrl
+  a.href = href
   a.rel = 'noopener'
   a.click()
 }
