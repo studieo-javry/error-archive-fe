@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
-import { ArrowDownTrayIcon } from '@heroicons/vue/24/outline'
+import { ArrowDownTrayIcon, DocumentTextIcon } from '@heroicons/vue/24/outline'
 import type { ErrorCaseAttachment } from '@/types/error'
 
 const props = defineProps<{
@@ -90,12 +90,12 @@ function startResize(e: PointerEvent) {
         @error="imgFailed = true"
       />
 
-      <!-- download button (view mode; click = save via presigned attachment URL, separate from preview) -->
+      <!-- download button (view mode; always visible; click = save via presigned attachment URL, separate from preview) -->
       <button
         v-if="!editable && attachment.downloadUrl"
         type="button"
-        title="Download"
-        class="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/60 text-white opacity-0 group-hover:opacity-100 hover:bg-zinc-900/80 focus:opacity-100 transition-opacity backdrop-blur-sm"
+        title="다운로드"
+        class="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/70 text-white hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-colors backdrop-blur-sm shadow-sm"
         @click.stop="downloadFile"
       >
         <ArrowDownTrayIcon class="w-4 h-4" />
@@ -112,11 +112,22 @@ function startResize(e: PointerEvent) {
       />
     </figure>
 
-    <!-- non-image file (or image that failed to load): click to download -->
-    <div v-else class="flex items-center gap-2 text-sm">
-      <span class="text-zinc-400">📎</span>
-      <button type="button" class="text-emerald-600 dark:text-emerald-400 hover:underline truncate" title="Download" @click="downloadFile">{{ attachment.title || attachment.fileName }}</button>
-      <span class="text-[11px] text-zinc-400">{{ (attachment.size / 1024).toFixed(1) }}KB</span>
+    <!-- non-image file (or image that failed to load): file card with a matching download button -->
+    <div v-else class="flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-700 px-3 py-2.5 max-w-md">
+      <DocumentTextIcon class="w-8 h-8 text-zinc-400 dark:text-zinc-500 shrink-0" />
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium text-zinc-700 dark:text-zinc-200 truncate">{{ attachment.title || attachment.fileName }}</div>
+        <div class="text-[11px] text-zinc-400 dark:text-zinc-500">{{ (attachment.size / 1024).toFixed(1) }}KB · {{ attachment.kind }}</div>
+      </div>
+      <button
+        v-if="attachment.downloadUrl"
+        type="button"
+        title="다운로드"
+        class="p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-colors shrink-0"
+        @click="downloadFile"
+      >
+        <ArrowDownTrayIcon class="w-4 h-4" />
+      </button>
     </div>
   </div>
 
