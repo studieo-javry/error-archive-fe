@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Comment } from '@/types/error'
+import type { Comment, CommentAuthor } from '@/types/error'
 import { timeAgo, formatAbsolute } from '@/utils/timeAgo'
 import MarkdownBody from '@/components/common/MarkdownBody.vue'
 import CommentForm from './CommentForm.vue'
@@ -11,7 +11,19 @@ const props = defineProps<{
   caseOwnerUserId: number
   depth?: number
   stepIndexMap?: Map<number, number>
+  authorMap?: Map<number, CommentAuthor>
 }>()
+
+// 작성자 이니셜(아바타 없을 때). displayName 첫 글자.
+const authorInitial = computed(() => (props.comment.author?.displayName || '?').charAt(0).toUpperCase())
+
+// helpful/reaction 팝오버 — uid 만 있으므로 authorMap 으로 이름/이니셜 해석(폴백 익명).
+function nameFor(uid: number): string {
+  return props.authorMap?.get(uid)?.displayName ?? '알 수 없는 사용자'
+}
+function initialFor(uid: number): string {
+  return (props.authorMap?.get(uid)?.displayName || '?').charAt(0).toUpperCase()
+}
 
 const emit = defineEmits<{
   reply: [parentId: number, body: string, quote: QuoteInfo | null]
@@ -57,12 +69,19 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
     </div>
     <div v-else>
       <div class="flex items-start gap-3">
-        <div class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-          {{ String(comment.authorUserId).slice(-2) }}
+        <img
+          v-if="comment.author?.avatarUrl"
+          :src="comment.author.avatarUrl"
+          :alt="comment.author.displayName"
+          class="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 border border-zinc-200 dark:border-zinc-700"
+        />
+        <div v-else class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+          {{ authorInitial }}
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
-            <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300">User #{{ comment.authorUserId }}</span>
+            <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300">{{ comment.author?.displayName ?? '알 수 없는 사용자' }}</span>
+            <span v-if="comment.author?.handle" class="text-[10px] font-mono text-zinc-400 dark:text-zinc-600">@{{ comment.author.handle }}</span>
             <span v-if="isAuthor" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium">Author</span>
             <span class="text-[10px] text-zinc-400 dark:text-zinc-600 cursor-default" :title="formatAbsolute(displayDate)">
               {{ timeAgo(displayDate) }}
@@ -103,7 +122,8 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
                   :key="uid"
                   class="w-5 h-5 rounded-full border border-white dark:border-zinc-900 flex items-center justify-center text-[8px] font-medium shrink-0 relative bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
                   :style="{ marginLeft: i > 0 ? '-6px' : '0', zIndex: 5 - i }"
-                >{{ String(uid).slice(-1) }}</div>
+                  :title="nameFor(uid)"
+                >{{ initialFor(uid) }}</div>
               </div>
               <button
                 class="flex items-center gap-1 text-[11px] transition-colors"
@@ -123,8 +143,8 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
                 </div>
                 <div class="px-3 py-2 space-y-1.5">
                   <div v-for="uid in comment.helpful.userIds" :key="uid" class="flex items-center gap-2">
-                    <div class="w-4 h-4 rounded-full bg-zinc-600 dark:bg-zinc-500 flex items-center justify-center text-[7px] font-medium text-zinc-200 shrink-0">{{ String(uid).slice(-1) }}</div>
-                    <span class="text-[11px] text-zinc-200 dark:text-zinc-300">User #{{ uid }}</span>
+                    <div class="w-4 h-4 rounded-full bg-zinc-600 dark:bg-zinc-500 flex items-center justify-center text-[7px] font-medium text-zinc-200 shrink-0">{{ initialFor(uid) }}</div>
+                    <span class="text-[11px] text-zinc-200 dark:text-zinc-300">{{ nameFor(uid) }}</span>
                   </div>
                 </div>
               </div>
@@ -147,6 +167,7 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
               :case-owner-user-id="caseOwnerUserId"
               :depth="(depth ?? 0) + 1"
               :step-index-map="stepIndexMap"
+              :author-map="authorMap"
               @reply="(parentId, body, quote) => $emit('reply', parentId, body, quote)"
               @edit="(id, body) => $emit('edit', id, body)"
               @delete="(id) => $emit('delete', id)"

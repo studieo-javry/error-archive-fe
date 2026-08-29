@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Comment } from '@/types/error'
+import type { Comment, CommentAuthor } from '@/types/error'
 import CommentItem from './CommentItem.vue'
 import type { QuoteInfo } from './CommentForm.vue'
 
@@ -7,6 +7,7 @@ defineProps<{
   comments: Comment[]
   caseOwnerUserId: number
   stepIndexMap?: Map<number, number>
+  authorMap?: Map<number, CommentAuthor>
 }>()
 
 defineEmits<{
@@ -26,6 +27,7 @@ defineEmits<{
       :comment="comment"
       :case-owner-user-id="caseOwnerUserId"
       :step-index-map="stepIndexMap"
+      :author-map="authorMap"
       @reply="(parentId, body, quote) => $emit('reply', parentId, body, quote)"
       @edit="(id, body) => $emit('edit', id, body)"
       @delete="(id) => $emit('delete', id)"

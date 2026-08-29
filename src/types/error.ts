@@ -226,10 +226,19 @@ export interface CommentSuggestion {
   updatedAt: string
 }
 
+export interface CommentAuthor {
+  userId: number
+  handle: string | null
+  displayName: string
+  avatarUrl: string | null
+}
+
 export interface Comment {
   id: number
   errorCaseId: number
   authorUserId: number
+  /** 표시용 작성자 정보. 이름/handle/아바타. authorUserId 는 식별/딥링크용으로만. */
+  author: CommentAuthor
   isAuthorOfCase: boolean
   parentCommentId: number | null
   body: string
@@ -265,6 +274,8 @@ export interface CommentListResponse {
   items: Comment[]
   nextCursor: string | null
   hasNext: boolean
+  /** 목록에 등장하는 모든 userId(작성자 + 도움됨/리액션 누른 사람)의 표시 정보 디렉토리. */
+  authors: CommentAuthor[]
   quoteSummary: {
     general: number
     caseBody: number

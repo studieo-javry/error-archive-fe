@@ -8,7 +8,7 @@ import { useTeamStore } from '@/stores/teamStore'
 import { stepApi } from '@/services/stepApi'
 import { solutionApi } from '@/services/solutionApi'
 import { commentApi } from '@/services/commentApi'
-import type { ErrorCaseDetail, Step, Solution, StepCreateRequest, Comment } from '@/types/error'
+import type { ErrorCaseDetail, Step, Solution, StepCreateRequest, Comment, CommentAuthor } from '@/types/error'
 import ErrorStatusBadge from '@/components/error/ErrorStatusBadge.vue'
 import TimelineList from '@/components/timeline/TimelineList.vue'
 import StepForm from '@/components/timeline/StepForm.vue'
@@ -29,6 +29,21 @@ const errorCase = ref<ErrorCaseDetail | null>(null)
 const steps = ref<Step[]>([])
 const solutions = ref<Solution[]>([])
 const comments = ref<Comment[]>([])
+// userId → 표시 정보. 목록 응답의 authors(도움됨/리액션 누른 사람 포함) + 각 댓글의 임베드 author
+// (새로 단 댓글도 자동 포함)를 합친다. helpful 팝오버 등 uid 만 있는 곳의 이름 해석용.
+const commentAuthorDirectory = ref<CommentAuthor[]>([])
+const commentAuthorMap = computed<Map<number, CommentAuthor>>(() => {
+  const m = new Map<number, CommentAuthor>()
+  for (const a of commentAuthorDirectory.value) m.set(a.userId, a)
+  const walk = (list: Comment[]) => {
+    for (const c of list) {
+      if (c.author) m.set(c.author.userId, c.author)
+      if (c.replies?.length) walk(c.replies)
+    }
+  }
+  walk(comments.value)
+  return m
+})
 const loading = ref(true)
 const selectionMode = ref(false)
 const selectedStepIds = ref<Set<number>>(new Set())
@@ -67,6 +82,7 @@ async function loadData() {
     steps.value = stepsRes.data
     solutions.value = solRes.data
     comments.value = commRes.data.items
+    commentAuthorDirectory.value = commRes.data.authors ?? []
   } finally {
     loading.value = false
   }
@@ -419,6 +435,7 @@ onUnmounted(() => {
         :comments="comments"
         :case-owner-user-id="errorCase.ownerUserId"
         :step-index-map="stepIndexMap"
+        :author-map="commentAuthorMap"
         @reply="postReply"
         @edit="editComment"
         @delete="deleteComment"
