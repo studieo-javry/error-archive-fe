@@ -10,9 +10,18 @@ const apiClient = axios.create({
   withCredentials: true,
 })
 
+// Cookie-authenticated endpoints — they authenticate via the httpOnly refresh cookie, NOT the
+// access token. Attaching an (often expired) Bearer here is actively harmful: the gateway's
+// OAuth2 resource-server validates the presented token BEFORE forwarding, so an expired token
+// makes the gateway 401 the request itself — refresh never reaches iam, the cookie is never
+// checked, and the session can't be renewed. So we must send these with NO Authorization header.
+function isCookieAuthPath(url?: string): boolean {
+  return !!url && (url.includes('/auth/refresh') || url.includes('/auth/logout'))
+}
+
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
-  if (token) {
+  if (token && !isCookieAuthPath(config.url)) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
