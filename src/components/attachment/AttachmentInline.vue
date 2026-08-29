@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
+import { ArrowDownTrayIcon } from '@heroicons/vue/24/outline'
 import type { ErrorCaseAttachment } from '@/types/error'
 
 const props = defineProps<{
@@ -76,7 +77,7 @@ function startResize(e: PointerEvent) {
 <template>
   <div v-if="attachment" class="my-3">
     <!-- image: rendered inline via presigned inline URL, no frame -->
-    <figure v-if="isImage && imgUrl && !imgFailed" ref="figureEl" class="relative w-fit max-w-full">
+    <figure v-if="isImage && imgUrl && !imgFailed" ref="figureEl" class="group relative w-fit max-w-full">
       <img
         :src="imgUrl"
         :alt="attachment.title || attachment.fileName"
@@ -88,6 +89,18 @@ function startResize(e: PointerEvent) {
         @click="onImageClick"
         @error="imgFailed = true"
       />
+
+      <!-- download button (view mode; click = save via presigned attachment URL, separate from preview) -->
+      <button
+        v-if="!editable && attachment.downloadUrl"
+        type="button"
+        title="Download"
+        class="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/60 text-white opacity-0 group-hover:opacity-100 hover:bg-zinc-900/80 focus:opacity-100 transition-opacity backdrop-blur-sm"
+        @click.stop="downloadFile"
+      >
+        <ArrowDownTrayIcon class="w-4 h-4" />
+      </button>
+
       <figcaption v-if="attachment.caption" class="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">{{ attachment.caption }}</figcaption>
 
       <!-- resize handle (editable only) -->
