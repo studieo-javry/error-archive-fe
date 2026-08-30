@@ -138,6 +138,22 @@ function goToUser(userId: number) {
   router.push({ name: 'profile', params: { id: String(userId) } })
 }
 
+// 목록 행의 follow/unfollow 토글. u.isFollowing 을 즉시 반영(옵티미스틱은 서버 결과로 확정).
+const followRowBusy = ref<Set<number>>(new Set())
+async function toggleFollowRow(u: UserSummary) {
+  if (followRowBusy.value.has(u.userId)) return
+  followRowBusy.value = new Set(followRowBusy.value).add(u.userId)
+  const wasFollowing = !!u.isFollowing
+  try {
+    const { data } = wasFollowing ? await authApi.unfollow(u.userId) : await authApi.follow(u.userId)
+    u.isFollowing = data.following
+  } finally {
+    const s = new Set(followRowBusy.value)
+    s.delete(u.userId)
+    followRowBusy.value = s
+  }
+}
+
 onMounted(loadProfile)
 // 모달에서 다른 사용자로 이동하면 같은 라우트라 컴포넌트가 재사용된다 → 파라미터 변화 시 재로딩.
 watch(() => route.params.id, () => { loadProfile() })
@@ -224,10 +240,10 @@ watch(() => route.params.id, () => { loadProfile() })
         {{ followListMode === 'followers' ? '아직 팔로워가 없어요.' : '아직 팔로우한 사람이 없어요.' }}
       </p>
       <ul v-else class="divide-y divide-zinc-100 dark:divide-zinc-700/60 -mx-2">
-        <li v-for="u in followListItems" :key="u.userId">
+        <li v-for="u in followListItems" :key="u.userId" class="flex items-center gap-2 pr-1">
           <button
             type="button"
-            class="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700/40 transition-colors text-left"
+            class="flex-1 min-w-0 flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700/40 transition-colors text-left"
             @click="goToUser(u.userId)"
           >
             <img v-if="u.avatarUrl" :src="u.avatarUrl" :alt="u.displayName" class="w-9 h-9 rounded-full object-cover shrink-0" />
@@ -238,6 +254,23 @@ watch(() => route.params.id, () => { loadProfile() })
               <p class="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">{{ u.displayName }}</p>
               <p v-if="u.handle" class="text-xs text-zinc-400 dark:text-zinc-500 truncate">@{{ u.handle }}</p>
             </div>
+          </button>
+          <!-- 본인 행이 아니면 follow/unfollow 버튼 -->
+          <button
+            v-if="!u.isSelf"
+            type="button"
+            class="group shrink-0 px-3 py-1 text-xs font-medium rounded-lg transition-colors disabled:opacity-60"
+            :class="u.isFollowing
+              ? 'bg-zinc-100 text-zinc-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-rose-500/15 dark:hover:text-rose-400'
+              : 'bg-emerald-600 text-white hover:bg-emerald-700'"
+            :disabled="followRowBusy.has(u.userId)"
+            @click="toggleFollowRow(u)"
+          >
+            <template v-if="u.isFollowing">
+              <span class="group-hover:hidden">Following</span>
+              <span class="hidden group-hover:inline">Unfollow</span>
+            </template>
+            <template v-else>Follow</template>
           </button>
         </li>
       </ul>

@@ -40,6 +40,10 @@ export interface UserSummary {
   handle: string
   displayName: string
   avatarUrl: string | null
+  /** 팔로워/팔로잉 목록에서만: 로그인 viewer 가 이 사용자를 팔로우 중인지(비로그인이면 false). */
+  isFollowing?: boolean
+  /** 팔로워/팔로잉 목록에서만: 이 사용자가 viewer 본인인지(본인 행은 팔로우 버튼 숨김). */
+  isSelf?: boolean
 }
 
 export interface TokenResponse {
