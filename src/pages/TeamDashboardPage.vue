@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 import { useTeamStore } from '@/stores/teamStore'
 import { teamApi } from '@/services/teamApi'
 import type { WorkspaceMember } from '@/types/team'
@@ -8,6 +9,17 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Modal from '@/components/common/Modal.vue'
 
 const teamStore = useTeamStore()
+const router = useRouter()
+
+// iam-api requires ADMIN for both role changes and invitations
+// (ChangeMemberRoleUseCase / InviteMemberUseCase call WorkspaceAccess.requireAdmin),
+// so don't offer either to anyone else.
+const isAdmin = computed(() => teamStore.currentWorkspace?.role === 'ADMIN')
+
+function openProfile(userId: number) {
+  router.push({ name: 'profile', params: { id: String(userId) } })
+}
+
 const members = ref<WorkspaceMember[]>([])
 const loading = ref(false)
 const showInviteModal = ref(false)
@@ -110,7 +122,7 @@ watch(
         {{ teamStore.currentWorkspace?.name ?? 'Members' }}
       </h1>
       <button
-        v-if="teamStore.currentWorkspaceId != null"
+        v-if="teamStore.currentWorkspaceId != null && isAdmin"
         class="px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
         @click="showInviteModal = true"
       >
@@ -133,14 +145,24 @@ watch(
         :key="member.userId"
         class="flex items-center justify-between p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/40"
       >
-        <div class="flex items-center gap-3">
-          <img v-if="member.avatarUrl" :src="member.avatarUrl" :alt="member.displayName" class="w-8 h-8 rounded-full" />
-          <div>
-            <p class="text-sm font-medium text-zinc-800 dark:text-zinc-100">{{ member.displayName }}</p>
-            <p class="text-xs text-zinc-400 dark:text-zinc-500">{{ member.role }}</p>
-          </div>
-        </div>
+        <button
+          type="button"
+          class="group flex items-center gap-3 min-w-0 text-left"
+          :title="`View ${member.displayName}'s profile`"
+          @click="openProfile(member.userId)"
+        >
+          <img v-if="member.avatarUrl" :src="member.avatarUrl" :alt="member.displayName" class="w-8 h-8 rounded-full shrink-0" />
+          <span v-else class="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 shrink-0 flex items-center justify-center text-xs font-medium text-zinc-500 dark:text-zinc-300">
+            {{ member.displayName.charAt(0).toUpperCase() }}
+          </span>
+          <span class="min-w-0">
+            <span class="block text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{{ member.displayName }}</span>
+            <span class="block text-xs text-zinc-400 dark:text-zinc-500">{{ member.role }}</span>
+          </span>
+        </button>
+
         <select
+          v-if="isAdmin"
           :value="member.role"
           class="text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-2 py-1 dark:text-zinc-300"
           @change="changeRole(member.userId, ($event.target as HTMLSelectElement).value)"
