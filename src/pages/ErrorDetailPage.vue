@@ -374,7 +374,7 @@ onUnmounted(() => {
       </div>
 
       <div v-if="errorCase.snapshot?.rawPaste" data-quote-context>
-        <pre class="bg-zinc-100 dark:bg-zinc-900/50 rounded-lg p-4 border border-zinc-200 dark:border-zinc-800/50 font-mono text-xs text-rose-500 dark:text-rose-300 leading-relaxed overflow-x-auto whitespace-pre-wrap">{{ errorCase.snapshot.rawPaste }}</pre>
+        <pre class="bg-zinc-100 dark:bg-zinc-900/50 rounded-lg p-4 border border-zinc-200 dark:border-zinc-800/50 font-mono text-xs text-rose-500 dark:text-rose-300 leading-relaxed overflow-x-auto themed-scroll whitespace-pre-wrap">{{ errorCase.snapshot.rawPaste }}</pre>
       </div>
     </div>
 

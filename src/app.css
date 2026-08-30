@@ -328,3 +328,33 @@ main::-webkit-scrollbar {
 .footer-slide-down {
   transform: translateY(100%);
 }
+
+/* Scrollbars inside code/trace panels — the UA default clashed with both themes. */
+.themed-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #c4c4c8 transparent;
+}
+.dark .themed-scroll {
+  scrollbar-color: #52525b transparent;
+}
+.themed-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.themed-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.themed-scroll::-webkit-scrollbar-thumb {
+  background-color: #c4c4c8;
+  border-radius: 4px;
+}
+.themed-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #a1a1aa;
+}
+.dark .themed-scroll::-webkit-scrollbar-thumb {
+  background-color: #52525b;
+}
+.dark .themed-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #71717a;
+}
+
