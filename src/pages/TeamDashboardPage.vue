@@ -98,17 +98,27 @@ async function createInvite() {
 }
 
 const roleError = ref('')
+let roleErrorTimer: ReturnType<typeof setTimeout> | null = null
+
+// 역할 변경 에러 배너. 메시지가 있으면 5초 뒤 자동으로 사라진다.
+function setRoleError(message: string) {
+  if (roleErrorTimer) { clearTimeout(roleErrorTimer); roleErrorTimer = null }
+  roleError.value = message
+  if (message) {
+    roleErrorTimer = setTimeout(() => { roleError.value = ''; roleErrorTimer = null }, 5000)
+  }
+}
 
 async function changeRole(userId: number, role: string) {
   const wsId = teamStore.currentWorkspaceId
   if (wsId == null) return
-  roleError.value = ''
+  setRoleError('')
   try {
     await teamApi.changeMemberRole(wsId, userId, role)
     await loadMembers(wsId)
   } catch (e) {
     // 예: 마지막 Admin 강등 → BE 409(WORKSPACE_LAST_ADMIN). 조용히 실패하지 않도록 표시.
-    roleError.value = errorMessage(e, '역할 변경에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    setRoleError(errorMessage(e, '역할 변경에 실패했습니다. 잠시 후 다시 시도해주세요.'))
     // 실패 시 select 값을 실제 역할로 되돌리기 위해 목록 재조회.
     await loadMembers(wsId)
   }
@@ -118,6 +128,7 @@ async function changeRole(userId: number, role: string) {
 watch(
   () => teamStore.currentWorkspaceId,
   (id) => {
+    setRoleError('') // 이전 워크스페이스의 에러 배너가 남지 않도록 클리어.
     if (id != null) loadMembers(id)
     else members.value = []
   },
