@@ -111,10 +111,14 @@ async function joinWorkspace() {
   if (!token) return
   joining.value = true
   try {
-    await teamApi.acceptInvitation(token)
+    const { data } = await teamApi.acceptInvitation(token)
     await teamStore.fetchWorkspaces()
     joinToken.value = ''
     showJoin.value = false
+    open.value = false
+    // land in the workspace you just joined — the route guard picks it up from the slug,
+    // which iam-api now returns on accept for exactly this purpose
+    router.push({ name: 'home', params: { slug: data.slug } })
   } finally {
     joining.value = false
   }
