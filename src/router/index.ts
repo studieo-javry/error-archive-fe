@@ -22,6 +22,11 @@ const routes = [
   { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true } },
   { path: '/report/:shareToken', name: 'report', component: () => import('@/pages/ReportPage.vue'), meta: { public: true } },
 
+  // Workspace invitation accept — the email/link target is `${INVITE_BASE}/{token}`. Requires
+  // auth (no meta.public): the guard bounces logged-out users to login?redirect=/invitations/{token}
+  // and they return here after OAuth, so the page always renders authenticated and can accept.
+  { path: '/invitations/:token', name: 'invite', component: () => import('@/pages/InvitePage.vue') },
+
   // Legacy path redirects → public workspace.
   { path: '/home', redirect: '/w/public/home' },
   { path: '/errors', redirect: '/w/public/errors' },

@@ -69,7 +69,8 @@ async function createInvite() {
     } else if (data.inviteUrl) {
       inviteLink.value = data.inviteUrl
     } else if (data.inviteToken) {
-      inviteLink.value = `${window.location.origin}/invite/${data.inviteToken}`
+      // 메일의 accept URL(IAM_INVITATION_BASE_URL=/invitations)과 경로를 일치시킨다.
+      inviteLink.value = `${window.location.origin}/invitations/${data.inviteToken}`
     }
   } catch (e) {
     // 예: ADMIN 은 초대로 부여 불가(가입 후 승격) → BE 400. 조용히 실패하지 않도록 표시.

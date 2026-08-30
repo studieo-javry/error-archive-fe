@@ -79,5 +79,7 @@ export interface InvitationPreview {
 export interface AcceptInvitationResponse {
   workspaceId: number
   workspaceName: string
+  /** 수락 직후 `/w/{slug}/home` 이동에 사용 (iam-api 가 응답에 포함). */
+  slug: string
   role: string
 }
