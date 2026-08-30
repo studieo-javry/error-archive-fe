@@ -58,7 +58,14 @@ function open(item: WatchlistFeedItem) {
         <div class="inner-content">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 min-w-0">
-              <span class="font-medium text-zinc-800 dark:text-zinc-200 truncate">{{ item.actor?.displayName ?? 'Someone' }}</span>
+              <button
+                v-if="item.actor"
+                type="button"
+                class="font-medium text-zinc-800 dark:text-zinc-200 truncate hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                :title="`View ${item.actor.displayName}'s profile`"
+                @click.stop="openProfile(item.actor.userId)"
+              >{{ item.actor.displayName }}</button>
+              <span v-else class="font-medium text-zinc-800 dark:text-zinc-200 truncate">Someone</span>
               <span class="font-light shrink-0">{{ verb[item.latestActivitySource] }}</span>
               <span class="shrink-0 font-mono text-[10px] font-bold tracking-widest uppercase border px-1.5 py-0.5 rounded" :class="chipClass(item.latestActivitySource)">{{ chipLabel[item.latestActivitySource] }}</span>
             </div>

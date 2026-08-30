@@ -69,19 +69,33 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
     </div>
     <div v-else>
       <div class="flex items-start gap-3">
-        <img
-          v-if="comment.author?.avatarUrl"
-          :src="comment.author.avatarUrl"
-          :alt="comment.author.displayName"
-          class="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 border border-zinc-200 dark:border-zinc-700"
-        />
-        <div v-else class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-          {{ authorInitial }}
-        </div>
+        <component
+          :is="comment.author ? 'router-link' : 'div'"
+          :to="comment.author ? { name: 'profile', params: { id: String(comment.author.userId) } } : undefined"
+          class="shrink-0 mt-0.5"
+          :title="comment.author ? `View ${comment.author.displayName}'s profile` : undefined"
+        >
+          <img
+            v-if="comment.author?.avatarUrl"
+            :src="comment.author.avatarUrl"
+            :alt="comment.author.displayName"
+            class="w-7 h-7 rounded-full object-cover border border-zinc-200 dark:border-zinc-700"
+          />
+          <div v-else class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+            {{ authorInitial }}
+          </div>
+        </component>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
-            <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300">{{ comment.author?.displayName ?? '알 수 없는 사용자' }}</span>
-            <span v-if="comment.author?.handle" class="text-[10px] font-mono text-zinc-400 dark:text-zinc-600">@{{ comment.author.handle }}</span>
+            <router-link
+              v-if="comment.author"
+              :to="{ name: 'profile', params: { id: String(comment.author.userId) } }"
+              class="group/author flex items-center gap-2 min-w-0"
+            >
+              <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300 group-hover/author:text-emerald-600 dark:group-hover/author:text-emerald-400 transition-colors">{{ comment.author.displayName }}</span>
+              <span v-if="comment.author.handle" class="text-[10px] font-mono text-zinc-400 dark:text-zinc-600">@{{ comment.author.handle }}</span>
+            </router-link>
+            <span v-else class="text-xs font-medium text-zinc-700 dark:text-zinc-300">알 수 없는 사용자</span>
             <span v-if="isAuthor" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium">Author</span>
             <span class="text-[10px] text-zinc-400 dark:text-zinc-600 cursor-default" :title="formatAbsolute(displayDate)">
               {{ timeAgo(displayDate) }}
