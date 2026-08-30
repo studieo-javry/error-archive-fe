@@ -9,10 +9,10 @@ import { useAuthStore } from '@/stores/authStore'
 import { stepApi } from '@/services/stepApi'
 import { solutionApi } from '@/services/solutionApi'
 import { commentApi } from '@/services/commentApi'
-import type { ErrorCaseDetail, Step, Solution, StepCreateRequest, Comment, CommentAuthor } from '@/types/error'
+import type { ErrorCaseDetail, Step, Solution, Comment, CommentAuthor } from '@/types/error'
 import ErrorStatusBadge from '@/components/error/ErrorStatusBadge.vue'
 import TimelineList from '@/components/timeline/TimelineList.vue'
-import StepForm from '@/components/timeline/StepForm.vue'
+import StepForm, { type StepFormValues } from '@/components/timeline/StepForm.vue'
 import SolutionSelector from '@/components/timeline/SolutionSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
@@ -161,14 +161,47 @@ async function deleteCase() {
   router.push({ name: 'errorList', params: { slug: teamStore.currentSlug } })
 }
 
-async function addStep(data: StepCreateRequest) {
-  const res = await stepApi.create(caseId, data)
+async function addStep(v: StepFormValues) {
+  const res = await stepApi.create(caseId, {
+    title: v.title,
+    status: v.status,
+    attemptType: v.attemptType ?? undefined,
+    body: v.body || undefined,
+    insight: v.insight || undefined,
+  })
   steps.value.push(res.data.step)
   if (errorCase.value) {
     errorCase.value.status = res.data.caseStatus
   }
   if (res.data.suggestResolve && errorCase.value && errorCase.value.status !== 'RESOLVED') {
     showResolveConfirm.value = true
+  }
+}
+
+// Empty strings are meaningful on update — they clear the field — so send them as-is
+// rather than dropping them the way the create path does.
+async function updateStep(stepId: number, v: StepFormValues) {
+  const res = await stepApi.update(caseId, stepId, {
+    title: v.title,
+    status: v.status,
+    attemptType: v.attemptType,
+    clearAttemptType: v.attemptType === null,
+    body: v.body,
+    insight: v.insight,
+  })
+  const i = steps.value.findIndex(s => s.id === stepId)
+  if (i !== -1) steps.value[i] = res.data.step
+  if (errorCase.value) errorCase.value.status = res.data.caseStatus
+}
+
+async function deleteStep(stepId: number) {
+  await stepApi.delete(caseId, stepId)
+  steps.value = steps.value.filter(s => s.id !== stepId)
+  selectedStepIds.value.delete(stepId)
+  // a solution that referenced it may now be stale
+  solutions.value = solutions.value.filter(sol => !sol.stepIds.includes(stepId))
+  if (activeFilter.value != null && !solutions.value.some(sol => sol.id === activeFilter.value)) {
+    activeFilter.value = null
   }
 }
 
@@ -445,7 +478,10 @@ onUnmounted(() => {
         :selection-mode="selectionMode"
         :selected-ids="selectedStepIds"
         :highlighted-ids="highlightedStepIds"
+        :viewer-user-id="authStore.user?.userId ?? null"
         @toggle="toggleStepSelection"
+        @update="updateStep"
+        @delete="deleteStep"
       />
       <StepForm v-if="canWriteContent" @submit="addStep" />
     </section>

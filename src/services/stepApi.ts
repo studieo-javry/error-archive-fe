@@ -1,5 +1,5 @@
 import apiClient from './apiClient'
-import type { Step, StepCreateRequest, StepCreateResponse, StepUpdateRequest } from '@/types/error'
+import type { Step, StepCreateRequest, StepCreateResponse, StepUpdateRequest, StepUpdateResponse } from '@/types/error'
 
 export const stepApi = {
   list(caseId: number) {
@@ -11,7 +11,7 @@ export const stepApi = {
   },
 
   update(caseId: number, stepId: number, data: StepUpdateRequest) {
-    return apiClient.patch<Step>(`/error-cases/${caseId}/steps/${stepId}`, data)
+    return apiClient.patch<StepUpdateResponse>(`/error-cases/${caseId}/steps/${stepId}`, data)
   },
 
   delete(caseId: number, stepId: number) {

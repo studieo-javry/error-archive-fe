@@ -1,8 +1,26 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { StepStatus, StepCreateRequest } from '@/types/error'
+import { ref, computed, watch } from 'vue'
+import type { StepStatus, Step } from '@/types/error'
 
-const emit = defineEmits<{ submit: [data: StepCreateRequest] }>()
+/** Raw field values — the caller maps them to a create or update request. */
+export interface StepFormValues {
+  title: string
+  status: StepStatus
+  /** null = no type / cleared */
+  attemptType: string | null
+  body: string
+  insight: string
+}
+
+const props = defineProps<{
+  /** present = editing that step; absent = creating a new one */
+  initial?: Step | null
+  submitLabel?: string
+}>()
+
+const emit = defineEmits<{ submit: [values: StepFormValues]; cancel: [] }>()
+
+const isEdit = computed(() => Boolean(props.initial))
 
 const title = ref('')
 const status = ref<StepStatus>('FAILED')
@@ -23,30 +41,68 @@ const attemptTypes = [
 
 const isCustom = computed(() => attemptTypeSelect.value === '__custom__')
 
-const resolvedAttemptType = computed(() => {
-  if (isCustom.value) return customAttemptType.value.trim() || undefined
-  return attemptTypeSelect.value || undefined
+const resolvedAttemptType = computed<string | null>(() => {
+  if (isCustom.value) return customAttemptType.value.trim() || null
+  return attemptTypeSelect.value || null
 })
+
+function reset() {
+  title.value = ''
+  status.value = 'FAILED'
+  attemptTypeSelect.value = ''
+  customAttemptType.value = ''
+  body.value = ''
+  insight.value = ''
+}
+
+// Seed the fields when editing. An attempt type the picker doesn't know about
+// (users may type their own) falls back to the custom slot.
+watch(
+  () => props.initial,
+  (step) => {
+    if (!step) {
+      reset()
+      return
+    }
+    title.value = step.title
+    status.value = step.status
+    body.value = step.body ?? ''
+    insight.value = step.insight ?? ''
+    if (step.attemptType && attemptTypes.some(t => t.value === step.attemptType)) {
+      attemptTypeSelect.value = step.attemptType
+      customAttemptType.value = ''
+    } else if (step.attemptType) {
+      attemptTypeSelect.value = '__custom__'
+      customAttemptType.value = step.attemptType
+    } else {
+      attemptTypeSelect.value = ''
+      customAttemptType.value = ''
+    }
+  },
+  { immediate: true },
+)
 
 function onSubmit() {
   if (!title.value.trim()) return
   emit('submit', {
     title: title.value,
     status: status.value,
-    attemptType: resolvedAttemptType.value || undefined,
-    body: body.value || undefined,
-    insight: insight.value || undefined,
+    attemptType: resolvedAttemptType.value,
+    body: body.value,
+    insight: insight.value,
   })
-  title.value = ''
-  body.value = ''
-  insight.value = ''
-  attemptTypeSelect.value = ''
-  customAttemptType.value = ''
+  // editing keeps the values on screen until the parent closes the form
+  if (!isEdit.value) reset()
 }
 </script>
 
 <template>
-  <form id="add-step-form" class="mt-6 space-y-3" @submit.prevent="onSubmit">
+  <form
+    :id="isEdit ? undefined : 'add-step-form'"
+    class="space-y-3"
+    :class="isEdit ? 'mt-1' : 'mt-6'"
+    @submit.prevent="onSubmit"
+  >
     <input
       v-model="title"
       type="text"
@@ -71,12 +127,20 @@ function onSubmit() {
         placeholder="Custom type"
         class="raw-input text-xs w-28"
       />
-      <button
-        type="submit"
-        class="ml-auto px-4 py-1.5 text-xs font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
-      >
-        Add Step
-      </button>
+      <div class="ml-auto flex items-center gap-3">
+        <button
+          v-if="isEdit"
+          type="button"
+          class="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+          @click="emit('cancel')"
+        >Cancel</button>
+        <button
+          type="submit"
+          class="px-4 py-1.5 text-xs font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+        >
+          {{ submitLabel || (isEdit ? 'Save' : 'Add Step') }}
+        </button>
+      </div>
     </div>
     <textarea
       v-model="body"

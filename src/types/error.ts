@@ -149,10 +149,19 @@ export interface StepCreateRequest {
   insight?: string | null
 }
 
+/** PATCH /steps/{id} — same wrapper as create: BE returns the step plus case state. */
+export interface StepUpdateResponse {
+  step: Step
+  caseStatus: string
+  suggestResolve: boolean
+}
+
 export interface StepUpdateRequest {
   title?: string | null
   status?: StepStatus | null
-  attemptType?: AttemptType | null
+  // free-form on the BE (max 64) — an unknown value is registered in the user's catalogue,
+  // so this must not be narrowed to the AttemptType literals
+  attemptType?: string | null
   clearAttemptType?: boolean
   body?: string | null
   insight?: string | null
