@@ -109,18 +109,22 @@ function setRoleError(message: string) {
   }
 }
 
-async function changeRole(userId: number, role: string) {
+async function changeRole(member: WorkspaceMember, event: Event) {
+  const el = event.target as HTMLSelectElement
+  const newRole = el.value
+  const prevRole = member.role
   const wsId = teamStore.currentWorkspaceId
-  if (wsId == null) return
+  if (wsId == null || newRole === prevRole) return
   setRoleError('')
   try {
-    await teamApi.changeMemberRole(wsId, userId, role)
-    await loadMembers(wsId)
+    await teamApi.changeMemberRole(wsId, member.userId, newRole)
+    member.role = newRole // 성공: 로컬 반영(전체 리로드/스피너 없음 → 깜빡임 방지).
   } catch (e) {
     // 예: 마지막 Admin 강등 → BE 409(WORKSPACE_LAST_ADMIN). 조용히 실패하지 않도록 표시.
     setRoleError(errorMessage(e, '역할 변경에 실패했습니다. 잠시 후 다시 시도해주세요.'))
-    // 실패 시 select 값을 실제 역할로 되돌리기 위해 목록 재조회.
-    await loadMembers(wsId)
+    // 실패: 드롭다운 UI 를 원래 역할로 되돌린다(재렌더/재조회 없이 DOM 값만).
+    member.role = prevRole
+    el.value = prevRole
   }
 }
 
@@ -189,7 +193,7 @@ watch(
           v-if="isAdmin"
           :value="member.role"
           class="text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-2 py-1 dark:text-zinc-300"
-          @change="changeRole(member.userId, ($event.target as HTMLSelectElement).value)"
+          @change="changeRole(member, $event)"
         >
           <option value="ADMIN">Admin</option>
           <option value="WRITE">Write</option>
