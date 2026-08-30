@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { meApi } from '@/services/meApi'
 import type { RecentActiveCase } from '@/types/home'
@@ -9,8 +9,15 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const router = useRouter()
 const teamStore = useTeamStore()
-const items = ref<RecentActiveCase[]>([])
+const all = ref<RecentActiveCase[]>([])
 const loading = ref(true)
+
+// core-api has no workspace filter on this endpoint yet, so pull a wider window and scope
+// here: the home of a workspace should only show that workspace's cases (null = personal).
+const LIMIT = 5
+const items = computed(() =>
+  all.value.filter(c => (c.workspaceId ?? null) === teamStore.currentWorkspaceId).slice(0, LIMIT),
+)
 
 const statusLabel: Record<string, string> = { OPEN: 'Open', IN_PROGRESS: 'In Progress', RESOLVED: 'Resolved', CLOSE: 'Closed' }
 function kickerColor(status: string) {
@@ -26,14 +33,17 @@ const isFresh = (c: RecentActiveCase) => Date.now() - new Date(c.lastActivityAt)
 const commentDelta = (c: RecentActiveCase) => (isFresh(c) ? c.commentDelta24h : c.commentDelta7d)
 const meTooDelta = (c: RecentActiveCase) => (isFresh(c) ? c.meTooDelta24h : c.meTooDelta7d)
 
-onMounted(async () => {
+async function load() {
+  loading.value = true
   try {
-    const { data } = await meApi.recentActiveCases({ windowDays: 7, limit: 5 })
-    items.value = data.items
+    const { data } = await meApi.recentActiveCases({ windowDays: 7, limit: 20 })
+    all.value = data.items
   } finally {
     loading.value = false
   }
-})
+}
+onMounted(load)
+watch(() => teamStore.currentWorkspaceId, load)
 
 function open(c: RecentActiveCase) {
   router.push({ name: 'errorDetail', params: { slug: teamStore.currentSlug, id: c.id } })

@@ -2,10 +2,16 @@
 import ActiveCasesSection from '@/components/home/ActiveCasesSection.vue'
 import FollowingFeedSection from '@/components/home/FollowingFeedSection.vue'
 import WatchlistSection from '@/components/home/WatchlistSection.vue'
+import { computed } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
+import { useTeamStore } from '@/stores/teamStore'
 import { StarIcon } from '@heroicons/vue/24/solid'
 
 const authStore = useAuthStore()
+const teamStore = useTeamStore()
+
+// The case-based sections only show what belongs to the workspace you're currently in.
+const scopeLabel = computed(() => teamStore.currentWorkspace?.name ?? 'Personal')
 const hour = new Date().getHours()
 const greeting = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening'
 </script>
@@ -31,7 +37,7 @@ const greeting = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening'
       <section class="mb-20">
         <div class="flex justify-between items-end mb-8">
           <h2 class="text-xl font-medium text-zinc-800 dark:text-zinc-100 tracking-tight">My Active Cases</h2>
-          <span class="text-xs font-mono text-zinc-500">7 Days Activity</span>
+          <span class="text-xs font-mono text-zinc-500">{{ scopeLabel }} · 7 days</span>
         </div>
         <div class="gradient-divider mb-6" />
         <ActiveCasesSection />
@@ -40,8 +46,8 @@ const greeting = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening'
       <!-- Team Network (following feed) -->
       <section class="mb-20">
         <div class="flex justify-between items-end mb-8">
-          <h2 class="text-xl font-medium text-zinc-800 dark:text-zinc-100 tracking-tight">Team Network</h2>
-          <span class="text-xs font-mono text-zinc-500">Following Feed</span>
+          <h2 class="text-xl font-medium text-zinc-800 dark:text-zinc-100 tracking-tight">People You Follow</h2>
+          <span class="text-xs font-mono text-zinc-500">Across all workspaces</span>
         </div>
         <div class="gradient-divider mb-8" />
         <FollowingFeedSection />
@@ -53,7 +59,7 @@ const greeting = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening'
           <h2 class="text-xl font-medium text-zinc-800 dark:text-zinc-100 tracking-tight flex items-center gap-2">
             Watchlist Updates <StarIcon class="w-4 h-4 text-amber-500" />
           </h2>
-          <span class="text-xs font-mono text-zinc-500">Starred Activity</span>
+          <span class="text-xs font-mono text-zinc-500">{{ scopeLabel }}</span>
         </div>
         <div class="gradient-divider mb-6" />
         <WatchlistSection />

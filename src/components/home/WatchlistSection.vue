@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { meApi } from '@/services/meApi'
 import type { WatchlistFeedItem, WatchlistActivitySource } from '@/types/home'
@@ -11,8 +11,14 @@ import { StarIcon } from '@heroicons/vue/24/outline'
 const router = useRouter()
 const teamStore = useTeamStore()
 
-const feed = ref<WatchlistFeedItem[]>([])
+const all = ref<WatchlistFeedItem[]>([])
 const loading = ref(true)
+
+// No workspace filter on the endpoint yet — scope client-side so a workspace home only
+// reports activity on cases in that workspace (null = personal/public).
+const feed = computed(() =>
+  all.value.filter(i => (i.workspaceId ?? null) === teamStore.currentWorkspaceId),
+)
 
 // "[actor] [verb] [chip]" — the chip is the activity type, colored like the design.
 const verb: Record<WatchlistActivitySource, string> = {
@@ -33,14 +39,21 @@ function chipClass(source: WatchlistActivitySource) {
   return 'text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 bg-emerald-100 dark:bg-emerald-500/10'
 }
 
-onMounted(async () => {
+async function load() {
+  loading.value = true
   try {
-    const { data } = await meApi.watchlistFeed()
-    feed.value = data.items
+    const { data } = await meApi.watchlistFeed({ limit: 50 })
+    all.value = data.items
   } finally {
     loading.value = false
   }
-})
+}
+onMounted(load)
+watch(() => teamStore.currentWorkspaceId, load)
+
+function openProfile(userId: number) {
+  router.push({ name: 'profile', params: { id: String(userId) } })
+}
 
 function open(item: WatchlistFeedItem) {
   const hash = item.detailUrl.includes('#') ? item.detailUrl.slice(item.detailUrl.indexOf('#')) : ''
