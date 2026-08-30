@@ -153,7 +153,7 @@ onMounted(loadProfile)
         </div>
       </section>
 
-      <section v-if="activities.length" class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
+      <section class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
         <RecentActivities :items="activities" :by-type="activitySummary" />
       </section>
     </template>

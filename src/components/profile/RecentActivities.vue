@@ -95,8 +95,13 @@ function openCase(caseId: number) {
       </div>
     </div>
 
+    <!-- empty: an absent timeline should still say so, not collapse to nothing -->
+    <p v-if="!groups.length" class="py-8 text-sm text-zinc-500 dark:text-zinc-400 font-light">
+      No activity in the last 7 days — create a case, add a step, or leave a comment and it will show up here.
+    </p>
+
     <!-- day groups -->
-    <div class="space-y-8">
+    <div v-else class="space-y-8">
       <div v-for="day in groups" :key="day.key">
         <div class="flex items-center gap-2 mb-3">
           <span class="w-2 h-2 rounded-[3px] bg-emerald-500" />
