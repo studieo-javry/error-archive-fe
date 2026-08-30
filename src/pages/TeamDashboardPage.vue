@@ -11,9 +11,15 @@ const teamStore = useTeamStore()
 const members = ref<WorkspaceMember[]>([])
 const loading = ref(false)
 const showInviteModal = ref(false)
+// EMAIL = one-off invite mailed to an address, LINK = reusable URL. Both are supported by
+// iam-api; only LINK was wired up before.
+const inviteType = ref<'EMAIL' | 'LINK'>('EMAIL')
 const inviteRole = ref('WRITE')
+const inviteEmail = ref('')
 const inviteLink = ref('')
+const inviteSentTo = ref('')
 const inviteError = ref('')
+const inviteBusy = ref(false)
 
 // axios 에러 → 사용자에게 보여줄 메시지(BE ProblemDetail 의 detail 우선).
 function errorMessage(e: unknown, fallback: string): string {
@@ -34,21 +40,47 @@ async function loadMembers(wsId: number) {
   }
 }
 
+function resetInviteResult() {
+  inviteLink.value = ''
+  inviteSentTo.value = ''
+  inviteError.value = ''
+}
+
 async function createInvite() {
   const wsId = teamStore.currentWorkspaceId
-  if (wsId == null) return
-  inviteError.value = ''
-  inviteLink.value = ''
+  if (wsId == null || inviteBusy.value) return
+  const email = inviteEmail.value.trim()
+  if (inviteType.value === 'EMAIL' && !email) {
+    inviteError.value = '초대할 이메일 주소를 입력해주세요.'
+    return
+  }
+  inviteBusy.value = true
+  resetInviteResult()
   try {
-    const { data } = await teamApi.createInvitation(wsId, { type: 'LINK', role: inviteRole.value, expiresInHours: 168 })
-    if (data.inviteUrl) {
+    const { data } = await teamApi.createInvitation(wsId, {
+      type: inviteType.value,
+      role: inviteRole.value,
+      email: inviteType.value === 'EMAIL' ? email : null,
+      expiresInHours: 168,
+    })
+    if (inviteType.value === 'EMAIL') {
+      inviteSentTo.value = email
+      inviteEmail.value = ''
+    } else if (data.inviteUrl) {
       inviteLink.value = data.inviteUrl
     } else if (data.inviteToken) {
       inviteLink.value = `${window.location.origin}/invite/${data.inviteToken}`
     }
   } catch (e) {
     // 예: ADMIN 은 초대로 부여 불가(가입 후 승격) → BE 400. 조용히 실패하지 않도록 표시.
-    inviteError.value = errorMessage(e, '초대 링크 생성에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    inviteError.value = errorMessage(
+      e,
+      inviteType.value === 'EMAIL'
+        ? '초대 메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.'
+        : '초대 링크 생성에 실패했습니다. 잠시 후 다시 시도해주세요.',
+    )
+  } finally {
+    inviteBusy.value = false
   }
 }
 
@@ -120,25 +152,61 @@ watch(
     </div>
 
     <Modal :show="showInviteModal" title="Invite Member" @close="showInviteModal = false">
-      <div class="space-y-4">
+      <div class="space-y-5">
+        <!-- how to deliver the invite -->
+        <div class="flex items-center gap-5 text-xs">
+          <button
+            v-for="t in (['EMAIL', 'LINK'] as const)"
+            :key="t"
+            type="button"
+            class="relative pb-1.5 transition-colors"
+            :class="inviteType === t
+              ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+              : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'"
+            @click="inviteType = t; resetInviteResult()"
+          >
+            {{ t === 'EMAIL' ? 'Send email' : 'Create link' }}
+            <span v-if="inviteType === t" class="absolute left-0 right-0 -bottom-px h-px bg-emerald-500" />
+          </button>
+        </div>
+
+        <div v-if="inviteType === 'EMAIL'">
+          <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1.5">Email address</label>
+          <input
+            v-model="inviteEmail"
+            type="email"
+            placeholder="teammate@example.com"
+            class="raw-input w-full text-sm"
+            @keyup.enter="createInvite"
+          />
+        </div>
+
         <div>
+          <label class="text-xs text-zinc-500 dark:text-zinc-400 block mb-1.5">Role</label>
           <select v-model="inviteRole" class="raw-input w-full text-sm" @change="inviteError = ''">
             <option value="WRITE">Write</option>
             <option value="READ">Read</option>
           </select>
           <p class="mt-1.5 text-[11px] text-zinc-400 dark:text-zinc-500">
-            관리자(Admin) 권한은 초대 링크로 부여할 수 없어요. 멤버가 참여한 뒤 역할을 Admin 으로 변경하세요.
+            관리자(Admin) 권한은 초대로 부여할 수 없어요. 멤버가 참여한 뒤 역할을 Admin 으로 변경하세요.
           </p>
         </div>
+
         <button
-          class="w-full px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+          class="w-full px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-60"
+          :disabled="inviteBusy"
           @click="createInvite"
         >
-          Generate Link
+          {{ inviteType === 'EMAIL' ? 'Send invitation' : 'Generate link' }}
         </button>
         <div v-if="inviteError" class="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50">
           <p class="text-sm text-rose-600 dark:text-rose-400">{{ inviteError }}</p>
         </div>
+
+        <p v-if="inviteSentTo" class="text-xs text-emerald-600 dark:text-emerald-400">
+          {{ inviteSentTo }} 님에게 초대 메일을 보냈어요.
+        </p>
+
         <div v-if="inviteLink" class="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-700">
           <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Share this link:</p>
           <p class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all">{{ inviteLink }}</p>
