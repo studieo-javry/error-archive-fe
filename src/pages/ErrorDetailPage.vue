@@ -342,6 +342,16 @@ async function deleteComment(commentId: number) {
 
 async function toggleHelpful(commentId: number) {
   const res = await commentApi.toggleHelpful(caseId, commentId)
+  // The response only carries userIds. core-api resolves names for everyone referenced when
+  // the thread loads, but my own id can appear here for the first time — add myself so the
+  // popover doesn't fall back to "알 수 없는 사용자" until a reload.
+  const me = authStore.user
+  if (me && !commentAuthorDirectory.value.some(a => a.userId === me.userId)) {
+    commentAuthorDirectory.value = [
+      ...commentAuthorDirectory.value,
+      { userId: me.userId, handle: me.handle ?? null, displayName: me.displayName, avatarUrl: me.avatarUrl ?? null },
+    ]
+  }
   function update(list: Comment[]): boolean {
     for (const c of list) {
       if (c.id === commentId) {
