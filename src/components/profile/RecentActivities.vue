@@ -95,13 +95,24 @@ function openCase(caseId: number) {
       </div>
     </div>
 
-    <!-- empty: an absent timeline should still say so, not collapse to nothing -->
-    <p v-if="!groups.length" class="py-8 text-sm text-zinc-500 dark:text-zinc-400 font-light">
-      No activity in the last 7 days — create a case, add a step, or leave a comment and it will show up here.
-    </p>
-
     <!-- day groups -->
-    <div v-else class="space-y-8">
+    <div class="space-y-8">
+      <!-- nothing to list: keep the timeline frame and let the row itself report the gap -->
+      <div v-if="!groups.length">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-2 h-2 rounded-[3px] bg-zinc-300 dark:bg-zinc-700" />
+          <span class="text-[11px] font-mono tracking-widest text-zinc-400 dark:text-zinc-500">LAST 7 DAYS</span>
+        </div>
+        <ul class="ml-1 border-l border-zinc-200 dark:border-zinc-800">
+          <li class="relative pl-6">
+            <span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-900" />
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 font-light">
+              No activity yet — create a case, add a step, or leave a comment and it will show up here.
+            </p>
+          </li>
+        </ul>
+      </div>
+
       <div v-for="day in groups" :key="day.key">
         <div class="flex items-center gap-2 mb-3">
           <span class="w-2 h-2 rounded-[3px] bg-emerald-500" />
