@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
 import { meApi } from '@/services/meApi'
 import { useTeamStore } from '@/stores/teamStore'
+import { useAuthStore } from '@/stores/authStore'
 import { stepApi } from '@/services/stepApi'
 import { solutionApi } from '@/services/solutionApi'
 import { commentApi } from '@/services/commentApi'
@@ -25,6 +26,7 @@ import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
 const route = useRoute()
 const router = useRouter()
 const teamStore = useTeamStore()
+const authStore = useAuthStore()
 const errorCase = ref<ErrorCaseDetail | null>(null)
 const steps = ref<Step[]>([])
 const solutions = ref<Solution[]>([])
@@ -62,6 +64,27 @@ const activeSolution = computed(() => {
 })
 
 const caseId = Number(route.params.id)
+
+const isOwner = computed(() =>
+  Boolean(errorCase.value && authStore.user && errorCase.value.ownerUserId === authStore.user.userId),
+)
+
+/**
+ * Adding steps/solutions — mirrors core-api `ErrorCaseAccess.requireWrite`: the author, or a
+ * WRITE/ADMIN member when the case is workspace-visible. Personal cases stay author-only.
+ */
+const canWriteContent = computed(() => {
+  const c = errorCase.value
+  if (!c || !authStore.user) return false
+  if (isOwner.value) return true
+  if (c.visibility !== 'WORKSPACE' || c.workspaceId == null) return false
+  const role = teamStore.workspaces.find(w => w.workspaceId === c.workspaceId)?.role
+  return role === 'ADMIN' || role === 'WRITE'
+})
+
+// Editing/deleting the case itself is owner-only in core-api (UpdateErrorCaseUseCase /
+// DeleteErrorCaseUseCase check ownerUserId), so don't offer it to anyone else.
+const canEditCase = isOwner
 
 const stepIndexMap = computed(() => {
   const m = new Map<number, number>()
@@ -353,10 +376,12 @@ onUnmounted(() => {
           {{ watching ? 'Watching' : 'Watch' }}
         </button>
         <button
+          v-if="canEditCase"
           class="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-colors"
           @click="router.push({ name: 'errorEdit', params: { slug: teamStore.currentSlug, id: caseId } })"
         >Edit</button>
         <button
+          v-if="canEditCase"
           class="text-xs text-zinc-400 hover:text-rose-500 transition-colors"
           @click="showDeleteConfirm = true"
         >Delete</button>
@@ -382,6 +407,7 @@ onUnmounted(() => {
       <div class="flex items-center justify-between mb-6 border-b border-zinc-200 dark:border-zinc-800/50 pb-4 pt-8">
         <h3 class="font-bold text-zinc-800 dark:text-zinc-200">Resolution Timeline</h3>
         <SolutionSelector
+          v-if="canWriteContent"
           :selected-count="selectedStepIds.size"
           :active="selectionMode"
           @toggle="selectionMode = !selectionMode"
@@ -421,7 +447,7 @@ onUnmounted(() => {
         :highlighted-ids="highlightedStepIds"
         @toggle="toggleStepSelection"
       />
-      <StepForm @submit="addStep" />
+      <StepForm v-if="canWriteContent" @submit="addStep" />
     </section>
 
     <section id="comment-section" class="mb-8">
