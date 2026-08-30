@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { authApi } from '@/services/authApi'
 import { insightApi, type MyKpis, type KpiMetric } from '@/services/insightApi'
 import { meApi } from '@/services/meApi'
 import { useAuthStore } from '@/stores/authStore'
-import type { PublicProfile, MyProfile, FollowStatusResponse } from '@/types/user'
+import type { PublicProfile, MyProfile, FollowStatusResponse, UserSummary } from '@/types/user'
 import type { RecentActivity } from '@/types/home'
 import RecentActivities from '@/components/profile/RecentActivities.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import Modal from '@/components/common/Modal.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -55,6 +56,8 @@ async function loadProfile() {
     if (isOwnProfile.value) {
       const { data } = await authApi.getMe()
       profile.value = data
+      // 본인 프로필에서도 팔로워/팔로잉 카운트를 보여주기 위해 follow-status 조회.
+      followStatus.value = (await authApi.getFollowStatus(data.userId)).data
     } else {
       const userId = Number(route.params.id)
       const [profileRes, followRes] = await Promise.all([
@@ -87,7 +90,57 @@ async function toggleFollow() {
   }
 }
 
+// ── Followers / Following list modal ──
+const router = useRouter()
+const profileUserId = computed<number | null>(() =>
+  isOwnProfile.value ? (authStore.user?.userId ?? null) : Number(route.params.id),
+)
+
+const FOLLOW_PAGE_SIZE = 30
+const followListOpen = ref(false)
+const followListMode = ref<'followers' | 'following'>('followers')
+const followListItems = ref<UserSummary[]>([])
+const followListLoading = ref(false)
+const followListPage = ref(0)
+const followListTotal = ref(0)
+const followListHasMore = computed(() => followListItems.value.length < followListTotal.value)
+const followListTitle = computed(() => (followListMode.value === 'followers' ? 'Followers' : 'Following'))
+
+async function openFollowList(mode: 'followers' | 'following') {
+  if (profileUserId.value == null) return
+  followListMode.value = mode
+  followListItems.value = []
+  followListPage.value = 0
+  followListTotal.value = 0
+  followListOpen.value = true
+  await fetchFollowList()
+}
+
+async function fetchFollowList() {
+  const uid = profileUserId.value
+  if (uid == null || followListLoading.value) return
+  followListLoading.value = true
+  try {
+    const params = { page: followListPage.value, size: FOLLOW_PAGE_SIZE }
+    const { data } = followListMode.value === 'followers'
+      ? await authApi.getFollowers(uid, params)
+      : await authApi.getFollowing(uid, params)
+    followListItems.value.push(...data.items)
+    followListTotal.value = data.totalElements
+    followListPage.value += 1
+  } finally {
+    followListLoading.value = false
+  }
+}
+
+function goToUser(userId: number) {
+  followListOpen.value = false
+  router.push({ name: 'profile', params: { id: String(userId) } })
+}
+
 onMounted(loadProfile)
+// 모달에서 다른 사용자로 이동하면 같은 라우트라 컴포넌트가 재사용된다 → 파라미터 변화 시 재로딩.
+watch(() => route.params.id, () => { loadProfile() })
 </script>
 
 <template>
@@ -101,8 +154,12 @@ onMounted(loadProfile)
         <p v-if="profile.handle" class="text-sm text-zinc-500 dark:text-zinc-400">@{{ profile.handle }}</p>
         <p v-if="profile.bio" class="text-sm text-zinc-600 dark:text-zinc-300 mt-2">{{ profile.bio }}</p>
         <div v-if="followStatus" class="flex gap-4 mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-          <span><strong class="text-zinc-800 dark:text-zinc-200">{{ followStatus.followersCount }}</strong> followers</span>
-          <span><strong class="text-zinc-800 dark:text-zinc-200">{{ followStatus.followingCount }}</strong> following</span>
+          <button type="button" class="hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors" @click="openFollowList('followers')">
+            <strong class="text-zinc-800 dark:text-zinc-200">{{ followStatus.followersCount }}</strong> followers
+          </button>
+          <button type="button" class="hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors" @click="openFollowList('following')">
+            <strong class="text-zinc-800 dark:text-zinc-200">{{ followStatus.followingCount }}</strong> following
+          </button>
         </div>
         <button
           v-if="!isOwnProfile && followStatus"
@@ -158,4 +215,41 @@ onMounted(loadProfile)
       </section>
     </template>
   </div>
+
+  <!-- Followers / Following list -->
+  <Modal :show="followListOpen" :title="followListTitle" @close="followListOpen = false">
+    <div class="min-h-[6rem]">
+      <div v-if="!followListItems.length && followListLoading" class="py-8"><LoadingSpinner /></div>
+      <p v-else-if="!followListItems.length" class="py-8 text-center text-sm text-zinc-400 dark:text-zinc-500">
+        {{ followListMode === 'followers' ? '아직 팔로워가 없어요.' : '아직 팔로우한 사람이 없어요.' }}
+      </p>
+      <ul v-else class="divide-y divide-zinc-100 dark:divide-zinc-700/60 -mx-2">
+        <li v-for="u in followListItems" :key="u.userId">
+          <button
+            type="button"
+            class="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700/40 transition-colors text-left"
+            @click="goToUser(u.userId)"
+          >
+            <img v-if="u.avatarUrl" :src="u.avatarUrl" :alt="u.displayName" class="w-9 h-9 rounded-full object-cover shrink-0" />
+            <div v-else class="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 shrink-0 flex items-center justify-center text-xs font-medium text-zinc-500 dark:text-zinc-300">
+              {{ u.displayName.charAt(0).toUpperCase() }}
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">{{ u.displayName }}</p>
+              <p v-if="u.handle" class="text-xs text-zinc-400 dark:text-zinc-500 truncate">@{{ u.handle }}</p>
+            </div>
+          </button>
+        </li>
+      </ul>
+      <button
+        v-if="followListHasMore"
+        type="button"
+        class="w-full mt-2 py-2 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors disabled:opacity-50"
+        :disabled="followListLoading"
+        @click="fetchFollowList"
+      >
+        {{ followListLoading ? '불러오는 중…' : '더 보기' }}
+      </button>
+    </div>
+  </Modal>
 </template>
