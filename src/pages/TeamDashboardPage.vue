@@ -97,11 +97,21 @@ async function createInvite() {
   }
 }
 
+const roleError = ref('')
+
 async function changeRole(userId: number, role: string) {
   const wsId = teamStore.currentWorkspaceId
   if (wsId == null) return
-  await teamApi.changeMemberRole(wsId, userId, role)
-  await loadMembers(wsId)
+  roleError.value = ''
+  try {
+    await teamApi.changeMemberRole(wsId, userId, role)
+    await loadMembers(wsId)
+  } catch (e) {
+    // 예: 마지막 Admin 강등 → BE 409(WORKSPACE_LAST_ADMIN). 조용히 실패하지 않도록 표시.
+    roleError.value = errorMessage(e, '역할 변경에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    // 실패 시 select 값을 실제 역할로 되돌리기 위해 목록 재조회.
+    await loadMembers(wsId)
+  }
 }
 
 // Members of the workspace selected in the header selector.
@@ -140,6 +150,9 @@ watch(
     <LoadingSpinner v-else-if="loading" size="lg" />
 
     <div v-else class="space-y-3">
+      <div v-if="roleError" class="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50">
+        <p class="text-sm text-rose-600 dark:text-rose-400">{{ roleError }}</p>
+      </div>
       <div
         v-for="member in members"
         :key="member.userId"
