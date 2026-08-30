@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import type { Comment, CommentAuthor } from '@/types/error'
 import { timeAgo, formatAbsolute } from '@/utils/timeAgo'
 import MarkdownBody from '@/components/common/MarkdownBody.vue'
+import { HandThumbUpIcon } from '@heroicons/vue/24/outline'
+import { HandThumbUpIcon as HandThumbUpSolidIcon } from '@heroicons/vue/24/solid'
 import CommentForm from './CommentForm.vue'
 import type { QuoteInfo } from './CommentForm.vue'
 
@@ -144,7 +146,10 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
                 :class="comment.helpful.helpedByMe ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400'"
                 @click="$emit('helpful', comment.id)"
               >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /></svg>
+                <component
+                  :is="comment.helpful.helpedByMe ? HandThumbUpSolidIcon : HandThumbUpIcon"
+                  class="w-3.5 h-3.5"
+                />
                 <span v-if="comment.helpful.count" class="font-medium">{{ comment.helpful.count }}</span>
                 <span v-else>Helpful</span>
               </button>
