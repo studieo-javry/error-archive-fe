@@ -41,17 +41,29 @@ const kpiCards = computed<Kpi[]>(() => {
 })
 
 function loadDashboard() {
-  // insight-api KPIs + core-api recent activities. Load independently so one failing
-  // (e.g. a service down) doesn't hide the other.
-  insightApi.myKpis().then(({ data }) => { kpis.value = data }).catch(() => {})
-  meApi.recentActivities().then(({ data }) => {
-    activities.value = data.items
-    activitySummary.value = data.summary.byType
-  }).catch(() => {})
+  // 본인: insight-api KPIs + 내 활동. 타인: 공개 활동 타임라인만(KPI 는 /me 전용이라 생략).
+  // 각각 독립적으로 로드해 하나가 실패해도 다른 하나는 표시.
+  if (isOwnProfile.value) {
+    insightApi.myKpis().then(({ data }) => { kpis.value = data }).catch(() => {})
+    meApi.recentActivities().then(({ data }) => {
+      activities.value = data.items
+      activitySummary.value = data.summary.byType
+    }).catch(() => {})
+  } else {
+    const userId = Number(route.params.id)
+    meApi.recentActivitiesOf(userId).then(({ data }) => {
+      activities.value = data.items
+      activitySummary.value = data.summary.byType
+    }).catch(() => {})
+  }
 }
 
 async function loadProfile() {
   loading.value = true
+  // 프로필 전환 시 이전 사용자 데이터가 잠깐 남지 않도록 초기화.
+  kpis.value = null
+  activities.value = []
+  activitySummary.value = {}
   try {
     if (isOwnProfile.value) {
       const { data } = await authApi.getMe()
@@ -70,7 +82,7 @@ async function loadProfile() {
   } finally {
     loading.value = false
   }
-  if (isOwnProfile.value) loadDashboard()
+  loadDashboard()
 }
 
 const followBusy = ref(false)
@@ -203,33 +215,32 @@ watch(() => route.params.id, () => { loadProfile() })
       </div>
     </div>
 
-    <!-- My-page dashboard (own profile only) -->
-    <template v-if="isOwnProfile">
-      <section v-if="kpis" class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
-        <h2 class="text-lg font-light serif-title text-zinc-800 dark:text-zinc-100 mb-4">Activity</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-          <div v-for="c in kpiCards" :key="c.label" class="rounded-xl bg-zinc-50 dark:bg-zinc-800/40 p-3">
-            <div class="flex items-center gap-1.5">
-              <p class="text-[11px] text-zinc-500 dark:text-zinc-400">{{ c.label }}</p>
-              <span
-                v-if="c.rate !== undefined"
-                :title="c.rateTitle"
-                class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
-              >{{ c.rate }}%</span>
-            </div>
-            <p class="text-2xl font-light text-zinc-800 dark:text-zinc-100 mt-1">{{ c.metric.total }}</p>
-            <p
-              class="text-[11px] mt-0.5"
-              :class="c.metric.weeklyDelta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-transparent'"
-            >+{{ c.metric.weeklyDelta }} this week</p>
+    <!-- KPI grid — 본인 프로필만 (insight /me 전용) -->
+    <section v-if="isOwnProfile && kpis" class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
+      <h2 class="text-lg font-light serif-title text-zinc-800 dark:text-zinc-100 mb-4">Activity</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        <div v-for="c in kpiCards" :key="c.label" class="rounded-xl bg-zinc-50 dark:bg-zinc-800/40 p-3">
+          <div class="flex items-center gap-1.5">
+            <p class="text-[11px] text-zinc-500 dark:text-zinc-400">{{ c.label }}</p>
+            <span
+              v-if="c.rate !== undefined"
+              :title="c.rateTitle"
+              class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
+            >{{ c.rate }}%</span>
           </div>
+          <p class="text-2xl font-light text-zinc-800 dark:text-zinc-100 mt-1">{{ c.metric.total }}</p>
+          <p
+            class="text-[11px] mt-0.5"
+            :class="c.metric.weeklyDelta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-transparent'"
+          >+{{ c.metric.weeklyDelta }} this week</p>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
-        <RecentActivities :items="activities" :by-type="activitySummary" />
-      </section>
-    </template>
+    <!-- Recent activities — 본인 + 타인(공개 활동). 타인은 활동이 있을 때만 노출. -->
+    <section v-if="isOwnProfile || activities.length" class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
+      <RecentActivities :items="activities" :by-type="activitySummary" />
+    </section>
   </div>
 
   <!-- Followers / Following list -->

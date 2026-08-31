@@ -17,6 +17,11 @@ export const meApi = {
     return apiClient.get<RecentActivitiesResponse>('/users/me/recent-activities', { params })
   },
 
+  // 다른 사용자의 공개 활동 타임라인 (core-api PublicProfileController).
+  recentActivitiesOf(userId: number, params?: { windowDays?: number; limit?: number }) {
+    return apiClient.get<RecentActivitiesResponse>(`/users/${userId}/recent-activities`, { params })
+  },
+
   // Cases the user explicitly watches (core-api). Returns full case summaries.
   watchlist(params?: { limit?: number }) {
     return apiClient.get<ErrorCaseSummary[]>('/users/me/watchlist', { params })
