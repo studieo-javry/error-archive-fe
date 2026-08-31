@@ -7,6 +7,12 @@ import { teamApi } from '@/services/teamApi'
 import type { WorkspaceMember } from '@/types/team'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Modal from '@/components/common/Modal.vue'
+import {
+  EllipsisHorizontalIcon,
+  ArrowRightOnRectangleIcon,
+  TrashIcon,
+  UserPlusIcon,
+} from '@heroicons/vue/24/outline'
 
 const teamStore = useTeamStore()
 const router = useRouter()
@@ -140,6 +146,8 @@ watch(
 )
 
 // ── Leave / Delete workspace ──
+// 자주 쓰지 않는 파괴적 동작이라 헤더에 노출하지 않고 ⋯ 메뉴 안으로 넣는다.
+const showWsMenu = ref(false)
 const showLeaveConfirm = ref(false)
 const showDeleteConfirm = ref(false)
 const wsActionBusy = ref(false)
@@ -192,25 +200,51 @@ async function deleteWorkspace() {
       </h1>
       <div v-if="teamStore.currentWorkspaceId != null" class="flex items-center gap-2">
         <button
-          class="px-3 py-2 text-sm font-medium rounded-xl text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
-          @click="showLeaveConfirm = true"
-        >
-          Leave
-        </button>
-        <button
           v-if="isAdmin"
-          class="px-3 py-2 text-sm font-medium rounded-xl text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
-          @click="showDeleteConfirm = true"
-        >
-          Delete
-        </button>
-        <button
-          v-if="isAdmin"
-          class="px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+          class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
           @click="showInviteModal = true"
         >
+          <UserPlusIcon class="w-4 h-4" />
           Invite Member
         </button>
+        <div class="relative">
+          <button
+            class="flex items-center justify-center w-[38px] h-[38px] rounded-xl border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors"
+            aria-label="더보기"
+            aria-haspopup="menu"
+            :aria-expanded="showWsMenu"
+            @click.stop="showWsMenu = !showWsMenu"
+          >
+            <EllipsisHorizontalIcon class="w-5 h-5" />
+          </button>
+          <!-- click-outside backdrop -->
+          <div v-if="showWsMenu" class="fixed inset-0 z-10" @click="showWsMenu = false" />
+          <div
+            v-if="showWsMenu"
+            role="menu"
+            class="absolute right-0 top-[calc(100%+8px)] z-20 min-w-[196px] p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-lg shadow-black/10"
+          >
+            <button
+              role="menuitem"
+              class="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-left rounded-xl text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 transition-colors"
+              @click="showWsMenu = false; showLeaveConfirm = true"
+            >
+              <ArrowRightOnRectangleIcon class="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
+              워크스페이스 나가기
+            </button>
+            <template v-if="isAdmin">
+              <div class="h-px bg-zinc-200 dark:bg-zinc-700 mx-1 my-1" />
+              <button
+                role="menuitem"
+                class="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-left rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                @click="showWsMenu = false; showDeleteConfirm = true"
+              >
+                <TrashIcon class="w-4 h-4" />
+                워크스페이스 삭제
+              </button>
+            </template>
+          </div>
+        </div>
       </div>
     </div>
 
