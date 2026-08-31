@@ -103,6 +103,7 @@ async function loadData() {
       commentApi.list(caseId, { sort: 'OLDEST' }),
     ])
     errorCase.value = errRes.data
+    watching.value = errRes.data.watchedByMe ?? false // 별(Watch) 상태를 응답에서 초기화
     steps.value = stepsRes.data
     solutions.value = solRes.data
     comments.value = commRes.data.items

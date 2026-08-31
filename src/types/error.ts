@@ -62,6 +62,8 @@ export interface ErrorCaseDetail {
   snapshot: ErrorCaseSnapshot | null
   snippets: ErrorCaseSnippet[]
   attachments: ErrorCaseAttachment[]
+  /** viewer 본인이 이 케이스를 watch 중인지. 별(Watch) 상태 초기화용. */
+  watchedByMe?: boolean
 }
 
 export interface ErrorCaseSummary {
