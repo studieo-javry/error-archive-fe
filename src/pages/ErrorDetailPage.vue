@@ -505,6 +505,7 @@ onUnmounted(() => {
       <CommentThread
         v-if="comments.length"
         :comments="comments"
+        :case-id="caseId"
         :case-owner-user-id="errorCase.ownerUserId"
         :step-index-map="stepIndexMap"
         :author-map="commentAuthorMap"
@@ -518,6 +519,7 @@ onUnmounted(() => {
       <div class="mt-6">
         <CommentForm
           :quote="pendingQuote"
+          :case-id="caseId"
           @submit="postComment"
           @clear-quote="clearQuote"
         />

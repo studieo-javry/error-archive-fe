@@ -10,6 +10,7 @@ import type { QuoteInfo } from './CommentForm.vue'
 
 const props = defineProps<{
   comment: Comment
+  caseId: number
   caseOwnerUserId: number
   depth?: number
   stepIndexMap?: Map<number, number>
@@ -120,6 +121,7 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
           <div v-else>
             <CommentForm
               :initial-body="comment.body"
+              :case-id="caseId"
               submit-label="Save"
               @submit="(body) => handleEdit(body)"
               @cancel="editing = false"
@@ -173,6 +175,7 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
           <div v-if="showReplyForm" class="mt-3">
             <CommentForm
               placeholder="Write a reply..."
+              :case-id="caseId"
               @submit="handleReply"
               @cancel="showReplyForm = false"
             />
@@ -183,6 +186,7 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
               v-for="reply in comment.replies"
               :key="reply.id"
               :comment="reply"
+              :case-id="caseId"
               :case-owner-user-id="caseOwnerUserId"
               :depth="(depth ?? 0) + 1"
               :step-index-map="stepIndexMap"

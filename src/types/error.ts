@@ -242,6 +242,16 @@ export interface CommentAuthor {
   avatarUrl: string | null
 }
 
+/** 멘션 자동완성 후보 (core-api GET /error-cases/{id}/mention-candidates). */
+export interface MentionCandidate {
+  userId: number
+  displayName: string
+  handle: string | null
+  avatarUrl: string | null
+  /** 후보 source — in-discussion · owner · workspace-member · search. */
+  badge: string | null
+}
+
 export interface Comment {
   id: number
   errorCaseId: number

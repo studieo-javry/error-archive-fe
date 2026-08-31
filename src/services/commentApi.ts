@@ -3,10 +3,18 @@ import type {
   Comment,
   CommentCreateRequest,
   CommentListResponse,
+  MentionCandidate,
   SuggestionStatus,
 } from '@/types/error'
 
 export const commentApi = {
+  // @멘션 자동완성 후보 (core-api). q=displayName/handle prefix, 빈 값=기본 추천.
+  mentionCandidates(caseId: number, q: string, limit = 8) {
+    return apiClient.get<MentionCandidate[]>(`/error-cases/${caseId}/mention-candidates`, {
+      params: { q, limit },
+    })
+  },
+
   list(caseId: number, params?: {
     sort?: 'NEWEST' | 'OLDEST' | 'HELPFUL'
     quoteKind?: 'ALL' | 'GENERAL' | 'CASE_BODY' | 'STEP'

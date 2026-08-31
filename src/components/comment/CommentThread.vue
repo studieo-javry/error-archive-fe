@@ -5,6 +5,7 @@ import type { QuoteInfo } from './CommentForm.vue'
 
 defineProps<{
   comments: Comment[]
+  caseId: number
   caseOwnerUserId: number
   stepIndexMap?: Map<number, number>
   authorMap?: Map<number, CommentAuthor>
@@ -25,6 +26,7 @@ defineEmits<{
       v-for="comment in comments"
       :key="comment.id"
       :comment="comment"
+      :case-id="caseId"
       :case-owner-user-id="caseOwnerUserId"
       :step-index-map="stepIndexMap"
       :author-map="authorMap"
