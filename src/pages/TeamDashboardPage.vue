@@ -4,7 +4,7 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useTeamStore } from '@/stores/teamStore'
 import { teamApi } from '@/services/teamApi'
-import type { WorkspaceMember } from '@/types/team'
+import type { WorkspaceMember, InvitationItem } from '@/types/team'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Modal from '@/components/common/Modal.vue'
 import {
@@ -12,6 +12,8 @@ import {
   ArrowRightOnRectangleIcon,
   TrashIcon,
   UserPlusIcon,
+  EnvelopeIcon,
+  LinkIcon,
 } from '@heroicons/vue/24/outline'
 
 const teamStore = useTeamStore()
@@ -90,6 +92,8 @@ async function createInvite() {
       // 메일의 accept URL(IAM_INVITATION_BASE_URL=/invitations)과 경로를 일치시킨다.
       inviteLink.value = `${window.location.origin}/invitations/${data.inviteToken}`
     }
+    // 방금 보낸 초대가 아래 "대기 중 초대" 목록에 바로 뜨도록 재조회.
+    loadInvitations()
   } catch (e) {
     // 예: ADMIN 은 초대로 부여 불가(가입 후 승격) → BE 400. 조용히 실패하지 않도록 표시.
     inviteError.value = errorMessage(
@@ -102,6 +106,68 @@ async function createInvite() {
     inviteBusy.value = false
   }
 }
+
+// ── 대기 중 초대 목록 + 취소 (초대 모달 안) ──
+const pendingInvites = ref<InvitationItem[]>([])
+const invitesLoading = ref(false)
+const confirmRevokeId = ref<number | null>(null) // 인라인 "취소할까요?" 확인 대상
+const revokingId = ref<number | null>(null)
+
+const roleLabel: Record<string, string> = { ADMIN: 'Admin', WRITE: 'Write', READ: 'Read' }
+
+// expiresAt → "N일 후 만료" / "N시간 후 만료" / "곧 만료" / "만료됨".
+function expiryLabel(expiresAt: string): string {
+  const ms = new Date(expiresAt).getTime() - Date.now()
+  if (ms <= 0) return '만료됨'
+  const hours = Math.floor(ms / 3_600_000)
+  if (hours >= 24) return `${Math.floor(hours / 24)}일 후 만료`
+  if (hours >= 1) return `${hours}시간 후 만료`
+  return '곧 만료'
+}
+// 24시간 이내면 rose 로 강조.
+function isExpiringSoon(expiresAt: string): boolean {
+  const ms = new Date(expiresAt).getTime() - Date.now()
+  return ms > 0 && ms < 86_400_000
+}
+
+async function loadInvitations() {
+  const wsId = teamStore.currentWorkspaceId
+  if (wsId == null) return
+  invitesLoading.value = true
+  try {
+    const { data } = await teamApi.listInvitations(wsId)
+    pendingInvites.value = data
+  } catch {
+    // 목록 조회 실패는 조용히 무시(초대 보내기 자체는 계속 가능).
+    pendingInvites.value = []
+  } finally {
+    invitesLoading.value = false
+  }
+}
+
+async function revokeInvite(invitationId: number) {
+  const wsId = teamStore.currentWorkspaceId
+  if (wsId == null || revokingId.value != null) return
+  revokingId.value = invitationId
+  try {
+    await teamApi.revokeInvitation(wsId, invitationId)
+    // 성공: 목록에서 제거(= 더는 대기 중 아님).
+    pendingInvites.value = pendingInvites.value.filter((i) => i.invitationId !== invitationId)
+    confirmRevokeId.value = null
+  } catch (e) {
+    inviteError.value = errorMessage(e, '초대 취소에 실패했습니다. 잠시 후 다시 시도해주세요.')
+  } finally {
+    revokingId.value = null
+  }
+}
+
+// 모달을 열 때마다 대기 목록을 새로 불러온다.
+watch(showInviteModal, (open) => {
+  if (open) {
+    confirmRevokeId.value = null
+    loadInvitations()
+  }
+})
 
 const roleError = ref('')
 let roleErrorTimer: ReturnType<typeof setTimeout> | null = null
@@ -354,6 +420,85 @@ async function deleteWorkspace() {
         <div v-if="inviteLink" class="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-700">
           <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Share this link:</p>
           <p class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all">{{ inviteLink }}</p>
+        </div>
+
+        <!-- 대기 중 초대 목록 + 취소 -->
+        <div class="pt-4 border-t border-zinc-200 dark:border-zinc-700">
+          <div class="flex items-center gap-2 mb-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">대기 중 초대</p>
+            <span
+              v-if="!invitesLoading"
+              class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-zinc-100 dark:bg-zinc-700 text-[11px] font-semibold text-zinc-500 dark:text-zinc-300"
+            >{{ pendingInvites.length }}</span>
+          </div>
+
+          <div v-if="invitesLoading" class="py-4"><LoadingSpinner /></div>
+
+          <p
+            v-else-if="pendingInvites.length === 0"
+            class="text-center text-xs text-zinc-400 dark:text-zinc-500 py-5 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700"
+          >
+            아직 대기 중인 초대가 없어요.
+          </p>
+
+          <div v-else class="space-y-2">
+            <div
+              v-for="inv in pendingInvites"
+              :key="inv.invitationId"
+              class="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/40"
+            >
+              <div
+                class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                :class="inv.type === 'LINK'
+                  ? 'bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300'
+                  : 'bg-emerald-50 dark:bg-emerald-900/25 text-emerald-600 dark:text-emerald-400'"
+              >
+                <LinkIcon v-if="inv.type === 'LINK'" class="w-4 h-4" />
+                <EnvelopeIcon v-else class="w-4 h-4" />
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
+                    {{ inv.type === 'LINK' ? '초대 링크' : inv.email }}
+                  </span>
+                  <span class="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/25 text-emerald-600 dark:text-emerald-400">
+                    {{ roleLabel[inv.role] ?? inv.role }}
+                  </span>
+                </div>
+                <p class="text-xs mt-0.5" :class="isExpiringSoon(inv.expiresAt) ? 'text-rose-500 dark:text-rose-400' : 'text-zinc-400 dark:text-zinc-500'">
+                  {{ expiryLabel(inv.expiresAt) }}
+                </p>
+              </div>
+
+              <!-- 취소: 기본은 휴지통, 누르면 인라인 확인 -->
+              <div class="shrink-0 flex items-center gap-1">
+                <template v-if="confirmRevokeId === inv.invitationId">
+                  <button
+                    class="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors disabled:opacity-60"
+                    :disabled="revokingId === inv.invitationId"
+                    @click="revokeInvite(inv.invitationId)"
+                  >
+                    {{ revokingId === inv.invitationId ? '취소 중…' : '취소하기' }}
+                  </button>
+                  <button
+                    class="text-xs px-2 py-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                    @click="confirmRevokeId = null"
+                  >
+                    유지
+                  </button>
+                </template>
+                <button
+                  v-else
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                  aria-label="초대 취소"
+                  @click="confirmRevokeId = inv.invitationId"
+                >
+                  <TrashIcon class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Modal>
