@@ -16,6 +16,7 @@ import StepForm, { type StepFormValues } from '@/components/timeline/StepForm.vu
 import SolutionSelector from '@/components/timeline/SolutionSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
+import UntaggedAssets from '@/components/attachment/UntaggedAssets.vue'
 import CommentThread from '@/components/comment/CommentThread.vue'
 import CommentForm from '@/components/comment/CommentForm.vue'
 import QuotePopup from '@/components/comment/QuotePopup.vue'
@@ -444,6 +445,13 @@ onUnmounted(() => {
       <div v-if="errorCase.snapshot?.rawPaste" data-quote-context>
         <pre class="bg-zinc-100 dark:bg-zinc-900/50 rounded-lg p-4 border border-zinc-200 dark:border-zinc-800/50 font-mono text-xs text-rose-500 dark:text-rose-300 leading-relaxed overflow-x-auto themed-scroll whitespace-pre-wrap">{{ errorCase.snapshot.rawPaste }}</pre>
       </div>
+
+      <!-- 본문에 삽입하지 않았지만 케이스에 붙은 첨부·스니펫 -->
+      <UntaggedAssets
+        :attachments="errorCase.attachments"
+        :snippets="errorCase.snippets"
+        :body="errorCase.description"
+      />
     </div>
 
     <section class="mb-12">
