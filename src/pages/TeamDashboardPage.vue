@@ -138,6 +138,50 @@ watch(
   },
   { immediate: true },
 )
+
+// ── Leave / Delete workspace ──
+const showLeaveConfirm = ref(false)
+const showDeleteConfirm = ref(false)
+const wsActionBusy = ref(false)
+
+// 나가기/삭제 성공 후: 목록 재조회 + Public 워크스페이스로 이동.
+async function afterWorkspaceGone() {
+  showLeaveConfirm.value = false
+  showDeleteConfirm.value = false
+  await teamStore.fetchWorkspaces()
+  teamStore.setCurrentWorkspace(null)
+  router.push({ name: 'home', params: { slug: 'public' } })
+}
+
+async function leaveWorkspace() {
+  const wsId = teamStore.currentWorkspaceId
+  if (wsId == null || wsActionBusy.value) return
+  wsActionBusy.value = true
+  try {
+    await teamApi.leaveWorkspace(wsId)
+    await afterWorkspaceGone()
+  } catch (e) {
+    showLeaveConfirm.value = false
+    setRoleError(errorMessage(e, '워크스페이스 나가기에 실패했습니다.'))
+  } finally {
+    wsActionBusy.value = false
+  }
+}
+
+async function deleteWorkspace() {
+  const wsId = teamStore.currentWorkspaceId
+  if (wsId == null || wsActionBusy.value) return
+  wsActionBusy.value = true
+  try {
+    await teamApi.deleteWorkspace(wsId)
+    await afterWorkspaceGone()
+  } catch (e) {
+    showDeleteConfirm.value = false
+    setRoleError(errorMessage(e, '워크스페이스 삭제에 실패했습니다.'))
+  } finally {
+    wsActionBusy.value = false
+  }
+}
 </script>
 
 <template>
@@ -146,13 +190,28 @@ watch(
       <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100">
         {{ teamStore.currentWorkspace?.name ?? 'Members' }}
       </h1>
-      <button
-        v-if="teamStore.currentWorkspaceId != null && isAdmin"
-        class="px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
-        @click="showInviteModal = true"
-      >
-        Invite Member
-      </button>
+      <div v-if="teamStore.currentWorkspaceId != null" class="flex items-center gap-2">
+        <button
+          class="px-3 py-2 text-sm font-medium rounded-xl text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
+          @click="showLeaveConfirm = true"
+        >
+          Leave
+        </button>
+        <button
+          v-if="isAdmin"
+          class="px-3 py-2 text-sm font-medium rounded-xl text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+          @click="showDeleteConfirm = true"
+        >
+          Delete
+        </button>
+        <button
+          v-if="isAdmin"
+          class="px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+          @click="showInviteModal = true"
+        >
+          Invite Member
+        </button>
+      </div>
     </div>
 
     <p
@@ -262,6 +321,36 @@ watch(
           <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Share this link:</p>
           <p class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all">{{ inviteLink }}</p>
         </div>
+      </div>
+    </Modal>
+
+    <!-- Leave workspace confirm -->
+    <Modal :show="showLeaveConfirm" title="워크스페이스 나가기" @close="showLeaveConfirm = false">
+      <p class="text-sm text-zinc-600 dark:text-zinc-300 mb-5">
+        <strong>{{ teamStore.currentWorkspace?.name }}</strong> 에서 나갈까요? 다시 참여하려면 새 초대가 필요해요.
+      </p>
+      <div class="flex justify-end gap-2">
+        <button class="px-4 py-2 text-sm rounded-xl text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors" @click="showLeaveConfirm = false">취소</button>
+        <button
+          class="px-4 py-2 text-sm font-medium rounded-xl bg-zinc-800 text-white hover:bg-zinc-900 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white transition-colors disabled:opacity-60"
+          :disabled="wsActionBusy"
+          @click="leaveWorkspace"
+        >나가기</button>
+      </div>
+    </Modal>
+
+    <!-- Delete workspace confirm (admin) -->
+    <Modal :show="showDeleteConfirm" title="워크스페이스 삭제" @close="showDeleteConfirm = false">
+      <p class="text-sm text-zinc-600 dark:text-zinc-300 mb-5">
+        <strong>{{ teamStore.currentWorkspace?.name }}</strong> 를 삭제할까요? 이 워크스페이스와 모든 멤버 구성이 사라지며 되돌릴 수 없어요.
+      </p>
+      <div class="flex justify-end gap-2">
+        <button class="px-4 py-2 text-sm rounded-xl text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors" @click="showDeleteConfirm = false">취소</button>
+        <button
+          class="px-4 py-2 text-sm font-medium rounded-xl bg-rose-600 text-white hover:bg-rose-700 transition-colors disabled:opacity-60"
+          :disabled="wsActionBusy"
+          @click="deleteWorkspace"
+        >삭제</button>
       </div>
     </Modal>
   </div>
