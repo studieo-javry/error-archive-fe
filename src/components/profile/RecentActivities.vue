@@ -7,10 +7,21 @@ import type { RecentActivity, RecentActivityType } from '@/types/home'
 const props = defineProps<{
   items: RecentActivity[]
   byType: Record<string, number>
+  /** 본인 프로필인지 — 빈 상태에서 CTA 노출 여부. 기본 true(하위호환). */
+  isOwn?: boolean
+  /** 방문자 빈 상태 문구용 프로필 주인 이름. */
+  ownerName?: string
 }>()
 
 const router = useRouter()
 const teamStore = useTeamStore()
+
+function goCreate() {
+  router.push({ name: 'errorCreate', params: { slug: teamStore.currentSlug } })
+}
+
+// isOwn 은 optional — 미지정이면 본인으로 간주(하위호환).
+const own = computed(() => props.isOwn !== false)
 
 // ── type presentation ──
 interface TypeMeta { badge: string; label: string; dot: string; badgeCls: string; hollow?: boolean }
@@ -97,20 +108,30 @@ function openCase(caseId: number) {
 
     <!-- day groups -->
     <div class="space-y-8">
-      <!-- nothing to list: keep the timeline frame and let the row itself report the gap -->
-      <div v-if="!groups.length">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="w-2 h-2 rounded-[3px] bg-zinc-300 dark:bg-zinc-700" />
-          <span class="text-[11px] font-mono tracking-widest text-zinc-400 dark:text-zinc-500">LAST 7 DAYS</span>
+      <!-- empty: owner sees a CTA, visitors see a neutral line -->
+      <div v-if="!groups.length" class="text-center py-6">
+        <div
+          class="w-14 h-14 mx-auto mb-3.5 rounded-2xl flex items-center justify-center"
+          :class="own ? 'bg-emerald-50 dark:bg-emerald-900/25 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-zinc-800/60 text-zinc-400 dark:text-zinc-500'"
+        >
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
         </div>
-        <ul class="ml-1 border-l border-zinc-200 dark:border-zinc-800">
-          <li class="relative pl-6">
-            <span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-900" />
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 font-light">
-              No activity yet — create a case, add a step, or leave a comment and it will show up here.
-            </p>
-          </li>
-        </ul>
+        <template v-if="own">
+          <p class="text-sm font-medium text-zinc-800 dark:text-zinc-100">No activity yet</p>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-4 max-w-xs mx-auto">Create a case and log steps or solutions — they'll show up here on your timeline.</p>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 text-[13px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline group"
+            @click="goCreate"
+          >
+            Create a case
+            <svg class="w-4 h-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </button>
+        </template>
+        <template v-else>
+          <p class="text-sm font-medium text-zinc-800 dark:text-zinc-100">No activity yet</p>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{{ ownerName || 'This user' }} hasn't logged any activity yet.</p>
+        </template>
       </div>
 
       <div v-for="day in groups" :key="day.key">

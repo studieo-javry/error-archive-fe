@@ -237,9 +237,14 @@ watch(() => route.params.id, () => { loadProfile() })
       </div>
     </section>
 
-    <!-- Recent activities — 본인 + 타인(공개 활동). 타인은 활동이 있을 때만 노출. -->
-    <section v-if="isOwnProfile || activities.length" class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
-      <RecentActivities :items="activities" :by-type="activitySummary" />
+    <!-- Recent activities — 본인/타인 모두. 비어 있으면 viewer 별 빈 상태를 컴포넌트가 처리. -->
+    <section class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
+      <RecentActivities
+        :items="activities"
+        :by-type="activitySummary"
+        :is-own="isOwnProfile"
+        :owner-name="profile.displayName"
+      />
     </section>
   </div>
 
