@@ -6,6 +6,7 @@ import type {
   ErrorCaseCreateRequest,
   ErrorCaseCreateResponse,
   ErrorCaseUpdateRequest,
+  MeTooResponse,
 } from '@/types/error'
 
 export const errorApi = {
@@ -45,5 +46,14 @@ export const errorApi = {
     size?: number
   }) {
     return apiClient.get<CursorPaginatedResponse<ErrorCaseSummary>>('/error-cases/search', { params })
+  },
+
+  // "나도 겪었어요"(me-too) 토글 — 본인 케이스는 403(멱등). 응답에 최신 count/taggedByMe/userIds.
+  markMeToo(id: number) {
+    return apiClient.post<MeTooResponse>(`/error-cases/${id}/me-too`)
+  },
+
+  unmarkMeToo(id: number) {
+    return apiClient.delete<MeTooResponse>(`/error-cases/${id}/me-too`)
   },
 }

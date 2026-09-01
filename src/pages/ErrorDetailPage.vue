@@ -21,8 +21,8 @@ import CommentThread from '@/components/comment/CommentThread.vue'
 import CommentForm from '@/components/comment/CommentForm.vue'
 import QuotePopup from '@/components/comment/QuotePopup.vue'
 import type { QuoteInfo } from '@/components/comment/CommentForm.vue'
-import { StarIcon as StarOutlineIcon } from '@heroicons/vue/24/outline'
-import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
+import { StarIcon as StarOutlineIcon, HandRaisedIcon as HandOutlineIcon } from '@heroicons/vue/24/outline'
+import { StarIcon as StarSolidIcon, HandRaisedIcon as HandSolidIcon } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const router = useRouter()
@@ -104,6 +104,8 @@ async function loadData() {
     ])
     errorCase.value = errRes.data
     watching.value = errRes.data.watchedByMe ?? false // 별(Watch) 상태를 응답에서 초기화
+    meTooCount.value = errRes.data.meToo?.count ?? 0
+    meTooTagged.value = errRes.data.meToo?.taggedByMe ?? false
     steps.value = stepsRes.data
     solutions.value = solRes.data
     comments.value = commRes.data.items
@@ -155,6 +157,43 @@ async function toggleWatch() {
     watching.value = !next // revert on failure
   } finally {
     watchBusy.value = false
+  }
+}
+
+// ── "나도 겪었어요"(me-too) ──
+const meTooCount = ref(0)
+const meTooTagged = ref(false)
+const meTooBusy = ref(false)
+const meTooBurst = ref(false) // 좋아요 터지듯 중앙 팝 애니메이션 표시 여부
+let meTooBurstTimer: ReturnType<typeof setTimeout> | undefined
+
+// 켤 때마다 애니메이션을 재시작 — 껐다가 다음 프레임에 켬.
+function triggerMeTooBurst() {
+  meTooBurst.value = false
+  clearTimeout(meTooBurstTimer)
+  requestAnimationFrame(() => {
+    meTooBurst.value = true
+    meTooBurstTimer = setTimeout(() => { meTooBurst.value = false }, 760)
+  })
+}
+
+async function toggleMeToo() {
+  // 본인 케이스에는 누를 수 없음(서버도 403). 낙관적 반영 후 서버 응답으로 확정.
+  if (meTooBusy.value || isOwner.value) return
+  meTooBusy.value = true
+  const next = !meTooTagged.value
+  meTooTagged.value = next
+  meTooCount.value += next ? 1 : -1
+  if (next) triggerMeTooBurst()
+  try {
+    const { data } = next ? await errorApi.markMeToo(caseId) : await errorApi.unmarkMeToo(caseId)
+    meTooTagged.value = data.taggedByMe
+    meTooCount.value = data.count
+  } catch {
+    meTooTagged.value = !next
+    meTooCount.value += next ? -1 : 1
+  } finally {
+    meTooBusy.value = false
   }
 }
 
@@ -389,6 +428,14 @@ onUnmounted(() => {
   <LoadingSpinner v-if="loading" size="lg" />
 
   <div v-else-if="errorCase" class="max-w-3xl mx-auto">
+    <!-- me-too 중앙 팝 애니메이션 (좋아요 터지듯 손바닥 아이콘) -->
+    <div v-if="meTooBurst" class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+      <div class="metoo-burst">
+        <span class="metoo-ring" />
+        <HandSolidIcon class="metoo-ic" />
+      </div>
+    </div>
+
     <div class="text-center mb-12">
       <ErrorStatusBadge :status="errorCase.status" class="mb-6" />
 
@@ -420,6 +467,29 @@ onUnmounted(() => {
           <component :is="watching ? StarSolidIcon : StarOutlineIcon" class="w-3.5 h-3.5" />
           {{ watching ? 'Watching' : 'Watch' }}
         </button>
+
+        <!-- Me too — 방문자는 토글, 본인 케이스는 카운트만 표시 -->
+        <button
+          v-if="!isOwner"
+          class="inline-flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
+          :class="meTooTagged ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400'"
+          :disabled="meTooBusy"
+          :aria-pressed="meTooTagged"
+          :title="meTooTagged ? '“나도 겪었어요” 해제' : '나도 겪었어요'"
+          @click="toggleMeToo"
+        >
+          <component :is="meTooTagged ? HandSolidIcon : HandOutlineIcon" class="w-3.5 h-3.5" />
+          Me too <span class="tabular-nums">· {{ meTooCount }}</span>
+        </button>
+        <span
+          v-else
+          class="inline-flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500"
+          title="본인 케이스에는 누를 수 없어요"
+        >
+          <HandOutlineIcon class="w-3.5 h-3.5" />
+          Me too <span class="tabular-nums">· {{ meTooCount }}</span>
+        </span>
+
         <button
           v-if="canEditCase"
           class="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-colors"
@@ -569,3 +639,48 @@ onUnmounted(() => {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+/* me-too 중앙 팝 — 손바닥 아이콘이 팡 튀며 그린 링이 퍼짐 */
+.metoo-burst {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.metoo-ring {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.34) 0%, transparent 62%);
+  animation: metoo-ringpop 0.62s ease-out forwards;
+}
+.metoo-ic {
+  width: 96px;
+  height: 96px;
+  color: #059669;
+  filter: drop-shadow(0 6px 16px rgba(5, 150, 105, 0.45));
+  animation: metoo-pawpop 0.72s cubic-bezier(0.2, 1.3, 0.4, 1) forwards;
+}
+:global(.dark) .metoo-ic {
+  color: #34d399;
+}
+@keyframes metoo-pawpop {
+  0% { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+  18% { opacity: 1; }
+  45% { transform: scale(1.18) rotate(4deg); opacity: 1; }
+  68% { transform: scale(1) rotate(0); opacity: 1; }
+  100% { transform: scale(1.12); opacity: 0; }
+}
+@keyframes metoo-ringpop {
+  0% { transform: scale(0.2); opacity: 0.9; }
+  70% { opacity: 0.5; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .metoo-ic, .metoo-ring { animation-duration: 0.01ms; }
+}
+</style>

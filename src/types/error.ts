@@ -64,6 +64,15 @@ export interface ErrorCaseDetail {
   attachments: ErrorCaseAttachment[]
   /** viewer 본인이 이 케이스를 watch 중인지. 별(Watch) 상태 초기화용. */
   watchedByMe?: boolean
+  /** "나도 겪었어요"(me-too) 상태 — 카운트 · 본인 여부 · 누른 사용자 id. */
+  meToo?: MeTooResponse
+}
+
+/** me-too 토글/조회 응답 — POST/DELETE /error-cases/{id}/me-too 및 detail 의 meToo. */
+export interface MeTooResponse {
+  count: number
+  taggedByMe: boolean
+  userIds: number[]
 }
 
 export interface ErrorCaseSummary {
