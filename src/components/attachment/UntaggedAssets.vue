@@ -101,9 +101,13 @@ function fmtSize(bytes: number) {
           <DocumentIcon v-else class="w-5 h-5" />
         </span>
         <div class="min-w-0 flex-1">
-          <div class="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">{{ a.fileName }}</div>
+          <div class="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">{{ a.title || a.fileName }}</div>
           <div class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
             {{ typeLabel(a) }} · {{ fmtSize(a.size) }}
+            <template v-if="a.title">
+              <span class="mx-1.5 text-zinc-300 dark:text-zinc-600">·</span>
+              <span class="font-mono">{{ a.fileName }}</span>
+            </template>
             <template v-if="isImage(a) && a.url">
               <span class="mx-1.5 text-zinc-300 dark:text-zinc-600">·</span>
               <a :href="a.url" target="_blank" rel="noopener" class="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">미리보기</a>
@@ -128,8 +132,7 @@ function fmtSize(bytes: number) {
           </span>
           <div class="min-w-0 flex-1">
             <div class="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">
-              {{ s.title || s.filePathOrClass || '코드 스니펫' }}
-              <span v-if="s.lineRange" class="text-zinc-400 dark:text-zinc-500 font-normal">· {{ s.lineRange }}</span>
+              {{ s.title || '코드 스니펫' }}
             </div>
             <div class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
               {{ s.language }}
