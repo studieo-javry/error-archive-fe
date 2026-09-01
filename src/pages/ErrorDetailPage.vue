@@ -483,7 +483,7 @@ onUnmounted(() => {
         </button>
         <span
           v-else
-          class="inline-flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500"
+          class="inline-flex items-center gap-1 text-xs text-zinc-400"
           title="본인 케이스에는 누를 수 없어요"
         >
           <HandOutlineIcon class="w-3.5 h-3.5" />
