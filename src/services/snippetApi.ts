@@ -1,7 +1,12 @@
 import apiClient from './apiClient'
-import type { SnippetCreateRequest, SnippetCreateResponse, SnippetDetail, SnippetUpdateRequest } from '@/types/error'
+import type { MyPendingSnippet, SnippetCreateRequest, SnippetCreateResponse, SnippetDetail, SnippetUpdateRequest } from '@/types/error'
 
 export const snippetApi = {
+  // 케이스에 아직 연결 안 한 내 pending 스니펫 목록 (최신순, 최대 100).
+  listMine() {
+    return apiClient.get<MyPendingSnippet[]>('/error-snippets/mine')
+  },
+
   create(data: SnippetCreateRequest) {
     return apiClient.post<SnippetCreateResponse>('/error-snippets', data)
   },

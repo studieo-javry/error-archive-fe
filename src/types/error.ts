@@ -365,3 +365,30 @@ export interface AttachmentUploadResponse {
   kind: string
   storageUrl: string
 }
+
+/** GET /error-attachments/mine — 케이스에 아직 연결 안 한 내 pending 첨부. */
+export interface MyPendingAttachment {
+  markerId: string
+  embedToken: string
+  fileName: string
+  contentType: string
+  size: number
+  kind: string
+  title: string | null
+  caption: string | null
+  previewUrl: string | null
+  uploadedAt: string
+}
+
+/** GET /error-snippets/mine — 케이스에 아직 연결 안 한 내 pending 스니펫. */
+export interface MyPendingSnippet {
+  markerId: string
+  embedToken: string
+  title: string | null
+  language: string
+  filePathOrClass: string | null
+  lineRange: string | null
+  caption: string | null
+  code: string
+  uploadedAt: string
+}

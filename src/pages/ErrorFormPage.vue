@@ -6,14 +6,14 @@ import { snippetApi } from '@/services/snippetApi'
 import { attachmentApi } from '@/services/attachmentApi'
 import { teamApi } from '@/services/teamApi'
 import { useTeamStore } from '@/stores/teamStore'
-import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse, ErrorCaseSnippet, ErrorCaseAttachment } from '@/types/error'
+import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse, ErrorCaseSnippet, ErrorCaseAttachment, MyPendingAttachment, MyPendingSnippet } from '@/types/error'
 import type { WorkspaceListItem } from '@/types/team'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
 import SnippetModal from '@/components/snippet/SnippetModal.vue'
 import SnippetCard from '@/components/snippet/SnippetCard.vue'
 import AttachmentModal from '@/components/attachment/AttachmentModal.vue'
 import AttachmentCard from '@/components/attachment/AttachmentCard.vue'
-import { CodeBracketIcon, PaperClipIcon } from '@heroicons/vue/24/outline'
+import { CodeBracketIcon, PaperClipIcon, ClockIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
@@ -198,7 +198,63 @@ async function deleteAttachment(markerId: string) {
   attachmentMarkers.value = attachmentMarkers.value.filter(a => a.markerId !== markerId)
 }
 
-onMounted(loadError)
+// ── 미연결(pending) 자료 복원 (새 케이스 작성 시만) ──
+// /mine 은 케이스에 아직 연결 안 한 내 업로드 전부(=여러 초안 것이 섞일 수 있음)를 돌려준다.
+// 새로고침·이탈 후에도 서버에 24h 남아있어, 여기서 다시 불러와 이어붙일 수 있게 한다.
+const pendingAttachments = ref<MyPendingAttachment[]>([])
+const pendingSnippets = ref<MyPendingSnippet[]>([])
+const pendingDismissed = ref(false)
+const pendingTipOpen = ref(false)
+const pendingTotal = computed(() => pendingAttachments.value.length + pendingSnippets.value.length)
+const showPending = computed(() => !isEdit && !pendingDismissed.value && pendingTotal.value > 0)
+
+async function loadPending() {
+  if (isEdit) return
+  const [a, s] = await Promise.allSettled([attachmentApi.listMine(), snippetApi.listMine()])
+  if (a.status === 'fulfilled') pendingAttachments.value = a.value.data
+  if (s.status === 'fulfilled') pendingSnippets.value = s.value.data
+}
+
+function restoreAttachment(p: MyPendingAttachment) {
+  // AttachmentCard 는 markerId 로 썸네일을 직접 받아오므로 storageUrl 은 비워도 된다.
+  attachmentMarkers.value.push({
+    markerId: p.markerId, embedToken: p.embedToken, fileName: p.fileName,
+    contentType: p.contentType, size: p.size, kind: p.kind, storageUrl: '',
+  })
+  pendingAttachments.value = pendingAttachments.value.filter(x => x.markerId !== p.markerId)
+}
+function restoreSnippet(p: MyPendingSnippet) {
+  snippetMarkers.value.push({
+    markerId: p.markerId, embedToken: p.embedToken, title: p.title,
+    language: p.language, caption: p.caption, code: p.code,
+  })
+  pendingSnippets.value = pendingSnippets.value.filter(x => x.markerId !== p.markerId)
+}
+async function discardAttachment(p: MyPendingAttachment) {
+  pendingAttachments.value = pendingAttachments.value.filter(x => x.markerId !== p.markerId)
+  await attachmentApi.delete(p.markerId).catch(() => {})
+}
+async function discardSnippet(p: MyPendingSnippet) {
+  pendingSnippets.value = pendingSnippets.value.filter(x => x.markerId !== p.markerId)
+  await snippetApi.delete(p.markerId).catch(() => {})
+}
+function restoreAllPending() {
+  pendingAttachments.value.slice().forEach(restoreAttachment)
+  pendingSnippets.value.slice().forEach(restoreSnippet)
+}
+function discardAllPending() {
+  const atts = pendingAttachments.value.slice()
+  const snips = pendingSnippets.value.slice()
+  pendingAttachments.value = []
+  pendingSnippets.value = []
+  atts.forEach(p => attachmentApi.delete(p.markerId).catch(() => {}))
+  snips.forEach(p => snippetApi.delete(p.markerId).catch(() => {}))
+}
+
+onMounted(async () => {
+  await loadError()
+  loadPending()
+})
 </script>
 
 <template>
@@ -206,6 +262,30 @@ onMounted(loadError)
     <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100 mb-10">
       {{ isEdit ? 'Edit Error' : 'New Entry' }}
     </h1>
+
+    <!-- 미연결(pending) 자료 안내 배너 — 새 케이스 작성 시만 -->
+    <div
+      v-if="showPending"
+      class="flex items-center gap-2.5 rounded-xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-3.5 py-2.5 mb-8"
+    >
+      <ClockIcon class="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+      <span class="flex-1 text-[13px] text-zinc-700 dark:text-zinc-200">
+        최근 올렸지만 아직 연결 안 한 자료 <b class="font-semibold">{{ pendingTotal }}개</b>가 있어요<span
+          class="help-wrap"
+          :class="{ open: pendingTipOpen }"
+          @click.stop="pendingTipOpen = !pendingTipOpen"
+        >
+          <button type="button" class="help-btn" aria-label="자세히">?</button>
+          <span class="help-tip">
+            <b>이 케이스 전용이 아니에요.</b> 케이스에 연결 안 한 내 최근 업로드 전부를 보여줘요(다른 초안 것도 섞일 수 있음). 필요한 것만 골라 붙이면 되고, 그냥 두면 <b>24시간 뒤 자동 정리</b>돼요.
+          </span>
+        </span>
+      </span>
+      <div class="flex shrink-0 gap-3">
+        <button type="button" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline" @click="restoreAllPending">모두 복원</button>
+        <button type="button" class="text-xs font-semibold text-zinc-400 hover:text-rose-500 transition-colors" @click="discardAllPending">모두 지우기</button>
+      </div>
+    </div>
 
     <form class="space-y-10" @submit.prevent="onSubmit">
       <div>
@@ -303,8 +383,48 @@ onMounted(loadError)
       </div>
     </form>
 
-    <div v-if="snippetMarkers.length || attachmentMarkers.length" class="mt-10 space-y-2">
+    <div v-if="showPending || snippetMarkers.length || attachmentMarkers.length" class="mt-10 space-y-2">
       <h3 class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Snippets & Attachments</h3>
+
+      <!-- 연결 안 한 자료: 카드별 개별 복원/지우기 -->
+      <template v-if="showPending">
+        <p class="pt-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400">연결 안 한 자료 {{ pendingTotal }}개</p>
+        <div
+          v-for="p in pendingSnippets"
+          :key="'ps-' + p.markerId"
+          class="flex items-center gap-3 rounded-xl border border-dashed border-amber-300 dark:border-amber-700/60 bg-amber-50/60 dark:bg-amber-900/15 px-3 py-2.5"
+        >
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+            <CodeBracketIcon class="h-4 w-4" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-[13px] font-medium text-zinc-800 dark:text-zinc-200">{{ p.title || '코드 스니펫' }}</p>
+            <p class="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">{{ p.language }}</p>
+          </div>
+          <div class="flex shrink-0 gap-2.5">
+            <button type="button" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline" @click="restoreSnippet(p)">복원</button>
+            <button type="button" class="text-xs text-zinc-400 hover:text-rose-500 transition-colors" @click="discardSnippet(p)">지우기</button>
+          </div>
+        </div>
+        <div
+          v-for="p in pendingAttachments"
+          :key="'pa-' + p.markerId"
+          class="flex items-center gap-3 rounded-xl border border-dashed border-amber-300 dark:border-amber-700/60 bg-amber-50/60 dark:bg-amber-900/15 px-3 py-2.5"
+        >
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+            <PaperClipIcon class="h-4 w-4" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-[13px] font-medium text-zinc-800 dark:text-zinc-200">{{ p.title || p.fileName }}</p>
+            <p class="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">{{ (p.size / 1024).toFixed(1) }}KB</p>
+          </div>
+          <div class="flex shrink-0 gap-2.5">
+            <button type="button" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline" @click="restoreAttachment(p)">복원</button>
+            <button type="button" class="text-xs text-zinc-400 hover:text-rose-500 transition-colors" @click="discardAttachment(p)">지우기</button>
+          </div>
+        </div>
+      </template>
+
       <SnippetCard
         v-for="snp in snippetMarkers"
         :key="snp.markerId"
@@ -325,3 +445,73 @@ onMounted(loadError)
     <AttachmentModal v-if="showAttachmentModal" @save="saveAttachment" @close="showAttachmentModal = false" />
   </div>
 </template>
+
+<style scoped>
+/* pending 안내 배너의 "?" 도움말 툴팁 (아래로 드롭) */
+.help-wrap {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.help-btn {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid #a1a1aa;
+  color: #71717a;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+  transition: color 0.13s, border-color 0.13s;
+}
+.help-btn:hover { border-color: #71717a; color: #52525b; }
+.help-tip {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  width: 250px;
+  background: #fff;
+  color: #3f3f46;
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  padding: 11px 13px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  font-weight: 400;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.16s;
+  z-index: 30;
+  text-align: left;
+}
+.help-tip::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: #fff;
+}
+.help-tip b { font-weight: 600; color: #18181b; }
+.help-wrap:hover .help-tip,
+.help-wrap.open .help-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+:global(.dark) .help-btn { border-color: #52525b; color: #a1a1aa; }
+:global(.dark) .help-btn:hover { border-color: #a1a1aa; color: #d4d4d8; }
+:global(.dark) .help-tip { background: #1f1f23; color: #d4d4d8; border-color: #3f3f46; }
+:global(.dark) .help-tip::after { border-bottom-color: #1f1f23; }
+:global(.dark) .help-tip b { color: #f4f4f5; }
+</style>

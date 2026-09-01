@@ -1,7 +1,12 @@
 import apiClient from './apiClient'
-import type { AttachmentUploadResponse } from '@/types/error'
+import type { AttachmentUploadResponse, MyPendingAttachment } from '@/types/error'
 
 export const attachmentApi = {
+  // 케이스에 아직 연결 안 한 내 pending 첨부 목록 (최신순, 최대 100).
+  listMine() {
+    return apiClient.get<MyPendingAttachment[]>('/error-attachments/mine')
+  },
+
   upload(data: { file: File; title?: string; caption?: string }) {
     const formData = new FormData()
     formData.append('file', data.file)
