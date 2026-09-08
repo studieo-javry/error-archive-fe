@@ -117,6 +117,15 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
+// 캐럿이 움직였을 수 있으니 keyup 에서도 재감지하지만, 멘션 UI 를 조작하는 키는
+// 건너뛴다. Esc 직후 재조회가 돌면 닫은 창이 다시 열리고, ↑↓ 로 옮긴 선택도
+// 재조회가 mentionIndex 를 0 으로 되돌리기 때문.
+function onKeyup(e: KeyboardEvent) {
+  if (e.key === 'Escape') return
+  if (mentionOpen.value && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter' || e.key === 'Tab')) return
+  detectMention()
+}
+
 function initials(name: string) {
   return name.slice(0, 2).toUpperCase()
 }
@@ -147,7 +156,7 @@ onBeforeUnmount(() => { if (fetchTimer) clearTimeout(fetchTimer) })
           rows="2"
           class="w-full text-sm bg-transparent border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 transition-colors resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-zinc-800 dark:text-zinc-200"
           @input="detectMention"
-          @keyup="detectMention"
+          @keyup="onKeyup"
           @click="detectMention"
           @keydown="onKeydown"
           @blur="onBlur"
