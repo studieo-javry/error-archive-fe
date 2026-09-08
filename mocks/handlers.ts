@@ -257,6 +257,60 @@ const mockWorkspaces = [
 ]
 let nextWorkspaceId = 3
 
+// publish-api 발행물 — Library > Published. 배지가 실제로 뜨는 조합을 섞어둔다
+// (정상 / source changed / Unlisted / Archived / source deleted).
+const mockPublishments = [
+  {
+    slug: 'jpa-n1-fetch-join', title: 'Killing an N+1 with fetch join, step by step',
+    summary: 'From 214 queries per request down to 3 — where lazy loading bites, and when to reach for fetch join over @EntityGraph.',
+    originalCaseId: 142, visibility: 'PUBLIC', sourceState: 'LIVE', status: 'LIVE',
+    sourceStale: true, version: 2, viewCount: 1284, downloadCount: 37,
+    stepCount: 7, solutionCount: 1, tags: ['spring', 'jpa', 'n+1'],
+    publishedAt: '2026-08-14T10:20:00', updatedAt: '2026-08-30T09:10:00',
+  },
+  {
+    slug: 'docker-m1-amd64-build', title: 'Why amd64 image builds die on an M1',
+    summary: 'The exec format error you get building multi-arch without buildx, plus the QEMU emulation setup that fixes it.',
+    originalCaseId: 98, visibility: 'UNLISTED', sourceState: 'LIVE', status: 'LIVE',
+    sourceStale: false, version: 1, viewCount: 412, downloadCount: 8,
+    stepCount: 4, solutionCount: 1, tags: ['docker', 'm1'],
+    publishedAt: '2026-07-02T14:05:00', updatedAt: '2026-07-02T14:05:00',
+  },
+  {
+    slug: 'coroutine-cancellation', title: 'Coroutine cancellation that never propagated',
+    summary: null,
+    originalCaseId: 77, visibility: 'PUBLIC', sourceState: 'SOURCE_DELETED', status: 'UNPUBLISHED',
+    sourceStale: null, version: 1, viewCount: 96, downloadCount: 0,
+    stepCount: 3, solutionCount: 0, tags: ['kotlin', 'coroutine'],
+    publishedAt: '2026-06-19T08:40:00', updatedAt: '2026-06-25T11:00:00',
+  },
+  {
+    slug: 'vite-hmr-stuck', title: 'Vite HMR going quiet with no error',
+    summary: 'A symlinked local package sat outside the watcher. How to reproduce it and how to confirm the cause.',
+    originalCaseId: 63, visibility: 'PUBLIC', sourceState: 'LIVE', status: 'LIVE',
+    sourceStale: false, version: 1, viewCount: 2310, downloadCount: 64,
+    stepCount: 5, solutionCount: 2, tags: ['vite', 'hmr'],
+    publishedAt: '2026-05-11T19:30:00', updatedAt: '2026-05-11T19:30:00',
+  },
+  {
+    slug: 'postgres-ddl-auto-check', title: 'ddl-auto=update never updates a CHECK constraint',
+    summary: 'Added a new enum value and watched every event land in the DLQ instead.',
+    originalCaseId: 51, visibility: 'PUBLIC', sourceState: 'LIVE', status: 'LIVE',
+    sourceStale: false, version: 3, viewCount: 874, downloadCount: 21,
+    stepCount: 6, solutionCount: 1, tags: ['postgres', 'hibernate'],
+    publishedAt: '2026-04-28T09:15:00', updatedAt: '2026-06-01T09:15:00',
+  },
+  {
+    slug: 'sse-behind-cloudflare', title: 'SSE dropping behind the Cloudflare proxy',
+    summary: 'Long-lived connections do not ride the proxy well — routing them to a DNS-only host instead.',
+    originalCaseId: 44, visibility: 'UNLISTED', sourceState: 'LIVE', status: 'LIVE',
+    sourceStale: false, version: 1, viewCount: 158, downloadCount: 3,
+    stepCount: 4, solutionCount: 1, tags: ['sse', 'cloudflare'],
+    publishedAt: '2026-03-09T16:45:00', updatedAt: '2026-03-09T16:45:00',
+  },
+]
+
+
 // In-app notifications — mutable so read / read-all reflect.
 const mockNotifications: Array<{
   id: number; type: string; actorUserId: number | null
@@ -614,6 +668,40 @@ export const handlers = [
   }),
 
   // Workspaces
+  // Library > Published. 커서 페이징을 실제로 돌려보려고 페이지 크기를 4로 잘라 둔다.
+  http.get('/api/v1/publishments/me', ({ request }) => {
+    const url = new URL(request.url)
+    const q = (url.searchParams.get('q') ?? '').trim().toLowerCase()
+    const visibility = url.searchParams.get('visibility')
+    const sort = url.searchParams.get('sort') ?? 'published'
+    const cursor = Number(url.searchParams.get('cursor') ?? 0)
+
+    let rows = mockPublishments.filter(p =>
+      (!q || p.title.toLowerCase().includes(q)) &&
+      (!visibility || p.visibility === visibility),
+    )
+    rows = [...rows].sort((a, b) => sort === 'views'
+      ? b.viewCount - a.viewCount
+      : b.publishedAt.localeCompare(a.publishedAt))
+
+    const PAGE = 4
+    const page = rows.slice(cursor, cursor + PAGE)
+    const end = cursor + PAGE
+    const base = 'http://localhost:5173'
+    return HttpResponse.json({
+      items: page.map(p => ({
+        ...p,
+        publicUrl: `${base}/p/${p.slug}`,
+        markdownUrl: `${base}/api/v1/publishments/by-slug/${p.slug}/export.md`,
+        pdfUrl: `${base}/api/v1/publishments/by-slug/${p.slug}/export.pdf`,
+      })),
+      nextCursor: end < rows.length ? String(end) : null,
+      hasNext: end < rows.length,
+      // BE 와 같게 — 첫 페이지에서만 채운다.
+      totalCount: cursor === 0 ? rows.length : null,
+    })
+  }),
+
   http.get('/api/v1/workspaces', () => {
     return HttpResponse.json(mockWorkspaces)
   }),
