@@ -257,7 +257,11 @@ export interface CommentAuthor {
 export interface MentionCandidate {
   userId: number
   displayName: string
-  handle: string | null
+  /**
+   * core-api MentionCandidateResponse 에 아직 없는 필드 — 항상 undefined 로 온다.
+   * BE 가 내려주기 시작하면 @handle 삽입이 살아나고, 그전까지는 displayName 폴백.
+   */
+  handle?: string | null
   avatarUrl: string | null
   /** 후보 source — in-discussion · owner · workspace-member · search. */
   badge: string | null
