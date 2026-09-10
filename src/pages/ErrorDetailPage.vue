@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import axios from 'axios'
 import { formatAbsolute } from '@/utils/timeAgo'
 import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
@@ -21,6 +22,9 @@ import CommentThread from '@/components/comment/CommentThread.vue'
 import CommentForm from '@/components/comment/CommentForm.vue'
 import QuotePopup from '@/components/comment/QuotePopup.vue'
 import PublishStatusBar from '@/components/publish/PublishStatusBar.vue'
+import PublishSheet from '@/components/publish/PublishSheet.vue'
+import { publishmentApi } from '@/services/publishmentApi'
+import type { PublishmentDetail } from '@/types/publish'
 import type { QuoteInfo } from '@/components/comment/CommentForm.vue'
 import { StarIcon as StarOutlineIcon, HandRaisedIcon as HandOutlineIcon } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon, HandRaisedIcon as HandSolidIcon } from '@heroicons/vue/24/solid'
@@ -32,6 +36,12 @@ const authStore = useAuthStore()
 const errorCase = ref<ErrorCaseDetail | null>(null)
 const steps = ref<Step[]>([])
 const solutions = ref<Solution[]>([])
+
+// 발행 상태 — 소유자에게만 로드. null + pubLoaded=true 면 "미발행"(→ Publish 트리거),
+// 값이 있으면 발행됨(→ 상태 바). 한 번 발행되면 unpublish 해도 null 로 돌아가지 않는다.
+const publishment = ref<PublishmentDetail | null>(null)
+const pubLoaded = ref(false)
+const showPublishSheet = ref(false)
 const comments = ref<Comment[]>([])
 // userId → 표시 정보. 목록 응답의 authors(도움됨/리액션 누른 사람 포함) + 각 댓글의 임베드 author
 // (새로 단 댓글도 자동 포함)를 합친다. helpful 팝오버 등 uid 만 있는 곳의 이름 해석용.
@@ -114,6 +124,25 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+  loadPublishState()
+}
+
+// 소유자 케이스의 발행 여부 조회. 404 = 미발행. 비소유자는 아예 호출하지 않는다.
+async function loadPublishState() {
+  if (!isOwner.value) { pubLoaded.value = true; return }
+  try {
+    const { data } = await publishmentApi.getByCase(caseId)
+    publishment.value = data
+  } catch (e) {
+    if (!axios.isAxiosError(e) || e.response?.status !== 404) { /* 일시 오류는 조용히 무시 */ }
+    publishment.value = null
+  } finally {
+    pubLoaded.value = true
+  }
+}
+
+function onPublished(detail: PublishmentDetail) {
+  publishment.value = detail // 트리거 → 상태 바로 전환
 }
 
 // Watchlist / notification deep links land on /error-cases/{id}#{step|solution|comment}-{id} —
@@ -501,6 +530,16 @@ onUnmounted(() => {
           class="text-xs text-zinc-400 hover:text-rose-500 transition-colors"
           @click="showDeleteConfirm = true"
         >Delete</button>
+
+        <!-- 아직 발행 안 한 소유자에게만 — 발행됨이면 하단 상태 바가 대신 뜬다 -->
+        <button
+          v-if="isOwner && pubLoaded && !publishment"
+          class="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
+          @click="showPublishSheet = true"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7" /></svg>
+          Publish
+        </button>
       </div>
     </div>
 
@@ -639,8 +678,21 @@ onUnmounted(() => {
       </div>
     </Teleport>
 
-    <!-- 소유자에게만 발행 상태 바를 띄운다. 미발행 케이스면 by-case 가 404 → 바 자체가 렌더 안 됨. -->
-    <PublishStatusBar v-if="isOwner" :case-id="errorCase.id" />
+    <!-- 발행된 소유자 케이스에만 상태 바. 미발행이면 위 Publish 트리거가 대신 노출된다. -->
+    <PublishStatusBar v-if="isOwner && publishment" :detail="publishment" />
+
+    <!-- 발행물 생성 시트 (하단 슬라이드업) -->
+    <PublishSheet
+      v-if="showPublishSheet"
+      :case-id="errorCase.id"
+      :case-title="errorCase.title"
+      :case-summary="null"
+      :steps="steps"
+      :solutions="solutions"
+      :author-default="authStore.user?.displayName ?? ''"
+      @published="onPublished"
+      @close="showPublishSheet = false"
+    />
   </div>
 </template>
 

@@ -1,31 +1,25 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import axios from 'axios'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { publishmentApi } from '@/services/publishmentApi'
 import type { PublishmentDetail } from '@/types/publish'
 import { formatAbsolute } from '@/utils/timeAgo'
 import { ChevronUpIcon } from '@heroicons/vue/24/outline'
 
-// 소유자 여부는 부모(ErrorDetailPage)가 v-if 로 걸러준다 — 여긴 발행 상태만 다룬다.
-const props = defineProps<{ caseId: number }>()
+// 발행 여부 판정(getByCase/404)과 소유자 게이팅은 부모(ErrorDetailPage)가 한다 —
+// 여긴 이미 발행된 케이스의 상태만 표현/조작한다. detail 은 최초 스냅샷.
+const props = defineProps<{ detail: PublishmentDetail }>()
 
-const pub = ref<PublishmentDetail | null>(null)
+// 내부 상태로 복제 — unpublish/restore 로 status 가 바뀌면 여기서 갱신한다.
+// 부모가 detail 을 다시 넘기면(다른 케이스로 이동 등) 동기화.
+const pub = ref<PublishmentDetail>({ ...props.detail })
+watch(() => props.detail, d => { pub.value = { ...d } })
+
 const expanded = ref(false)
 const busy = ref(false)
 const copied = ref(false)
 
 const isLive = computed(() => pub.value?.status === 'LIVE')
 const visLabel = computed(() => (pub.value?.visibility === 'UNLISTED' ? 'Unlisted' : 'Public'))
-
-onMounted(async () => {
-  try {
-    const { data } = await publishmentApi.getByCase(props.caseId)
-    pub.value = data
-  } catch (e) {
-    // 404 = 이 케이스는 발행된 적 없음 → 바를 띄우지 않는다. 그 외 에러도 조용히 숨김.
-    if (!axios.isAxiosError(e) || e.response?.status !== 404) pub.value = null
-  }
-})
 
 async function copy() {
   if (!pub.value) return

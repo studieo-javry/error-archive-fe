@@ -9,6 +9,31 @@
 /** 발행 공개 범위. BE 는 PRIVATE 도 카운트하지만 목록 필터는 이 둘만 받는다. */
 export type PublishmentVisibility = 'PUBLIC' | 'UNLISTED'
 
+/** step 시간 표기 방식 — 정확한 타임스탬프 / 상대(Day N) / 숨김. */
+export type PublishTimeStyle = 'EXACT' | 'RELATIVE' | 'NONE'
+
+/** 발행 렌더 옵션. 미지정 필드는 BE 기본값(showStepDuration=true, timeStyle=RELATIVE). */
+export interface PublishOptions {
+  showStepDuration?: boolean
+  timeStyle?: PublishTimeStyle
+  /** 작성자 표시 이름. 비우면(null) 익명. */
+  authorDisplayName?: string | null
+}
+
+/**
+ * `POST /publishments` 요청 본문. `Idempotency-Key` 헤더(UUID)와 함께 보낸다.
+ * includeStepIds 가 null 이면 전체 step 포함 — UI 는 항상 선별 결과를 명시적으로 넣는다.
+ */
+export interface PublishRequest {
+  caseId: number
+  title?: string
+  summary?: string
+  visibility?: PublishmentVisibility
+  includeStepIds?: number[]
+  includeSolutionIds?: number[]
+  options?: PublishOptions
+}
+
 /** 목록 정렬 — published(최신 발행순, default) / views(조회순). */
 export type PublishmentSort = 'published' | 'views'
 

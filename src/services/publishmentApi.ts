@@ -4,6 +4,7 @@ import type {
   PublishmentListResponse,
   PublishmentSort,
   PublishmentVisibility,
+  PublishRequest,
 } from '@/types/publish'
 
 /**
@@ -28,6 +29,17 @@ export const publishmentApi = {
     limit?: number
   } = {}) {
     return apiClient.get<PublishmentListResponse>('/publishments/me', { params })
+  },
+
+  /**
+   * 케이스를 발행 (케이스당 canonical 1개). `Idempotency-Key` 헤더 필수 —
+   * 클라이언트 생성 UUID 로 중복 전송/재시도를 멱등 처리한다.
+   * 409 = 이미 발행됨(ProblemDetail 에 existingSlug), 422 = 선별 step 0개.
+   */
+  create(request: PublishRequest, idempotencyKey: string) {
+    return apiClient.post<PublishmentDetail>('/publishments', request, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    })
   },
 
   /**
