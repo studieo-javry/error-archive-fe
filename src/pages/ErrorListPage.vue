@@ -21,21 +21,6 @@ const statusOptions: { value: ErrorCaseStatus | ''; label: string }[] = [
   { value: 'RESOLVED', label: 'Resolved' },
 ]
 
-const severityOptions = [
-  { value: 0, label: 'All' },
-  { value: 1, label: 'S1' },
-  { value: 2, label: 'S2' },
-  { value: 3, label: 'S3' },
-  { value: 4, label: 'S4' },
-]
-
-const severityFilter = ref(0)
-
-function setSeverity(val: number) {
-  severityFilter.value = val
-  store.setSeverity(val || undefined)
-}
-
 // Keyword search within the current space's library (client-side filter).
 const query = ref('')
 const filteredErrors = computed(() => {
@@ -131,21 +116,6 @@ watch(() => teamStore.currentWorkspaceId, () => {
             {{ opt.label }}
           </button>
         </div>
-        <div class="flex items-center gap-1.5">
-          <span class="text-[11px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Severity</span>
-          <button
-            v-for="sev in severityOptions"
-            :key="sev.value"
-            class="px-2 py-1 text-[11px] font-medium rounded-full transition-colors"
-            :class="severityFilter === sev.value
-              ? 'bg-amber-600 text-white'
-              : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-600'"
-            @click="setSeverity(sev.value)"
-          >
-            {{ sev.label }}
-          </button>
-        </div>
-
         <input
           v-model="query"
           type="text"

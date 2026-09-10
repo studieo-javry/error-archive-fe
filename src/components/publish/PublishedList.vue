@@ -6,7 +6,14 @@ import type { PublishmentListItem, PublishmentSort, PublishmentVisibility } from
 import { useTeamStore } from '@/stores/teamStore'
 import { formatAbsolute } from '@/utils/timeAgo'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import { ArrowTopRightOnSquareIcon } from '@heroicons/vue/24/outline'
+import {
+  LinkIcon,
+  EyeIcon,
+  ArrowDownTrayIcon,
+  ClipboardDocumentIcon,
+  CheckIcon,
+  ArrowPathIcon,
+} from '@heroicons/vue/24/outline'
 
 const teamStore = useTeamStore()
 
@@ -23,12 +30,6 @@ const loadError = ref('')
 
 const visibility = ref<PublishmentVisibility | ''>('')
 const sort = ref<PublishmentSort>('published')
-
-const visibilityOptions: { value: PublishmentVisibility | ''; label: string }[] = [
-  { value: '', label: 'All' },
-  { value: 'PUBLIC', label: 'Public' },
-  { value: 'UNLISTED', label: 'Unlisted' },
-]
 
 async function load(append = false) {
   if (loading.value) return
@@ -89,6 +90,22 @@ watch([visibility, sort], () => load())
 function caseRoute(caseId: number) {
   return { name: 'errorDetail', params: { slug: teamStore.currentSlug, id: caseId } }
 }
+
+// 공개 링크 복사 — 눌렀을 때 잠깐 Copied 로 바뀐다.
+const copiedSlug = ref<string | null>(null)
+async function copyLink(p: PublishmentListItem) {
+  try {
+    await navigator.clipboard.writeText(p.publicUrl)
+    copiedSlug.value = p.slug
+    setTimeout(() => {
+      if (copiedSlug.value === p.slug) copiedSlug.value = null
+    }, 1500)
+  } catch { /* clipboard 미지원 — 조용히 무시 */ }
+}
+
+// 공개범위 · 정렬 select 공통 스타일.
+const selectClass =
+  'rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:border-zinc-300 focus:border-emerald-400 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
 </script>
 
 <template>
@@ -96,36 +113,17 @@ function caseRoute(caseId: number) {
     <!-- 발행물은 워크스페이스 단위가 아니다(BE 에 필터 없음) — 오해하지 않게 밝혀둔다. -->
     <p class="text-[11px] text-zinc-400 dark:text-zinc-600 mb-4">Everything you've published, across all workspaces.</p>
 
-    <!-- 툴바 한 줄: 공개 범위 · 정렬 · 검색. 케이스의 status/severity 와는 다른 축이다. -->
-    <div class="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
-      <div class="flex gap-2 flex-wrap">
-        <button
-          v-for="opt in visibilityOptions"
-          :key="opt.value"
-          class="px-3 py-1.5 text-xs font-medium rounded-full transition-colors"
-          :class="visibility === opt.value
-            ? 'bg-emerald-600 text-white'
-            : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600'"
-          @click="visibility = opt.value"
-        >
-          {{ opt.label }}
-        </button>
-      </div>
-
-      <div class="flex items-center gap-1.5">
-        <button
-          v-for="opt in [{ value: 'published' as PublishmentSort, label: 'Latest' }, { value: 'views' as PublishmentSort, label: 'Views' }]"
-          :key="opt.value"
-          class="px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors"
-          :class="sort === opt.value
-            ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900'
-            : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-600'"
-          @click="sort = opt.value"
-        >
-          {{ opt.label }}
-        </button>
-      </div>
-
+    <!-- 툴바 한 줄: 공개 범위(select) · 정렬(select) · 검색(케이스와 동일한 raw-input). -->
+    <div class="flex flex-wrap items-center gap-3 mb-6">
+      <select v-model="visibility" :class="selectClass" aria-label="Visibility filter">
+        <option value="">Visibility: All</option>
+        <option value="PUBLIC">Public</option>
+        <option value="UNLISTED">Unlisted</option>
+      </select>
+      <select v-model="sort" :class="selectClass" aria-label="Sort">
+        <option value="published">Recently published</option>
+        <option value="views">Most viewed</option>
+      </select>
       <input
         v-model="q"
         type="text"
@@ -139,55 +137,101 @@ function caseRoute(caseId: number) {
     <LoadingSpinner v-else-if="loading && !items.length" size="lg" />
 
     <template v-else>
-      <div v-if="items.length" class="divide-y divide-zinc-200 dark:divide-zinc-800">
-        <article v-for="p in items" :key="p.slug" class="py-5">
-          <div class="flex items-start gap-3">
-            <div class="flex-1 min-w-0">
-              <div v-if="p.tags.length" class="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-500 mb-1">
-                {{ p.tags.slice(0, 3).join(' / ') }}
-              </div>
-
-              <h3 class="text-base font-medium mb-1">
-                <a
-                  :href="p.publicUrl"
-                  target="_blank"
-                  rel="noopener"
-                  class="group inline-flex items-start gap-1.5 text-zinc-800 dark:text-zinc-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                >
-                  <span class="line-clamp-2">{{ p.title }}</span>
-                  <ArrowTopRightOnSquareIcon class="w-3.5 h-3.5 mt-1 shrink-0 text-zinc-300 dark:text-zinc-600 group-hover:text-emerald-500 transition-colors" />
-                </a>
-              </h3>
-
-              <p v-if="p.summary" class="text-sm text-zinc-500 dark:text-zinc-400 font-light line-clamp-2 leading-relaxed">
-                {{ p.summary }}
-              </p>
-
-              <!-- 상태 배지 — 원본과 어긋난 발행물을 조용히 넘기지 않는다. -->
-              <div class="flex flex-wrap items-center gap-2 mt-2.5 text-[10px] font-medium">
-                <span v-if="p.status === 'UNPUBLISHED'" class="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">Archived</span>
-                <span v-if="p.visibility === 'UNLISTED'" class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">Unlisted</span>
-                <span v-if="p.sourceState === 'SOURCE_DELETED'" class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">Source deleted</span>
-                <span v-else-if="p.sourceStale" class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">Source changed &middot; republish</span>
-                <span v-if="p.version > 1" class="text-zinc-400 dark:text-zinc-500 font-mono">v{{ p.version }}</span>
-              </div>
-
-              <div class="flex flex-wrap items-center gap-3 mt-2 text-xs text-zinc-500 dark:text-zinc-400 font-mono">
-                <span>{{ p.stepCount }} steps · {{ p.solutionCount }} solution{{ p.solutionCount === 1 ? '' : 's' }}</span>
-                <span class="text-zinc-300 dark:text-zinc-700">|</span>
-                <span>{{ p.viewCount }} views</span>
-                <span v-if="p.downloadCount">{{ p.downloadCount }} downloads</span>
-              </div>
+      <div v-if="items.length" class="grid gap-3">
+        <article
+          v-for="p in items"
+          :key="p.slug"
+          class="rounded-xl border border-zinc-200 bg-white px-5 py-[18px] transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+          :class="{ 'opacity-60': p.status === 'UNPUBLISHED' }"
+        >
+          <!-- 헤더: 제목 + slug / 오른쪽 배지들 -->
+          <div class="flex items-start justify-between gap-3 mb-1.5">
+            <div class="min-w-0 flex-1">
+              <a
+                :href="p.publicUrl"
+                target="_blank"
+                rel="noopener"
+                class="block text-[15px] font-semibold leading-snug text-zinc-800 dark:text-zinc-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors mb-1 line-clamp-2"
+              >{{ p.title }}</a>
+              <a
+                :href="p.publicUrl"
+                target="_blank"
+                rel="noopener"
+                class="inline-flex max-w-full items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 font-mono text-[11px] text-zinc-500 transition-colors hover:border-emerald-200 hover:text-emerald-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:hover:text-emerald-400"
+              >
+                <LinkIcon class="w-3 h-3 shrink-0" />
+                <span class="truncate">/p/{{ p.slug }}</span>
+              </a>
             </div>
 
-            <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
-              <span class="text-xs text-zinc-400 dark:text-zinc-600">{{ formatAbsolute(p.publishedAt) }}</span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="rounded border border-zinc-200 bg-zinc-50 px-2 py-0.5 font-mono text-[9.5px] font-bold tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/60">v{{ p.version }}</span>
+              <span v-if="p.visibility === 'PUBLIC'" class="rounded bg-emerald-50 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">Public</span>
+              <span v-else-if="p.visibility === 'UNLISTED'" class="rounded bg-amber-50 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">Unlisted</span>
+              <span v-if="p.status === 'UNPUBLISHED'" class="rounded bg-zinc-100 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">Archived</span>
+
+              <!-- 원본 상태 배지 + 툴팁 -->
+              <span
+                v-if="p.sourceState === 'SOURCE_DELETED'"
+                class="tip-wrap rounded border border-rose-200 bg-rose-50 px-2 py-0.5 font-mono text-[9px] font-bold text-rose-600 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400"
+              >
+                ⛔ Source deleted
+                <span class="tip">The source case was deleted — the published snapshot is kept, but it can't be republished.</span>
+              </span>
+              <span
+                v-else-if="p.sourceStale"
+                class="tip-wrap rounded border border-amber-200 bg-amber-50 px-2 py-0.5 font-mono text-[9px] font-bold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
+              >
+                ⟳ Source updated
+                <span class="tip">The source case changed after publishing — republish to reflect the latest (not available yet).</span>
+              </span>
+            </div>
+          </div>
+
+          <p v-if="p.summary" class="text-[12.5px] leading-relaxed text-zinc-500 dark:text-zinc-400 line-clamp-2 my-2">{{ p.summary }}</p>
+
+          <!-- 지표 + 태그 -->
+          <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 pb-2.5 font-mono text-[11.5px] text-zinc-500 dark:text-zinc-400">
+            <span class="inline-flex items-center gap-1.5"><EyeIcon class="w-3 h-3 text-zinc-400 dark:text-zinc-600" /><b class="font-semibold text-zinc-800 dark:text-zinc-200">{{ p.viewCount }}</b> views</span>
+            <span class="inline-flex items-center gap-1.5"><ArrowDownTrayIcon class="w-3 h-3 text-zinc-400 dark:text-zinc-600" /><b class="font-semibold text-zinc-800 dark:text-zinc-200">{{ p.downloadCount }}</b> downloads</span>
+            <span><b class="font-semibold text-zinc-800 dark:text-zinc-200">{{ p.stepCount }}</b> steps</span>
+            <span><b class="font-semibold text-zinc-800 dark:text-zinc-200">{{ p.solutionCount }}</b> solution{{ p.solutionCount === 1 ? '' : 's' }}</span>
+            <div v-if="p.tags.length" class="ml-auto inline-flex flex-wrap items-center gap-1.5">
+              <span
+                v-for="t in p.tags.slice(0, 3)"
+                :key="t"
+                class="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-px font-mono text-[10px] text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/60"
+              >#{{ t }}</span>
+            </div>
+          </div>
+
+          <!-- 액션 + 타이밍 -->
+          <div class="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-zinc-200 pt-3 dark:border-zinc-800">
+            <div class="flex items-center gap-1.5">
+              <a :href="p.pdfUrl" target="_blank" rel="noopener" class="pub-btn"><ArrowDownTrayIcon class="w-3 h-3" />PDF</a>
+              <button type="button" class="pub-btn pub-btn-primary" @click="copyLink(p)">
+                <component :is="copiedSlug === p.slug ? CheckIcon : ClipboardDocumentIcon" class="w-3 h-3" />
+                {{ copiedSlug === p.slug ? 'Copied' : 'Copy link' }}
+              </button>
+              <!-- 재발행: 원본 수정됨(stale)일 때만 노출. 콘텐츠 재발행 API 미제공 → 비활성 + 툴팁. -->
+              <span
+                v-if="p.sourceStale && p.sourceState !== 'SOURCE_DELETED'"
+                class="tip-wrap pub-btn pub-btn-disabled"
+              >
+                <ArrowPathIcon class="w-3 h-3" />Republish
+                <span class="tip">Republishing (creating a fresh snapshot) isn't available yet.</span>
+              </span>
+            </div>
+
+            <div class="flex items-center gap-3 font-mono text-[10.5px] text-zinc-400 dark:text-zinc-600">
               <router-link
                 v-if="p.sourceState !== 'SOURCE_DELETED'"
                 :to="caseRoute(p.originalCaseId)"
-                class="text-[11px] font-mono text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                class="border-r border-zinc-200 pr-3 hover:text-emerald-600 dark:border-zinc-700 dark:hover:text-emerald-400 transition-colors"
               >from #{{ p.originalCaseId }}</router-link>
-              <span v-else class="text-[11px] font-mono text-zinc-300 dark:text-zinc-700">#{{ p.originalCaseId }}</span>
+              <span v-else class="border-r border-zinc-200 pr-3 dark:border-zinc-700">#{{ p.originalCaseId }}</span>
+              <span><b class="font-medium text-zinc-500 dark:text-zinc-400">published</b> {{ formatAbsolute(p.publishedAt) }}</span>
+              <span><b class="font-medium text-zinc-500 dark:text-zinc-400">updated</b> {{ formatAbsolute(p.updatedAt) }}</span>
             </div>
           </div>
         </article>
@@ -213,3 +257,93 @@ function caseRoute(caseId: number) {
     </p>
   </div>
 </template>
+
+<style scoped>
+/* 카드 액션 버튼 — library 발행물 시안(outline chip) */
+.pub-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid #e4e4e7;
+  background: transparent;
+  color: #71717a;
+  font: 500 10.5px "JetBrains Mono", ui-monospace, Menlo, monospace;
+  cursor: pointer;
+  transition: color .12s, border-color .12s, background-color .12s;
+}
+.pub-btn:hover {
+  border-color: #71717a;
+  color: #18181b;
+  background: #f4f4f5;
+}
+:global(.dark) .pub-btn {
+  border-color: #27272a;
+  color: #a1a1aa;
+}
+:global(.dark) .pub-btn:hover {
+  border-color: #a1a1aa;
+  color: #e4e4e7;
+  background: #232327;
+}
+.pub-btn-primary:hover {
+  border-color: #059669;
+  color: #059669;
+  background: rgba(16, 185, 129, .06);
+}
+:global(.dark) .pub-btn-primary:hover {
+  border-color: #10b981;
+  color: #34d399;
+  background: rgba(16, 185, 129, .1);
+}
+/* 비활성(재발행) — 점선 + not-allowed, hover 는 색 안 변하고 툴팁만 */
+.pub-btn-disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.pub-btn-disabled:hover {
+  border-color: #e4e4e7;
+  color: #71717a;
+  background: transparent;
+}
+:global(.dark) .pub-btn-disabled:hover {
+  border-color: #27272a;
+  color: #a1a1aa;
+  background: transparent;
+}
+
+/* 호버 툴팁 (배지·비활성 버튼) — 테마 무관 다크 말풍선 */
+.tip-wrap { position: relative; }
+.tip {
+  pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: none;
+  width: max-content;
+  max-width: 240px;
+  white-space: normal;
+  border-radius: 8px;
+  background: #18181b;
+  padding: 7px 10px;
+  font: 400 11px/1.45 "Inter", sans-serif;
+  color: #f4f4f5;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .3);
+}
+.tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  margin-top: -4px;
+  width: 8px;
+  height: 8px;
+  background: #18181b;
+}
+.tip-wrap:hover .tip { display: block; }
+</style>
