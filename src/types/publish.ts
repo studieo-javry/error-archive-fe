@@ -31,6 +31,8 @@ export interface PublishRequest {
   visibility?: PublishmentVisibility
   includeStepIds?: number[]
   includeSolutionIds?: number[]
+  /** 발행에서 제외할 첨부 markerId. BE 는 선별된 step 이 참조한 첨부 중 이 목록을 뺀다. */
+  excludedAttachmentMarkerIds?: string[]
   options?: PublishOptions
 }
 
