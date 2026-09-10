@@ -153,6 +153,9 @@ async function restoreBySlug(slug: string) {
   transform: translateX(-50%);
   z-index: 40;
   width: min(720px, calc(100vw - 120px));
+  /* 참조 HTML 과 동일한 폰트 렌더 — 없으면 macOS 에서 글자가 더 굵고 진하게 보인다 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 /* 참조 .statusbar 그대로: 솔리드 배경 + 26px 라운드 + 안쪽 하이라이트 그림자 + 상단 광택 */
 .psb-bar {
