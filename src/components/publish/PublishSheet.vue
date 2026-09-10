@@ -2,13 +2,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import { publishmentApi } from '@/services/publishmentApi'
-import type { PublishmentDetail, PublishmentVisibility, PublishRequest } from '@/types/publish'
-import type { Step, Solution } from '@/types/error'
+import type { PublishmentDetail, PublishmentVisibility, PublishRequest, PublishTimeStyle } from '@/types/publish'
+import type { Step, Solution, ErrorCaseAttachment } from '@/types/error'
 import { ChevronRightIcon, ChevronLeftIcon, CheckIcon } from '@heroicons/vue/24/outline'
 
 /**
  * 케이스 상세에서 올라오는 발행물 생성 시트(하단 슬라이드업).
- * 흐름: 슬림 바 → Include(step/solution 선별) → Details(제목·요약·공개범위) → Preview → 발행 → 완료.
+ * 흐름: 슬림 바 → Steps → Details → Files(첨부 포함/제외) → Options → Preview → 발행 → 완료.
  * 발행 성공 시 published(detail) 를 올려 부모가 상태 바로 전환한다.
  */
 const props = defineProps<{
@@ -17,16 +17,20 @@ const props = defineProps<{
   caseSummary: string | null
   steps: Step[]
   solutions: Solution[]
+  attachments: ErrorCaseAttachment[]
   authorDefault: string
 }>()
 const emit = defineEmits<{ close: []; published: [detail: PublishmentDetail] }>()
 
-// -1 = 슬림 바, 0 = Include, 1 = Details, 2 = Preview, 3 = Done
+// -1 = 슬림 바, 0 = Steps, 1 = Details, 2 = Files, 3 = Options, 4 = Preview, DONE = 완료
+const DONE = 5
 const stage = ref(-1)
-const STAGES = ['Include', 'Details', 'Preview']
+const STAGES = ['Steps', 'Details', 'Files', 'Options', 'Preview']
 
 const selSteps = ref(new Set<number>(props.steps.map(s => s.id)))
 const selSols = ref(new Set<number>(props.solutions.map(s => s.id)))
+const excludedAtt = ref(new Set<string>())          // 제외한 첨부 markerId (기본 전부 포함)
+const options = ref<{ timeStyle: PublishTimeStyle; showStepDuration: boolean }>({ timeStyle: 'RELATIVE', showStepDuration: true })
 const title = ref(props.caseTitle)
 const summary = ref(props.caseSummary ?? '')
 const author = ref(props.authorDefault)
@@ -61,6 +65,41 @@ function quick(kind: 'all' | 'nofail' | 'resolved') {
 const selectedStepList = computed(() => orderedSteps.value.filter(s => selSteps.value.has(s.id)))
 const selectedSolList = computed(() => props.solutions.filter(s => selSols.value.has(s.id)))
 
+// 선택된 step 본문의 @attach(markerId) 마커를 훑어, 발행에 실제로 들어갈 첨부만 추린다.
+// (첨부는 케이스 레벨이지만 발행 콘텐츠는 step 기준이라 step 에서 참조된 것만 노출)
+const ATTACH_MARKER = /@attach\(([a-zA-Z0-9_-]+)(?:\|\d{2,4})?\)/g
+const stepAttachments = computed<ErrorCaseAttachment[]>(() => {
+  const byMarker = new Map(props.attachments.map(a => [a.markerId, a]))
+  const seen = new Set<string>()
+  const out: ErrorCaseAttachment[] = []
+  for (const s of selectedStepList.value) {
+    if (!s.body) continue
+    for (const m of s.body.matchAll(ATTACH_MARKER)) {
+      const id = m[1]
+      if (seen.has(id)) continue
+      seen.add(id)
+      const att = byMarker.get(id)
+      if (att) out.push(att)
+    }
+  }
+  return out
+})
+const includedAttCount = computed(() => stepAttachments.value.filter(a => !excludedAtt.value.has(a.markerId)).length)
+
+function toggleAtt(mid: string) { excludedAtt.value.has(mid) ? excludedAtt.value.delete(mid) : excludedAtt.value.add(mid); excludedAtt.value = new Set(excludedAtt.value) }
+function attHint(kind: string): { ico: string; how: string } {
+  if (kind === 'IMAGE') return { ico: '🖼', how: '이미지로 표시' }
+  if (kind === 'TEXT') return { ico: '📄', how: '새 탭에서 보기' }
+  if (kind === 'JSON') return { ico: '🔧', how: '새 탭에서 보기' }
+  if (kind === 'DOCUMENT') return { ico: '📕', how: '새 탭에서 보기' }
+  return { ico: '📦', how: '다운로드' }
+}
+function fmtSize(b: number): string {
+  if (b < 1024) return `${b} B`
+  if (b < 1048576) return `${Math.round(b / 1024)} KB`
+  return `${(b / 1048576).toFixed(1)} MB`
+}
+
 function bodyPreview(b: string | null): string {
   if (!b) return ''
   // 마커/마크다운 잡음을 대충 걷어내고 한 줄로.
@@ -79,19 +118,24 @@ async function doPublish() {
     visibility: visibility.value,
     includeStepIds: [...selSteps.value],
     includeSolutionIds: [...selSols.value],
-    options: { authorDisplayName: author.value.trim() || null },
+    excludedAttachmentMarkerIds: [...excludedAtt.value],
+    options: {
+      authorDisplayName: author.value.trim() || null,
+      timeStyle: options.value.timeStyle,
+      showStepDuration: options.value.showStepDuration,
+    },
   }
   try {
     const { data } = await publishmentApi.create(req, idemKey)
     published.value = data
-    stage.value = 3
+    stage.value = DONE
   } catch (e) {
     if (axios.isAxiosError(e) && e.response?.status === 409) {
       // 이미 발행된 케이스 — 기존 발행물을 끌어와 완료 화면으로 자연스럽게 넘어간다.
       try {
         const { data } = await publishmentApi.getByCase(props.caseId)
         published.value = data
-        stage.value = 3
+        stage.value = DONE
       } catch { errorMsg.value = '이미 발행된 케이스예요. 페이지를 새로고침 해주세요.' }
     } else if (axios.isAxiosError(e) && e.response?.status === 422) {
       errorMsg.value = '최소 1개의 step 을 포함해야 해요.'
@@ -143,7 +187,7 @@ function close() {
         </div>
 
         <!-- 완료 -->
-        <template v-else-if="stage === 3 && published">
+        <template v-else-if="stage === DONE && published">
           <div class="psh-head">
             <h3>발행 완료</h3>
             <button class="psh-x" aria-label="닫기" @click="close">×</button>
@@ -232,12 +276,49 @@ function close() {
               </div>
             </template>
 
-            <!-- Preview -->
+            <!-- Files (첨부 포함/제외) -->
             <template v-else-if="stage === 2">
+              <h4>첨부 파일</h4>
+              <p class="hint">발행물에 넣을 첨부만 켜세요. <b>표시 방식은 파일 종류로 자동</b> — 이미지는 인라인, 로그·JSON·PDF 는 새 탭, zip 등은 다운로드.</p>
+              <p v-if="stepAttachments.length === 0" class="hint" style="font-style:italic">선택된 step 에 연결된 첨부가 없습니다.</p>
+              <div v-else class="pick-list">
+                <div v-for="a in stepAttachments" :key="a.markerId" class="pick att" :class="excludedAtt.has(a.markerId) ? 'off' : 'on'" @click="toggleAtt(a.markerId)">
+                  <span class="chk"><CheckIcon class="w-3 h-3" /></span>
+                  <span class="att-ico">{{ attHint(a.kind).ico }}</span>
+                  <span class="ptitle">{{ a.fileName }}</span>
+                  <span class="att-how">{{ attHint(a.kind).how }}</span>
+                  <span class="when">{{ fmtSize(a.size) }}</span>
+                </div>
+              </div>
+            </template>
+
+            <!-- Options -->
+            <template v-else-if="stage === 3">
+              <h4>표시 옵션</h4>
+              <p class="hint">step 시간 표기와 간격 표시를 조정하세요. 발행 후에도 바꿀 수 있어요.</p>
+              <div class="field"><label>Time style (시간 표기)</label>
+                <select v-model="options.timeStyle" class="opt-select">
+                  <option value="EXACT">정확한 타임스탬프</option>
+                  <option value="RELATIVE">상대 시간 (Day N)</option>
+                  <option value="NONE">표시 안 함</option>
+                </select>
+              </div>
+              <div class="opt-toggle" :class="{ on: options.showStepDuration }" @click="options.showStepDuration = !options.showStepDuration">
+                <span class="tg" />
+                <div class="ot-txt">
+                  <div class="ot-t">step 사이 간격 표시</div>
+                  <div class="ot-s">"3시간 뒤 다음 step" 처럼 소요 시간을 함께 보여줍니다</div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Preview -->
+            <template v-else-if="stage === 4">
               <div class="rv-banner">👁 <div><b>발행 전 미리보기</b> — 아직 저장되지 않았습니다. 웹 발행물이 원본이고 PDF 는 사본입니다.</div></div>
               <div class="rv-meta">
                 <span class="rv-chip"><b>{{ selSteps.size }}</b> steps</span>
                 <span class="rv-chip"><b>{{ selSols.size }}</b> solutions</span>
+                <span class="rv-chip"><b>{{ includedAttCount }}</b> attachments</span>
                 <span class="rv-chip">visibility <b>{{ visibility }}</b></span>
               </div>
               <div class="pv">
@@ -263,10 +344,13 @@ function close() {
             <button v-if="stage === 0" class="psh-btn" @click="close">취소</button>
             <button v-else class="psh-btn" @click="stage--"><ChevronLeftIcon class="ic" />뒤로</button>
             <span v-if="stage === 0" class="selinfo">{{ selSteps.size }} steps · {{ selSols.size }} solutions</span>
+            <span v-else-if="stage === 2 && stepAttachments.length" class="selinfo">{{ includedAttCount }} / {{ stepAttachments.length }} 첨부 포함</span>
             <span v-if="errorMsg" class="err">{{ errorMsg }}</span>
             <span class="sp" />
             <button v-if="stage === 0" class="psh-btn primary" :disabled="!canNextInclude" @click="stage = 1">다음: 제목<ChevronRightIcon class="ic" /></button>
-            <button v-else-if="stage === 1" class="psh-btn primary" :disabled="!canNextDetails" @click="stage = 2">다음: 미리보기<ChevronRightIcon class="ic" /></button>
+            <button v-else-if="stage === 1" class="psh-btn primary" :disabled="!canNextDetails" @click="stage = 2">다음: 첨부<ChevronRightIcon class="ic" /></button>
+            <button v-else-if="stage === 2" class="psh-btn primary" @click="stage = 3">다음: 옵션<ChevronRightIcon class="ic" /></button>
+            <button v-else-if="stage === 3" class="psh-btn primary" @click="stage = 4">다음: 미리보기<ChevronRightIcon class="ic" /></button>
             <button v-else class="psh-btn primary" :disabled="busy" @click="doPublish">{{ busy ? '발행 중…' : '발행하기' }}</button>
           </div>
         </template>
@@ -313,7 +397,9 @@ function close() {
 .psh-x:hover { background: #f4f4f5; color: #18181b; }
 :global(.dark) .psh-x:hover { background: #27272a; color: #e4e4e7; }
 
-.psh-body { padding: 14px 22px 4px; overflow-y: auto; flex: 1; min-height: 0; }
+.psh-body { padding: 14px 22px 20px; overflow-y: auto; flex: 1; min-height: 0; }
+/* 단계별 마지막 요소의 margin 차이를 지워 footer 와의 간격을 항상 20px 로 통일 */
+.psh-body > :last-child { margin-bottom: 0; }
 .psh-body h4 { font-size: 16px; font-weight: 600; color: #18181b; margin-bottom: 5px; }
 :global(.dark) .psh-body h4 { color: #e4e4e7; }
 .hint { font-size: 12.5px; color: #71717a; line-height: 1.55; margin-bottom: 16px; }
@@ -360,6 +446,28 @@ function close() {
 .vis .vn { font-size: 13px; font-weight: 600; color: #18181b; }
 :global(.dark) .vis .vn { color: #e4e4e7; }
 .vis .vd { font-size: 11.5px; color: #71717a; margin-top: 4px; line-height: 1.4; }
+
+/* attachments */
+.pick .att-ico { font-size: 15px; flex-shrink: 0; }
+.pick .att-how { font-size: 11px; color: #a1a1aa; flex-shrink: 0; }
+.pick.att.on .att-how { color: #059669; }
+:global(.dark) .pick.att.on .att-how { color: #34d399; }
+
+/* options */
+.opt-select { width: 100%; background: #fafafa; border: 1px solid #e4e4e7; border-radius: 10px; padding: 10px 12px; font: 400 14px "Inter", sans-serif; color: #18181b; cursor: pointer; }
+:global(.dark) .opt-select { background: #1d1d20; border-color: #34343a; color: #e4e4e7; }
+.opt-select:focus { outline: none; border-color: #059669; }
+.opt-toggle { display: flex; align-items: center; gap: 13px; padding: 14px; border: 1px solid #e4e4e7; border-radius: 11px; cursor: pointer; background: #fff; transition: .13s; }
+:global(.dark) .opt-toggle { background: #232327; border-color: #34343a; }
+.opt-toggle:hover { border-color: #a1a1aa; }
+.opt-toggle .tg { width: 38px; height: 22px; border-radius: 999px; background: #e4e4e7; position: relative; flex-shrink: 0; transition: .18s; }
+:global(.dark) .opt-toggle .tg { background: #3f3f46; }
+.opt-toggle .tg::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: .18s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.opt-toggle.on .tg { background: #059669; }
+.opt-toggle.on .tg::after { transform: translateX(16px); }
+.opt-toggle .ot-t { font-size: 13.5px; font-weight: 500; color: #18181b; }
+:global(.dark) .opt-toggle .ot-t { color: #e4e4e7; }
+.opt-toggle .ot-s { font-size: 11.5px; color: #71717a; margin-top: 2px; line-height: 1.4; }
 
 .rv-banner { display: flex; align-items: center; gap: 10px; background: #fffbeb; border: 1px solid rgba(180,83,9,.3); border-radius: 11px; padding: 11px 14px; font-size: 12.5px; color: #b45309; margin-bottom: 14px; line-height: 1.45; }
 :global(.dark) .rv-banner { background: rgba(245,158,11,.10); color: #fbbf24; }

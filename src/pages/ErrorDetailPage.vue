@@ -689,6 +689,7 @@ onUnmounted(() => {
       :case-summary="null"
       :steps="steps"
       :solutions="solutions"
+      :attachments="errorCase.attachments"
       :author-default="authStore.user?.displayName ?? ''"
       @published="onPublished"
       @close="showPublishSheet = false"
