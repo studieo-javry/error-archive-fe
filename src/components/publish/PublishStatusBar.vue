@@ -110,7 +110,15 @@ async function restoreBySlug(slug: string) {
       <template v-if="isLive">
         <button class="psb-txt" @click="copy">{{ copied ? 'Copied' : 'Copy' }}</button>
         <button class="psb-txt" @click="openPdf">PDF</button>
-        <button class="psb-txt danger" :disabled="busy" @click="down">Down</button>
+        <span class="psb-div" />
+        <!-- 자물쇠: 평소 열림 → hover 시 닫힘(발행 내리기) -->
+        <button class="psb-unpub" :disabled="busy" @click="down">
+          <svg class="lockicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path class="shackle" d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+            <rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2" />
+          </svg>
+          Down
+        </button>
       </template>
       <button v-else class="psb-txt primary" :disabled="busy" @click="up">Restore</button>
 
@@ -162,8 +170,8 @@ async function restoreBySlug(slug: string) {
 .psb-dot.off { background: #a1a1aa; box-shadow: 0 0 0 3px #f4f4f5; }
 :global(.dark) .psb-dot.off { box-shadow: 0 0 0 3px #27272a; }
 @keyframes psb-breathe {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.24); opacity: .72; }
+  0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, .7); }
+  50% { transform: scale(1.24); opacity: .76; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0); }
 }
 
 .psb-url { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 12.5px; color: #18181b; white-space: nowrap; text-decoration: none; }
@@ -181,13 +189,24 @@ async function restoreBySlug(slug: string) {
 :global(.dark) .psb-badge.public { background: rgba(16, 185, 129, .12); color: #34d399; }
 :global(.dark) .psb-badge.unlisted { background: rgba(245, 158, 11, .12); color: #fbbf24; }
 
-.psb-txt { background: none; border: 0; font: 500 12.5px "Inter", sans-serif; color: #71717a; cursor: pointer; padding: 4px 6px; border-radius: 7px; transition: color .15s; white-space: nowrap; }
+.psb-txt { background: none; border: 0; font: 400 12.5px "Inter", sans-serif; color: #71717a; cursor: pointer; padding: 4px 6px; border-radius: 7px; transition: color .15s; white-space: nowrap; }
 .psb-txt:hover { color: #059669; }
-.psb-txt.danger:hover { color: #e11d48; }
-.psb-txt.primary { color: #059669; font-weight: 600; }
+.psb-txt.primary { color: #059669; font-weight: 500; }
 .psb-txt.primary:hover { color: #047857; }
 .psb-txt:disabled { opacity: .5; cursor: default; }
 :global(.dark) .psb-txt { color: #a1a1aa; }
+
+/* 구분선 + 발행 내리기(자물쇠) — 참조 publish-case-status-v1.html 그대로 */
+.psb-div { width: 1px; height: 16px; background: #e4e4e7; flex-shrink: 0; }
+:global(.dark) .psb-div { background: #34343a; }
+.psb-unpub { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 9px; font: 400 12.5px "Inter", sans-serif; border: 0; background: none; color: #71717a; cursor: pointer; transition: .15s; white-space: nowrap; }
+.psb-unpub:hover { background: #fff1f2; color: #e11d48; }
+:global(.dark) .psb-unpub { color: #a1a1aa; }
+:global(.dark) .psb-unpub:hover { background: rgba(225, 29, 72, .12); color: #fb7185; }
+.psb-unpub:disabled { opacity: .5; cursor: default; }
+.psb-unpub svg { width: 14px; height: 14px; }
+.lockicon .shackle { transform-box: view-box; transform-origin: 8px 10.5px; transform: rotate(-38deg); transition: transform .34s cubic-bezier(.34, 1.56, .64, 1); }
+.psb-unpub:hover .lockicon .shackle { transform: rotate(0deg); }
 
 .psb-chev { width: 28px; height: 28px; border-radius: 8px; border: 0; background: none; color: #a1a1aa; cursor: pointer; display: grid; place-items: center; transition: color .15s, transform .3s; }
 .psb-chev:hover { color: #52525b; }
@@ -208,7 +227,8 @@ async function restoreBySlug(slug: string) {
   box-shadow: 0 16px 44px rgba(0, 0, 0, .12);
 }
 :global(.dark) .psb-card { background: rgba(38, 38, 42, .9); border-color: #34343a; }
-.psb-metric { background: #fafafa; border: 1px solid #f4f4f5; border-radius: 10px; padding: 10px 8px; text-align: center; }
+/* 셀 높이가 달라도(예: 날짜 줄바꿈) 글자가 위로 쏠리지 않게 세로 중앙 정렬 */
+.psb-metric { background: #fafafa; border: 1px solid #f4f4f5; border-radius: 10px; padding: 10px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
 :global(.dark) .psb-metric { background: #232327; border-color: #27272a; }
 .psb-metric .n { font-size: 18px; font-weight: 600; color: #18181b; font-variant-numeric: tabular-nums; line-height: 1.1; }
 :global(.dark) .psb-metric .n { color: #e4e4e7; }
@@ -246,7 +266,9 @@ async function restoreBySlug(slug: string) {
 .psb-toast-enter-active, .psb-toast-leave-active { transition: opacity .25s, transform .25s cubic-bezier(.34, 1.3, .5, 1); }
 .psb-toast-enter-from, .psb-toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(14px); }
 
+/* 참조 파일과 동일하게 라이브 도트의 breathe 는 reduced-motion 에서도 유지한다
+   (미세한 상태 신호라 접근성 부담이 낮음). transition 만 줄인다. */
 @media (prefers-reduced-motion: reduce) {
-  .psb-dot.live { animation: none; }
+  .psb-chev, .lockicon .shackle { transition: none; }
 }
 </style>

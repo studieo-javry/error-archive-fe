@@ -90,17 +90,6 @@ function startResize(e: PointerEvent) {
         @error="imgFailed = true"
       />
 
-      <!-- download button (view mode; always visible; click = save via presigned attachment URL, separate from preview) -->
-      <button
-        v-if="!editable && attachment.downloadUrl"
-        type="button"
-        title="다운로드"
-        class="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/70 text-white hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-colors backdrop-blur-sm shadow-sm"
-        @click.stop="downloadFile"
-      >
-        <ArrowDownTrayIcon class="w-4 h-4" />
-      </button>
-
       <figcaption v-if="attachment.caption" class="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">{{ attachment.caption }}</figcaption>
 
       <!-- resize handle (editable only) -->
