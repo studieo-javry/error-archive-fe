@@ -154,23 +154,37 @@ async function restoreBySlug(slug: string) {
   z-index: 40;
   width: min(720px, calc(100vw - 120px));
 }
+/* 참조 .statusbar 그대로: 솔리드 배경 + 26px 라운드 + 안쪽 하이라이트 그림자 + 상단 광택 */
 .psb-bar {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 12px;
   height: 52px;
   padding: 0 16px;
-  background: rgba(255, 255, 255, .9);
-  backdrop-filter: blur(12px);
+  background: #ffffff;
   border: 1px solid #e4e4e7;
-  border-radius: 16px;
-  box-shadow: 0 16px 44px rgba(0, 0, 0, .14);
+  border-radius: 26px;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(255, 255, 255, .5);
 }
 :global(.dark) .psb-bar {
-  background: rgba(38, 38, 42, .85);
-  border-color: #34343a;
-  box-shadow: 0 16px 46px rgba(0, 0, 0, .6);
+  background: #1f1f23;
+  border-color: #27272a;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .05);
 }
+/* 상단 유리 광택 */
+.psb-bar::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 42%;
+  border-radius: 26px 26px 0 0;
+  pointer-events: none;
+  background: linear-gradient(rgba(255, 255, 255, .4), transparent);
+}
+:global(.dark) .psb-bar::before { background: linear-gradient(rgba(255, 255, 255, .045), transparent); }
+.psb-bar > * { position: relative; z-index: 1; }
 
 .psb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
 .psb-dot.live { background: #10b981; transform-origin: center; animation: psb-breathe 1.5s ease-in-out infinite; }
@@ -206,7 +220,7 @@ async function restoreBySlug(slug: string) {
 
 /* 구분선 + 발행 내리기(자물쇠) — 참조 publish-case-status-v1.html 그대로 */
 .psb-div { width: 1px; height: 16px; background: #e4e4e7; flex-shrink: 0; }
-:global(.dark) .psb-div { background: #34343a; }
+:global(.dark) .psb-div { background: #27272a; }
 .psb-unpub { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 9px; font: 400 12.5px "Inter", sans-serif; border: 0; background: none; color: #71717a; cursor: pointer; transition: .15s; white-space: nowrap; }
 .psb-unpub:hover { background: #fff1f2; color: #e11d48; }
 :global(.dark) .psb-unpub { color: #a1a1aa; }
@@ -226,15 +240,14 @@ async function restoreBySlug(slug: string) {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  padding: 12px;
+  padding: 14px;
   margin-bottom: 8px;
-  background: rgba(255, 255, 255, .95);
-  backdrop-filter: blur(12px);
+  background: #ffffff;
   border: 1px solid #e4e4e7;
-  border-radius: 14px;
-  box-shadow: 0 16px 44px rgba(0, 0, 0, .12);
+  border-radius: 22px;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .12), inset 0 1px 0 rgba(255, 255, 255, .5);
 }
-:global(.dark) .psb-card { background: rgba(38, 38, 42, .9); border-color: #34343a; }
+:global(.dark) .psb-card { background: #1f1f23; border-color: #27272a; box-shadow: 0 18px 55px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .05); }
 /* 셀 높이가 달라도(예: 날짜 줄바꿈) 글자가 위로 쏠리지 않게 세로 중앙 정렬 */
 .psb-metric { background: #fafafa; border: 1px solid #f4f4f5; border-radius: 10px; padding: 10px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
 :global(.dark) .psb-metric { background: #232327; border-color: #27272a; }
