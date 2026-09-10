@@ -51,3 +51,34 @@ export interface PublishmentListResponse {
   hasNext: boolean
   totalCount: number | null
 }
+
+/**
+ * 단건 발행물 — `GET /publishments/by-case/{caseId}`(소유자 전용, 미발행이면 404)와
+ * unpublish/restore 응답. 케이스 상세 하단 발행 상태 바가 쓴다.
+ * (content/options 등 무거운 스냅샷 필드는 여기서 생략한다.)
+ */
+export interface PublishmentDetail {
+  slug: string
+  publicUrl: string
+  markdownUrl: string
+  pdfUrl: string
+  ownerUserId: number
+  originalCaseId: number
+  title: string
+  summary: string | null
+  visibility: string
+  tags: string[]
+  stepCount: number
+  solutionCount: number
+  version: number
+  viewCount: number
+  downloadCount: number
+  publishedAt: string
+  updatedAt: string
+  /** LIVE | SOURCE_DELETED */
+  sourceState: string
+  /** LIVE | UNPUBLISHED */
+  status: string
+  /** 단건 응답은 항상 null(목록에서만 채워짐). */
+  sourceStale: boolean | null
+}

@@ -20,6 +20,7 @@ import UntaggedAssets from '@/components/attachment/UntaggedAssets.vue'
 import CommentThread from '@/components/comment/CommentThread.vue'
 import CommentForm from '@/components/comment/CommentForm.vue'
 import QuotePopup from '@/components/comment/QuotePopup.vue'
+import PublishStatusBar from '@/components/publish/PublishStatusBar.vue'
 import type { QuoteInfo } from '@/components/comment/CommentForm.vue'
 import { StarIcon as StarOutlineIcon, HandRaisedIcon as HandOutlineIcon } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon, HandRaisedIcon as HandSolidIcon } from '@heroicons/vue/24/solid'
@@ -637,6 +638,9 @@ onUnmounted(() => {
         </div>
       </div>
     </Teleport>
+
+    <!-- 소유자에게만 발행 상태 바를 띄운다. 미발행 케이스면 by-case 가 404 → 바 자체가 렌더 안 됨. -->
+    <PublishStatusBar v-if="isOwner" :case-id="errorCase.id" />
   </div>
 </template>
 

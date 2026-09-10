@@ -1,5 +1,6 @@
 import apiClient from './apiClient'
 import type {
+  PublishmentDetail,
   PublishmentListResponse,
   PublishmentSort,
   PublishmentVisibility,
@@ -27,5 +28,23 @@ export const publishmentApi = {
     limit?: number
   } = {}) {
     return apiClient.get<PublishmentListResponse>('/publishments/me', { params })
+  },
+
+  /**
+   * 케이스의 발행 상태 (케이스 상세 하단 상태 바용). 소유자 전용 —
+   * 발행한 적 없거나 내 것이 아니면 **404**. 호출부에서 404 는 "미발행"으로 처리.
+   */
+  getByCase(caseId: number) {
+    return apiClient.get<PublishmentDetail>(`/publishments/by-case/${caseId}`)
+  },
+
+  /** 발행 내리기(soft) — 공개 링크 410, 목록/검색 제외. slug·스냅샷·지표 보존(다시 공개 가능). */
+  unpublish(slug: string) {
+    return apiClient.post<PublishmentDetail>(`/publishments/by-slug/${slug}/unpublish`)
+  },
+
+  /** 다시 공개 (UNPUBLISHED → LIVE). 버전/스냅샷 변화 없음. */
+  restore(slug: string) {
+    return apiClient.post<PublishmentDetail>(`/publishments/by-slug/${slug}/publish`)
   },
 }
