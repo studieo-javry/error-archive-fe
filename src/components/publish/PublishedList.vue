@@ -241,7 +241,7 @@ const selectClass =
         No published posts match those filters.
       </p>
 
-      <div v-else class="flex flex-col items-center justify-center py-24 text-center border-t border-zinc-200 dark:border-zinc-800 mt-8">
+      <div v-else class="flex flex-col items-center justify-center py-24 text-center">
         <h3 class="serif-title text-3xl text-zinc-800 dark:text-zinc-200 mb-6">Nothing Published Yet</h3>
         <p class="text-zinc-500 font-light text-sm max-w-md mx-auto leading-relaxed">
           Publish a case you’ve solved and share the whole write-up with a single link. Start from any case page.
