@@ -8,6 +8,8 @@ import { ChevronUpIcon } from '@heroicons/vue/24/outline'
 // 발행 여부 판정(getByCase/404)과 소유자 게이팅은 부모(ErrorDetailPage)가 한다 —
 // 여긴 이미 발행된 케이스의 상태만 표현/조작한다. detail 은 최초 스냅샷.
 const props = defineProps<{ detail: PublishmentDetail }>()
+// 상태 바에서 down/up 으로 status 가 바뀌면 부모(액션행 라벨)도 동기화하도록 알린다.
+const emit = defineEmits<{ update: [detail: PublishmentDetail] }>()
 
 // 내부 상태로 복제 — unpublish/restore 로 status 가 바뀌면 여기서 갱신한다.
 // 부모가 detail 을 다시 넘기면(다른 케이스로 이동 등) 동기화.
@@ -20,6 +22,9 @@ const copied = ref(false)
 
 const isLive = computed(() => pub.value?.status === 'LIVE')
 const visLabel = computed(() => (pub.value?.visibility === 'UNLISTED' ? 'Unlisted' : 'Public'))
+// 참조 시안과 동일하게: 프로토콜 없는 전체 도메인 URL, 콤마 구분 조회수.
+const displayUrl = computed(() => pub.value.publicUrl.replace(/^https?:\/\//, ''))
+const viewsLabel = computed(() => pub.value.viewCount.toLocaleString())
 
 async function copy() {
   if (!pub.value) return
@@ -57,6 +62,7 @@ async function down() {
   try {
     const { data } = await publishmentApi.unpublish(slug)
     pub.value = data // UNPUBLISHED
+    emit('update', data)
     undoToast('Unpublished — the public link now returns 410.', async () => {
       hideToast()
       await restoreBySlug(slug)
@@ -77,6 +83,7 @@ async function restoreBySlug(slug: string) {
   try {
     const { data } = await publishmentApi.restore(slug)
     pub.value = data // LIVE
+    emit('update', data)
   } catch {
     plainToast('Couldn’t restore. Try again.')
   } finally {
@@ -98,10 +105,10 @@ async function restoreBySlug(slug: string) {
 
     <div class="psb-bar">
       <span class="psb-dot" :class="isLive ? 'live' : 'off'" />
-      <a v-if="isLive" :href="pub.publicUrl" target="_blank" rel="noopener" class="psb-url">/p/{{ pub.slug }}</a>
-      <span v-else class="psb-url off">/p/{{ pub.slug }}</span>
+      <a v-if="isLive" :href="pub.publicUrl" target="_blank" rel="noopener" class="psb-url">{{ displayUrl }}</a>
+      <span v-else class="psb-url off">{{ displayUrl }}</span>
       <span class="psb-sep">·</span>
-      <span class="psb-stat">{{ isLive ? `${pub.viewCount} views` : 'Offline · link returns 410' }}</span>
+      <span class="psb-stat">{{ isLive ? `${viewsLabel} views` : 'link returns 410' }}</span>
 
       <span class="psb-spacer" />
 
@@ -151,7 +158,7 @@ async function restoreBySlug(slug: string) {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 50px;
+  height: 52px;
   padding: 0 16px;
   background: rgba(255, 255, 255, .9);
   backdrop-filter: blur(12px);
@@ -174,22 +181,23 @@ async function restoreBySlug(slug: string) {
   50% { transform: scale(1.24); opacity: .76; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0); }
 }
 
-.psb-url { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 12.5px; color: #18181b; white-space: nowrap; text-decoration: none; }
+.psb-url { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 13px; color: #18181b; white-space: nowrap; text-decoration: none; transition: color .15s; }
 .psb-url:hover { color: #059669; }
 .psb-url.off { color: #71717a; }
 :global(.dark) .psb-url { color: #e4e4e7; }
 :global(.dark) .psb-url.off { color: #a1a1aa; }
 .psb-sep { color: #a1a1aa; }
-.psb-stat { font-size: 12px; color: #71717a; white-space: nowrap; }
+.psb-stat { font-size: 12.5px; color: #71717a; white-space: nowrap; }
 .psb-spacer { flex: 1; }
 
-.psb-badge { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 5px; }
+/* 참조의 mini-badge: 라운드 pill */
+.psb-badge { font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; flex-shrink: 0; }
 .psb-badge.public { background: #ecfdf5; color: #059669; }
 .psb-badge.unlisted { background: #fffbeb; color: #92400e; }
 :global(.dark) .psb-badge.public { background: rgba(16, 185, 129, .12); color: #34d399; }
 :global(.dark) .psb-badge.unlisted { background: rgba(245, 158, 11, .12); color: #fbbf24; }
 
-.psb-txt { background: none; border: 0; font: 400 12.5px "Inter", sans-serif; color: #71717a; cursor: pointer; padding: 4px 6px; border-radius: 7px; transition: color .15s; white-space: nowrap; }
+.psb-txt { background: none; border: 0; font: 400 12.5px "Inter", sans-serif; color: #71717a; cursor: pointer; padding: 4px 4px; border-radius: 7px; transition: color .15s; white-space: nowrap; flex-shrink: 0; }
 .psb-txt:hover { color: #059669; }
 .psb-txt.primary { color: #059669; font-weight: 500; }
 .psb-txt.primary:hover { color: #047857; }

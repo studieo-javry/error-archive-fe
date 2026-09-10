@@ -26,7 +26,7 @@ import PublishSheet from '@/components/publish/PublishSheet.vue'
 import { publishmentApi } from '@/services/publishmentApi'
 import type { PublishmentDetail } from '@/types/publish'
 import type { QuoteInfo } from '@/components/comment/CommentForm.vue'
-import { StarIcon as StarOutlineIcon, HandRaisedIcon as HandOutlineIcon } from '@heroicons/vue/24/outline'
+import { StarIcon as StarOutlineIcon, HandRaisedIcon as HandOutlineIcon, LinkIcon } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon, HandRaisedIcon as HandSolidIcon } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
@@ -531,15 +531,27 @@ onUnmounted(() => {
           @click="showDeleteConfirm = true"
         >Delete</button>
 
-        <!-- 아직 발행 안 한 소유자에게만 — 발행됨이면 하단 상태 바가 대신 뜬다 -->
-        <button
-          v-if="isOwner && pubLoaded && !publishment"
-          class="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
-          @click="showPublishSheet = true"
-        >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7" /></svg>
-          Publish
-        </button>
+        <!-- 소유자 발행 상태: 미발행이면 발행 트리거, 발행됨이면 Published(초록)/Offline(회색) 표시.
+             실제 조작(내리기/다시공개)은 하단 상태 바에서 한다(참조 publish-case-status-v1). -->
+        <template v-if="isOwner && pubLoaded">
+          <button
+            v-if="!publishment"
+            class="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
+            @click="showPublishSheet = true"
+          >
+            <LinkIcon class="w-3.5 h-3.5" />
+            Publish
+          </button>
+          <span
+            v-else
+            class="inline-flex items-center gap-1 text-xs"
+            :class="publishment.status === 'LIVE' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400'"
+            :title="publishment.status === 'LIVE' ? '발행됨 — 하단 바에서 관리' : '내려짐 — 하단 바에서 다시 공개'"
+          >
+            <LinkIcon class="w-3.5 h-3.5" />
+            {{ publishment.status === 'LIVE' ? 'Published' : 'Offline' }}
+          </span>
+        </template>
       </div>
     </div>
 
@@ -678,8 +690,9 @@ onUnmounted(() => {
       </div>
     </Teleport>
 
-    <!-- 발행된 소유자 케이스에만 상태 바. 미발행이면 위 Publish 트리거가 대신 노출된다. -->
-    <PublishStatusBar v-if="isOwner && publishment" :detail="publishment" />
+    <!-- 발행된 소유자 케이스에만 상태 바. 미발행이면 위 Publish 트리거가 대신 노출된다.
+         바에서 내리기/다시공개 시 status 를 액션행 라벨에 반영하려고 update 를 받는다. -->
+    <PublishStatusBar v-if="isOwner && publishment" :detail="publishment" @update="publishment = $event" />
 
     <!-- 발행물 생성 시트 (하단 슬라이드업) -->
     <PublishSheet
