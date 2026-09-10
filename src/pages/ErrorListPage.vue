@@ -102,6 +102,9 @@ watch(() => teamStore.currentWorkspaceId, () => {
     <PublishedList v-if="tab === 'published'" />
 
     <template v-else>
+      <!-- Published 탭의 안내 한 줄과 대칭 — 두 탭의 검색 바 위치를 맞춘다. -->
+      <p class="text-[11px] text-zinc-400 dark:text-zinc-600 mb-4">Every error case in this workspace.</p>
+
       <div class="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
         <div class="flex gap-2 flex-wrap">
           <button
