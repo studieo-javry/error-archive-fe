@@ -692,7 +692,7 @@ onUnmounted(() => {
 
     <!-- 발행된 소유자 케이스에만 상태 바. 미발행이면 위 Publish 트리거가 대신 노출된다.
          바에서 내리기/다시공개 시 status 를 액션행 라벨에 반영하려고 update 를 받는다. -->
-    <PublishStatusBar v-if="isOwner && publishment" :detail="publishment" @update="publishment = $event" />
+    <PublishStatusBar v-if="isOwner && publishment" :detail="publishment" @update="publishment = $event" @deleted="publishment = null" />
 
     <!-- 발행물 생성 시트 (하단 슬라이드업) -->
     <PublishSheet

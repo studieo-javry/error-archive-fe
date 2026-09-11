@@ -59,4 +59,13 @@ export const publishmentApi = {
   restore(slug: string) {
     return apiClient.post<PublishmentDetail>(`/publishments/by-slug/${slug}/publish`)
   },
+
+  /**
+   * 발행물 영구 삭제(hard) — 내리기와 달리 slug·스냅샷·counters 를 보존하지 않는다.
+   * 공개 페이지는 404, slug 는 반납(같은 주소로 재발행 불가). 되돌릴 수 없다. 204 No Content.
+   * 원본 케이스와 재발행 권한은 그대로. 소유자 전용(403).
+   */
+  delete(slug: string) {
+    return apiClient.delete<void>(`/publishments/by-slug/${slug}`)
+  },
 }

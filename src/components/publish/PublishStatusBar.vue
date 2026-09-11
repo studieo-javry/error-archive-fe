@@ -9,7 +9,8 @@ import { ChevronUpIcon } from '@heroicons/vue/24/outline'
 // 여긴 이미 발행된 케이스의 상태만 표현/조작한다. detail 은 최초 스냅샷.
 const props = defineProps<{ detail: PublishmentDetail }>()
 // 상태 바에서 down/up 으로 status 가 바뀌면 부모(액션행 라벨)도 동기화하도록 알린다.
-const emit = defineEmits<{ update: [detail: PublishmentDetail] }>()
+// deleted: 영구 삭제 완료 — 부모는 발행물 상태를 비워(→ 다시 Publish 트리거) 상태 바를 내린다.
+const emit = defineEmits<{ update: [detail: PublishmentDetail]; deleted: [] }>()
 
 // 내부 상태로 복제 — unpublish/restore 로 status 가 바뀌면 여기서 갱신한다.
 // 부모가 detail 을 다시 넘기면(다른 케이스로 이동 등) 동기화.
@@ -102,6 +103,42 @@ async function restoreBySlug(slug: string) {
     busy.value = false
   }
 }
+
+// ── 삭제 다이얼로그 (E → D) ──
+// E: "내리기 vs 영구 삭제" 갈림. LIVE 일 때만 내리기 권유 단계를 거치고,
+//    이미 내려진(offline) 상태면 내리기 선택지가 무의미하니 바로 D(확정)로 간다.
+const dialog = ref<'E' | 'D' | null>(null)
+const ack = ref(false)
+
+function openDeleteDialog() {
+  if (busy.value) return
+  ack.value = false
+  dialog.value = isLive.value ? 'E' : 'D'
+}
+function closeDialog() { dialog.value = null }
+// E 에서 "내리기(추천)" 선택 → 기존 unpublish 플로우(실행취소 토스트 포함).
+async function chooseUnpublish() {
+  closeDialog()
+  await down()
+}
+// E 에서 "영구 삭제" 선택 → D(상세 확인)로.
+function goHardDelete() { ack.value = false; dialog.value = 'D' }
+
+async function doDelete() {
+  if (!pub.value || busy.value) return
+  const slug = pub.value.slug
+  busy.value = true
+  try {
+    await publishmentApi.delete(slug)
+    closeDialog()
+    emit('deleted')
+    plainToast('Deleted — the public link now returns 404.')
+  } catch {
+    plainToast('Couldn’t delete. Try again.')
+  } finally {
+    busy.value = false
+  }
+}
 </script>
 
 <template>
@@ -141,6 +178,14 @@ async function restoreBySlug(slug: string) {
       </template>
       <button v-else class="psb-txt primary" :disabled="busy" @click="up">Restore</button>
 
+      <!-- 영구 삭제 진입 — 항상 노출(내려진 상태에서도 삭제 가능) -->
+      <button class="psb-del" :disabled="busy" @click="openDeleteDialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-11.001.166v-.916c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.32 0c1.18.037 2.09 1.022 2.09 2.201v.916" />
+        </svg>
+        Delete
+      </button>
+
       <button class="psb-chev" :class="{ open: expanded }" aria-label="Toggle details" @click="expanded = !expanded">
         <ChevronUpIcon class="w-4 h-4" />
       </button>
@@ -152,6 +197,62 @@ async function restoreBySlug(slug: string) {
       <svg v-if="toast.undo" class="ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" /><circle class="p" cx="10" cy="10" r="7" /></svg>
       <span class="tmsg">{{ toast.msg }}</span>
       <button v-if="toast.undo" class="tundo" @click="toast.undo()">Undo</button>
+    </div>
+  </Transition>
+
+  <!-- 삭제 다이얼로그 (E: 내리기 vs 삭제 갈림 → D: 상세 확인) -->
+  <Transition name="psb-back">
+    <div v-if="dialog" class="psb-backdrop" @click.self="closeDialog">
+      <div class="psb-modal">
+        <!-- E: 어떻게 할까요? -->
+        <template v-if="dialog === 'E'">
+          <div class="m-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-11.001.166v-.916c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.32 0c1.18.037 2.09 1.022 2.09 2.201v.916" /></svg>
+          </div>
+          <div class="m-title">이 발행물을 어떻게 할까요?</div>
+          <div class="m-body">대부분의 경우 <b>내리기</b>로 충분해요 — 링크만 막고 언제든 되살릴 수 있어요.</div>
+          <div class="choice">
+            <button class="choice-opt safe rec" :disabled="busy" @click="chooseUnpublish">
+              <div class="ci">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" /><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2" /></svg>
+              </div>
+              <div class="tx">
+                <div class="ct">내리기 (unpublish)<span class="rec-badge">추천</span></div>
+                <div class="cd">공개 링크 410. slug·조회수·스냅샷 보존 → 다시 공개 가능.</div>
+              </div>
+            </button>
+            <button class="choice-opt hard" :disabled="busy" @click="goHardDelete">
+              <div class="ci">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-11.001.166v-.916c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.32 0c1.18.037 2.09 1.022 2.09 2.201v.916" /></svg>
+              </div>
+              <div class="tx">
+                <div class="ct">영구 삭제</div>
+                <div class="cd">전부 삭제, slug 반납, 복구 불가.</div>
+              </div>
+            </button>
+          </div>
+          <div class="m-actions"><button class="m-btn ghost" @click="closeDialog">취소</button></div>
+        </template>
+
+        <!-- D: 영구 삭제 상세 확인 -->
+        <template v-else>
+          <div class="m-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-11.001.166v-.916c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.32 0c1.18.037 2.09 1.022 2.09 2.201v.916" /></svg>
+          </div>
+          <div class="m-title">발행물 영구 삭제</div>
+          <div class="m-body">이 발행물을 완전히 지웁니다. <b>되돌릴 수 없어요.</b></div>
+          <ul class="consequences">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg><span>공개 페이지 <span class="slug">{{ displayUrl }}</span>가 <b>404</b></span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg><span><b>slug 영구 반납</b> — 같은 주소로 다시 발행 불가</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg><span>스냅샷·조회수·PDF 모두 삭제</span></li>
+          </ul>
+          <label class="ack"><input type="checkbox" v-model="ack"><span>위 내용을 이해했고, 이 발행물을 <b>영구 삭제</b>합니다.</span></label>
+          <div class="m-actions">
+            <button class="m-btn ghost" @click="closeDialog">취소</button>
+            <button class="m-btn danger" :disabled="!ack || busy" @click="doDelete">영구 삭제</button>
+          </div>
+        </template>
+      </div>
     </div>
   </Transition>
 </template>
@@ -172,7 +273,10 @@ async function restoreBySlug(slug: string) {
   --psb-amber: #92400e;
   --psb-amber-soft: #fffbeb;
   --psb-rose: #e11d48;
+  --psb-rose-2: #be123c;
   --psb-rose-soft: #fff1f2;
+  --psb-on-fill: #ffffff;
+  --psb-backdrop: rgba(24, 24, 27, .32);
   --psb-chev-hover: #52525b;
   --psb-toast-bg: #18181b;
   --psb-toast-border: transparent;
@@ -193,7 +297,10 @@ async function restoreBySlug(slug: string) {
   --psb-amber: #fbbf24;
   --psb-amber-soft: rgba(245, 158, 11, .12);
   --psb-rose: #fb7185;
-  --psb-rose-soft: rgba(225, 29, 72, .12);
+  --psb-rose-2: #fda4af;
+  --psb-rose-soft: rgba(225, 29, 72, .16);
+  --psb-on-fill: #0b0b0d;
+  --psb-backdrop: rgba(0, 0, 0, .55);
   --psb-chev-hover: #d4d4d8;
   --psb-toast-bg: #000;
   --psb-toast-border: #2a2a2f;
@@ -241,6 +348,8 @@ async function restoreBySlug(slug: string) {
   background: var(--psb-gloss);
 }
 .psb-bar > * { position: relative; z-index: 1; }
+/* 우측 액션들은 절대 줄어들지 않게 — 좁아지면 URL(위 flex-shrink:1)만 …로 축약 */
+.psb-badge, .psb-txt, .psb-div, .psb-unpub, .psb-del, .psb-chev, .psb-dot, .psb-sep, .psb-stat { flex-shrink: 0; }
 
 .psb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
 .psb-dot.live { background: #10b981; transform-origin: center; animation: psb-breathe 1.5s ease-in-out infinite; }
@@ -250,7 +359,7 @@ async function restoreBySlug(slug: string) {
   50% { transform: scale(1.24); opacity: .76; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0); }
 }
 
-.psb-url { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 13px; color: var(--psb-ink); white-space: nowrap; text-decoration: none; transition: color .15s; }
+.psb-url { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 13px; color: var(--psb-ink); white-space: nowrap; text-decoration: none; transition: color .15s; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
 .psb-url:hover { color: var(--psb-accent); }
 .psb-url.off { color: var(--psb-sub); }
 .psb-sep { color: var(--psb-faint); }
@@ -276,6 +385,66 @@ async function restoreBySlug(slug: string) {
 .psb-unpub svg { width: 14px; height: 14px; }
 .lockicon .shackle { transform-box: view-box; transform-origin: 8px 10.5px; transform: rotate(-38deg); transition: transform .34s cubic-bezier(.34, 1.56, .64, 1); }
 .psb-unpub:hover .lockicon .shackle { transform: rotate(0deg); }
+
+/* 영구 삭제(빨강 텍스트) 바 버튼 */
+.psb-del { display: inline-flex; align-items: center; gap: 5px; font: 400 12px "Inter", sans-serif; color: var(--psb-rose); background: none; border: 0; cursor: pointer; padding: 4px 7px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; transition: background .15s; }
+.psb-del:hover { background: var(--psb-rose-soft); }
+.psb-del:disabled { opacity: .5; cursor: default; }
+.psb-del svg { width: 13px; height: 13px; }
+
+/* ── 삭제 다이얼로그 ── */
+.psb-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: var(--psb-backdrop); }
+.psb-modal { width: 100%; max-width: 400px; background: var(--psb-surface); border: 1px solid var(--psb-line); border-radius: 16px; box-shadow: 0 24px 70px rgba(0, 0, 0, .28); padding: 22px; }
+.psb-modal .m-ic { width: 44px; height: 44px; border-radius: 12px; background: var(--psb-rose-soft); color: var(--psb-rose); display: grid; place-items: center; margin-bottom: 14px; }
+.psb-modal .m-ic svg { width: 22px; height: 22px; }
+.psb-modal .m-title { font-size: 16px; font-weight: 600; color: var(--psb-ink); margin-bottom: 7px; }
+.psb-modal .m-body { font-size: 12.5px; color: var(--psb-sub); line-height: 1.6; }
+.psb-modal .m-body b { color: var(--psb-ink); font-weight: 600; }
+
+/* 선택지(내리기 / 영구 삭제) — G(밑줄 draw) + F(아이콘 팝) */
+.choice { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.choice-opt { position: relative; overflow: hidden; display: flex; gap: 11px; align-items: flex-start; border: 1px solid var(--psb-line); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; background: var(--psb-surface); width: 100%; transition: background .2s, border-color .2s; }
+.choice-opt:disabled { opacity: .55; cursor: default; }
+.choice-opt.rec { border-color: color-mix(in srgb, var(--psb-accent) 45%, transparent); }
+.choice-opt::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2.5px; width: 100%; transform: scaleX(0); transform-origin: left; transition: transform .28s cubic-bezier(.4, 0, .2, 1); }
+.choice-opt.safe::after { background: var(--psb-accent); }
+.choice-opt.hard::after { background: var(--psb-rose); }
+.choice-opt:not(:disabled):hover::after { transform: scaleX(1); }
+.choice-opt.safe:not(:disabled):hover { background: var(--psb-accent-soft); }
+.choice-opt.hard:not(:disabled):hover { background: var(--psb-rose-soft); }
+.choice-opt .ci { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; transition: background .2s, color .2s, transform .25s; }
+.choice-opt .ci svg { width: 15px; height: 15px; }
+.choice-opt.safe .ci { background: var(--psb-accent-soft); color: var(--psb-accent); }
+.choice-opt.hard .ci { background: var(--psb-rose-soft); color: var(--psb-rose); }
+.choice-opt.safe:not(:disabled):hover .ci { background: var(--psb-accent); color: var(--psb-on-fill); transform: scale(1.08); }
+.choice-opt.hard:not(:disabled):hover .ci { background: var(--psb-rose); color: var(--psb-on-fill); transform: scale(1.08); }
+.choice-opt .tx { min-width: 0; }
+.choice-opt .ct { font-size: 13px; font-weight: 600; color: var(--psb-ink); display: flex; align-items: center; }
+.choice-opt .cd { font-size: 11px; color: var(--psb-sub); line-height: 1.45; margin-top: 2px; }
+.rec-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--psb-accent); background: var(--psb-accent-soft); padding: 1px 6px; border-radius: 5px; margin-left: 6px; }
+
+/* 결과 리스트 (D) */
+.consequences { list-style: none; margin: 14px 0 0; padding: 12px 14px; background: var(--psb-rose-soft); border-radius: 11px; display: flex; flex-direction: column; gap: 7px; }
+.consequences li { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--psb-ink); line-height: 1.5; }
+.consequences li svg { width: 13px; height: 13px; color: var(--psb-rose); flex-shrink: 0; margin-top: 2px; }
+.consequences b { font-weight: 600; }
+.consequences .slug { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 11px; background: var(--psb-surface); border: 1px solid var(--psb-line); padding: 1px 5px; border-radius: 5px; }
+
+.ack { display: flex; gap: 8px; align-items: flex-start; margin-top: 14px; font-size: 12px; color: var(--psb-sub); line-height: 1.5; cursor: pointer; }
+.ack input { margin-top: 2px; accent-color: var(--psb-rose); width: 15px; height: 15px; flex-shrink: 0; }
+.ack b { color: var(--psb-ink); font-weight: 600; }
+
+.m-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.m-btn { font: 500 13px "Inter", sans-serif; padding: 8px 15px; border-radius: 10px; cursor: pointer; border: 1px solid var(--psb-line); background: none; color: var(--psb-sub); transition: background .15s, color .15s; }
+.m-btn.ghost:hover { color: var(--psb-ink); background: var(--psb-line-soft); }
+.m-btn.danger { background: var(--psb-rose); color: var(--psb-on-fill); border: 0; }
+.m-btn.danger:hover { background: var(--psb-rose-2); }
+.m-btn:disabled { opacity: .5; cursor: default; }
+
+.psb-back-enter-active, .psb-back-leave-active { transition: opacity .2s; }
+.psb-back-enter-active .psb-modal, .psb-back-leave-active .psb-modal { transition: transform .22s cubic-bezier(.34, 1.3, .5, 1), opacity .22s; }
+.psb-back-enter-from, .psb-back-leave-to { opacity: 0; }
+.psb-back-enter-from .psb-modal, .psb-back-leave-to .psb-modal { transform: translateY(10px) scale(.98); opacity: 0; }
 
 .psb-chev { width: 28px; height: 28px; border-radius: 8px; border: 0; background: none; color: var(--psb-faint); cursor: pointer; display: grid; place-items: center; transition: color .15s, transform .3s; }
 .psb-chev:hover { color: var(--psb-chev-hover); }
