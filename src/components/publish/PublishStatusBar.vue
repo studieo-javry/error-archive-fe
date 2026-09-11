@@ -26,6 +26,18 @@ const visLabel = computed(() => (pub.value?.visibility === 'UNLISTED' ? 'Unliste
 const displayUrl = computed(() => pub.value.publicUrl.replace(/^https?:\/\//, ''))
 const viewsLabel = computed(() => pub.value.viewCount.toLocaleString())
 
+// 발행일: 상대 시간(2h ago) 표기. hover 시 정확한 일시를 title 로 병기.
+function relTime(iso: string): string {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  const m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24)
+  if (s < 60) return 'just now'
+  if (m < 60) return `${m}m ago`
+  if (h < 24) return `${h}h ago`
+  if (d < 30) return `${d}d ago`
+  return formatAbsolute(iso) // 30일 넘으면 절대 날짜로
+}
+const publishedRel = computed(() => relTime(pub.value.publishedAt))
+
 async function copy() {
   if (!pub.value) return
   try {
@@ -99,7 +111,7 @@ async function restoreBySlug(slug: string) {
         <div class="psb-metric"><div class="n">{{ pub.viewCount }}</div><div class="l">Views</div></div>
         <div class="psb-metric"><div class="n">{{ pub.downloadCount }}</div><div class="l">Downloads</div></div>
         <div class="psb-metric"><div class="n">v{{ pub.version }}</div><div class="l">Version</div></div>
-        <div class="psb-metric"><div class="n">{{ formatAbsolute(pub.publishedAt) }}</div><div class="l">Published</div></div>
+        <div class="psb-metric"><div class="n" :title="formatAbsolute(pub.publishedAt)">{{ publishedRel }}</div><div class="l">Published</div></div>
       </div>
     </Transition>
 
