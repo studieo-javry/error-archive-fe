@@ -700,6 +700,7 @@ onUnmounted(() => {
       :case-id="errorCase.id"
       :case-title="errorCase.title"
       :case-summary="null"
+      :case-description="errorCase.description ?? null"
       :steps="steps"
       :solutions="solutions"
       :attachments="errorCase.attachments"

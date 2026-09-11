@@ -15,6 +15,7 @@ const props = defineProps<{
   caseId: number
   caseTitle: string
   caseSummary: string | null
+  caseDescription: string | null
   steps: Step[]
   solutions: Solution[]
   attachments: ErrorCaseAttachment[]
@@ -65,26 +66,37 @@ function quick(kind: 'all' | 'nofail' | 'resolved') {
 const selectedStepList = computed(() => orderedSteps.value.filter(s => selSteps.value.has(s.id)))
 const selectedSolList = computed(() => props.solutions.filter(s => selSols.value.has(s.id)))
 
-// 선택된 step 본문의 @attach(markerId) 마커를 훑어, 발행에 실제로 들어갈 첨부만 추린다.
-// (첨부는 케이스 레벨이지만 발행 콘텐츠는 step 기준이라 step 에서 참조된 것만 노출)
+// 발행에 실제로 들어갈 첨부 = 케이스 본문(description) + 선택된 step 본문에 @attach 로 태그된 것.
+// BE ContentSnapshotBuilder 와 동일: descriptionAttachments + stepAttachments (미태그는 제외).
 const ATTACH_MARKER = /@attach\(([a-zA-Z0-9_-]+)(?:\|\d{2,4})?\)/g
-const stepAttachments = computed<ErrorCaseAttachment[]>(() => {
+function attachMarkersIn(text: string | null): string[] {
+  if (!text) return []
+  return [...text.matchAll(ATTACH_MARKER)].map(m => m[1])
+}
+const includedAttachments = computed<{ att: ErrorCaseAttachment; src: 'body' | 'step' }[]>(() => {
   const byMarker = new Map(props.attachments.map(a => [a.markerId, a]))
   const seen = new Set<string>()
-  const out: ErrorCaseAttachment[] = []
-  for (const s of selectedStepList.value) {
-    if (!s.body) continue
-    for (const m of s.body.matchAll(ATTACH_MARKER)) {
-      const id = m[1]
+  const out: { att: ErrorCaseAttachment; src: 'body' | 'step' }[] = []
+  const add = (ids: string[], src: 'body' | 'step') => {
+    for (const id of ids) {
       if (seen.has(id)) continue
-      seen.add(id)
       const att = byMarker.get(id)
-      if (att) out.push(att)
+      if (att) { seen.add(id); out.push({ att, src }) }
     }
   }
+  add(attachMarkersIn(props.caseDescription), 'body') // 본문(Context) 태그 첨부 먼저
+  for (const s of selectedStepList.value) add(attachMarkersIn(s.body), 'step')
   return out
 })
-const includedAttCount = computed(() => stepAttachments.value.filter(a => !excludedAtt.value.has(a.markerId)).length)
+const includedAttCount = computed(() => includedAttachments.value.filter(x => !excludedAtt.value.has(x.att.markerId)).length)
+
+// 미태그(본문·스텝 어디에도 @attach 로 넣지 않은) 첨부 — 발행 미포함 안내용
+const untaggedCount = computed(() => {
+  const referenced = new Set<string>()
+  attachMarkersIn(props.caseDescription).forEach(id => referenced.add(id))
+  for (const s of props.steps) attachMarkersIn(s.body).forEach(id => referenced.add(id))
+  return props.attachments.filter(a => !referenced.has(a.markerId)).length
+})
 
 function toggleAtt(mid: string) { excludedAtt.value.has(mid) ? excludedAtt.value.delete(mid) : excludedAtt.value.add(mid); excludedAtt.value = new Set(excludedAtt.value) }
 function attHint(kind: string): { ico: string; how: string } {
@@ -279,17 +291,19 @@ function close() {
             <!-- Files (첨부 포함/제외) -->
             <template v-else-if="stage === 2">
               <h4>첨부 파일</h4>
-              <p class="hint">발행물에 넣을 첨부만 켜세요. <b>표시 방식은 파일 종류로 자동</b> — 이미지는 인라인, 로그·JSON·PDF 는 새 탭, zip 등은 다운로드.</p>
-              <p v-if="stepAttachments.length === 0" class="hint" style="font-style:italic">선택된 step 에 연결된 첨부가 없습니다.</p>
+              <p class="hint">발행물에 넣을 첨부만 켜세요. 본문(Context)과 선택한 step 에 삽입된 첨부가 대상이에요. <b>표시 방식은 파일 종류로 자동</b> — 이미지는 인라인, 로그·JSON·PDF 는 새 탭, zip 등은 다운로드.</p>
+              <p v-if="includedAttachments.length === 0" class="hint" style="font-style:italic">본문·선택한 step 에 삽입된 첨부가 없습니다.</p>
               <div v-else class="pick-list">
-                <div v-for="a in stepAttachments" :key="a.markerId" class="pick att" :class="excludedAtt.has(a.markerId) ? 'off' : 'on'" @click="toggleAtt(a.markerId)">
+                <div v-for="{ att, src } in includedAttachments" :key="att.markerId" class="pick att" :class="excludedAtt.has(att.markerId) ? 'off' : 'on'" @click="toggleAtt(att.markerId)">
                   <span class="chk"><CheckIcon class="w-3 h-3" /></span>
-                  <span class="att-ico">{{ attHint(a.kind).ico }}</span>
-                  <span class="ptitle">{{ a.fileName }}</span>
-                  <span class="att-how">{{ attHint(a.kind).how }}</span>
-                  <span class="when">{{ fmtSize(a.size) }}</span>
+                  <span class="att-ico">{{ attHint(att.kind).ico }}</span>
+                  <span class="ptitle">{{ att.fileName }}</span>
+                  <span class="att-src">{{ src === 'body' ? '본문' : 'step' }}</span>
+                  <span class="att-how">{{ attHint(att.kind).how }}</span>
+                  <span class="when">{{ fmtSize(att.size) }}</span>
                 </div>
               </div>
+              <p v-if="untaggedCount > 0" class="hint" style="margin-top:12px">본문·step 에 삽입하지 않은 첨부 {{ untaggedCount }}개는 발행에 포함되지 않아요. 넣으려면 케이스 본문/step 에 삽입하세요.</p>
             </template>
 
             <!-- Options -->
@@ -344,7 +358,7 @@ function close() {
             <button v-if="stage === 0" class="psh-btn" @click="close">취소</button>
             <button v-else class="psh-btn" @click="stage--"><ChevronLeftIcon class="ic" />뒤로</button>
             <span v-if="stage === 0" class="selinfo">{{ selSteps.size }} steps · {{ selSols.size }} solutions</span>
-            <span v-else-if="stage === 2 && stepAttachments.length" class="selinfo">{{ includedAttCount }} / {{ stepAttachments.length }} 첨부 포함</span>
+            <span v-else-if="stage === 2 && includedAttachments.length" class="selinfo">{{ includedAttCount }} / {{ includedAttachments.length }} 첨부 포함</span>
             <span v-if="errorMsg" class="err">{{ errorMsg }}</span>
             <span class="sp" />
             <button v-if="stage === 0" class="psh-btn primary" :disabled="!canNextInclude" @click="stage = 1">다음: 제목<ChevronRightIcon class="ic" /></button>
@@ -449,6 +463,8 @@ function close() {
 
 /* attachments */
 .pick .att-ico { font-size: 15px; flex-shrink: 0; }
+.pick .att-src { font-size: 9.5px; font-weight: 600; color: #71717a; background: #f4f4f5; padding: 1px 6px; border-radius: 999px; flex-shrink: 0; }
+:global(.dark) .pick .att-src { color: #a1a1aa; background: #27272a; }
 .pick .att-how { font-size: 11px; color: #a1a1aa; flex-shrink: 0; }
 .pick.att.on .att-how { color: #059669; }
 :global(.dark) .pick.att.on .att-how { color: #34d399; }
