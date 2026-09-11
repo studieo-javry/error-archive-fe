@@ -4,7 +4,7 @@ import axios from 'axios'
 import { publishmentApi } from '@/services/publishmentApi'
 import type { PublishmentDetail, PublishmentVisibility, PublishRequest, PublishTimeStyle } from '@/types/publish'
 import type { Step, Solution, ErrorCaseAttachment } from '@/types/error'
-import { ChevronRightIcon, ChevronLeftIcon, CheckIcon } from '@heroicons/vue/24/outline'
+import { ChevronRightIcon, ChevronLeftIcon, CheckIcon, PaperClipIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
 
 /**
  * 케이스 상세에서 올라오는 발행물 생성 시트(하단 슬라이드업).
@@ -291,8 +291,14 @@ function close() {
             <!-- Files (첨부 포함/제외) -->
             <template v-else-if="stage === 2">
               <h4>첨부 파일</h4>
-              <p class="hint">발행물에 넣을 첨부만 켜세요. 본문(Context)과 선택한 step 에 삽입된 첨부가 대상이에요. <b>표시 방식은 파일 종류로 자동</b> — 이미지는 인라인, 로그·JSON·PDF 는 새 탭, zip 등은 다운로드.</p>
-              <p v-if="includedAttachments.length === 0" class="hint" style="font-style:italic">본문·선택한 step 에 삽입된 첨부가 없습니다.</p>
+              <p v-if="includedAttachments.length === 0" class="subline">본문과 선택한 step 에 삽입한 첨부가 발행물에 함께 들어가요.</p>
+              <p v-else class="subline">넣을 첨부만 켜세요. <b>표시 방식은 파일 종류에 따라 자동</b>이에요.</p>
+
+              <div v-if="includedAttachments.length === 0" class="att-empty">
+                <div class="eico"><PaperClipIcon class="w-[22px] h-[22px]" /></div>
+                <div class="et">삽입한 첨부가 없어요</div>
+                <div class="ed">본문이나 step 에 파일을 삽입하면 여기서 발행 포함 여부를 고를 수 있어요.</div>
+              </div>
               <div v-else class="pick-list">
                 <div v-for="{ att, src } in includedAttachments" :key="att.markerId" class="pick att" :class="excludedAtt.has(att.markerId) ? 'off' : 'on'" @click="toggleAtt(att.markerId)">
                   <span class="chk"><CheckIcon class="w-3 h-3" /></span>
@@ -303,7 +309,10 @@ function close() {
                   <span class="when">{{ fmtSize(att.size) }}</span>
                 </div>
               </div>
-              <p v-if="untaggedCount > 0" class="hint" style="margin-top:12px">본문·step 에 삽입하지 않은 첨부 {{ untaggedCount }}개는 발행에 포함되지 않아요. 넣으려면 케이스 본문/step 에 삽입하세요.</p>
+              <div v-if="untaggedCount > 0" class="att-excluded">
+                <InformationCircleIcon class="ic" />
+                <span>본문·step 에 삽입하지 않은 첨부 <b>{{ untaggedCount }}개</b>는 제외돼요. 넣으려면 본문이나 step 에 삽입하세요.</span>
+              </div>
             </template>
 
             <!-- Options -->
@@ -458,6 +467,18 @@ function close() {
 .psh-body > :last-child { margin-bottom: 0; }
 .psh-body h4 { font-size: 16px; font-weight: 600; color: var(--psh-ink); margin-bottom: 5px; }
 .hint { font-size: 12.5px; color: var(--psh-sub); line-height: 1.55; margin-bottom: 16px; }
+/* Files 단계 한 줄 안내 */
+.subline { font-size: 12.5px; color: var(--psh-sub); line-height: 1.5; margin-bottom: 16px; }
+.subline b { color: var(--psh-ink-2); font-weight: 600; }
+/* 첨부 없음 — 필기체 대신 아이콘 블록 */
+.att-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 30px 22px; border: 1px dashed var(--psh-line); border-radius: 14px; background: var(--psh-surface-2); }
+.att-empty .eico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--psh-soft); color: var(--psh-faint); margin-bottom: 8px; }
+.att-empty .et { font-size: 14px; font-weight: 600; color: var(--psh-ink-2); }
+.att-empty .ed { font-size: 12px; color: var(--psh-sub); line-height: 1.5; max-width: 280px; }
+/* 제외 안내 — info 배지 */
+.att-excluded { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; padding: 9px 12px; border-radius: 10px; background: var(--psh-amber-soft); font-size: 11.5px; color: var(--psh-amber); line-height: 1.45; }
+.att-excluded .ic { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+.att-excluded b { font-weight: 600; }
 
 .quick { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--psh-faint); margin: 2px 0 12px; }
 .quick button { font-size: 11.5px; padding: 4px 10px; border-radius: 7px; border: 1px solid var(--psh-line-2); background: none; color: var(--psh-sub); cursor: pointer; }
