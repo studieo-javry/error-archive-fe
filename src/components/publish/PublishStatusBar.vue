@@ -241,11 +241,20 @@ async function doDelete() {
           </div>
           <div class="m-title">발행물 영구 삭제</div>
           <div class="m-body">이 발행물을 완전히 지웁니다. <b>되돌릴 수 없어요.</b></div>
-          <ul class="consequences">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg><span>공개 페이지 <span class="slug">{{ displayUrl }}</span>가 <b>404</b></span></li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg><span><b>slug 영구 반납</b> — 같은 주소로 다시 발행 불가</span></li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg><span>스냅샷·조회수·PDF 모두 삭제</span></li>
-          </ul>
+          <div class="consequences">
+            <div class="cq-row">
+              <span class="cq-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg></span>
+              <div class="cq-tx"><div class="cq-t">공개 페이지가 <b>404</b>가 돼요</div><div class="cq-d">{{ displayUrl }} 접속 불가</div></div>
+            </div>
+            <div class="cq-row">
+              <span class="cq-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg></span>
+              <div class="cq-tx"><div class="cq-t">이 주소로 <b>다시 발행할 수 없어요</b></div><div class="cq-d">slug 영구 반납</div></div>
+            </div>
+            <div class="cq-row">
+              <span class="cq-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg></span>
+              <div class="cq-tx"><div class="cq-t">쌓인 데이터가 <b>모두 사라져요</b></div><div class="cq-d">스냅샷 · 조회수 · PDF</div></div>
+            </div>
+          </div>
           <label class="ack"><input type="checkbox" v-model="ack"><span>위 내용을 이해했고, 이 발행물을 <b>영구 삭제</b>합니다.</span></label>
           <div class="m-actions">
             <button class="m-btn ghost" @click="closeDialog">취소</button>
@@ -424,11 +433,15 @@ async function doDelete() {
 .rec-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--psb-accent); background: var(--psb-accent-soft); padding: 1px 6px; border-radius: 5px; margin-left: 6px; }
 
 /* 결과 리스트 (D) */
-.consequences { list-style: none; margin: 14px 0 0; padding: 12px 14px; background: var(--psb-rose-soft); border-radius: 11px; display: flex; flex-direction: column; gap: 7px; }
-.consequences li { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--psb-ink); line-height: 1.5; }
-.consequences li svg { width: 13px; height: 13px; color: var(--psb-rose); flex-shrink: 0; margin-top: 2px; }
-.consequences b { font-weight: 600; }
-.consequences .slug { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 11px; background: var(--psb-surface); border: 1px solid var(--psb-line); padding: 1px 5px; border-radius: 5px; }
+.consequences { margin: 15px 0 0; display: flex; flex-direction: column; }
+.cq-row { display: flex; gap: 11px; align-items: flex-start; padding: 9px 2px; }
+.cq-row + .cq-row { border-top: 1px solid var(--psb-line); }
+.cq-ic { flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; background: var(--psb-rose-soft); color: var(--psb-rose); display: grid; place-items: center; margin-top: 1px; }
+.cq-ic svg { width: 12px; height: 12px; }
+.cq-tx { min-width: 0; }
+.cq-t { font-size: 12.5px; color: var(--psb-ink); line-height: 1.4; }
+.cq-t b { font-weight: 600; }
+.cq-d { font-size: 11px; color: var(--psb-faint); margin-top: 2px; word-break: break-all; }
 
 .ack { display: flex; gap: 8px; align-items: flex-start; margin-top: 14px; font-size: 12px; color: var(--psb-sub); line-height: 1.5; cursor: pointer; }
 .ack input { margin-top: 2px; accent-color: var(--psb-rose); width: 15px; height: 15px; flex-shrink: 0; }

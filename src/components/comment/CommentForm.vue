@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onBeforeUnmount } from 'vue'
+import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import type { QuoteSourceKind, MentionCandidate } from '@/types/error'
 import { commentApi } from '@/services/commentApi'
 
@@ -44,6 +44,29 @@ const mentionIndex = ref(0)
 const mentionTokenStart = ref(-1) // 본문에서 '@' 의 위치
 let fetchTimer: ReturnType<typeof setTimeout> | null = null
 let fetchSeq = 0
+
+// Glass 드롭다운: 활성 행 위로 미끄러지는 하이라이트(pill) 위치 계산.
+const mentionListEl = ref<HTMLElement | null>(null)
+const pillTransform = ref('translateY(0)')
+const pillHeight = ref(0)
+function positionPill() {
+  const list = mentionListEl.value
+  if (!list) return
+  const rows = list.querySelectorAll<HTMLElement>('[data-mrow]')
+  const row = rows[mentionIndex.value]
+  if (!row) return
+  pillTransform.value = `translateY(${row.offsetTop}px)`
+  pillHeight.value = row.offsetHeight
+}
+watch([mentionIndex, mentionItems], () => nextTick(positionPill))
+
+// 아바타 폴백 톤(이름 기반 안정적 선택) — 밤티한 그라데이션 대신 소프트 틴트.
+function toneClass(u: MentionCandidate): string {
+  const key = u.handle ?? u.displayName ?? ''
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  return `mt${h % 6}`
+}
 
 function closeMention() {
   mentionOpen.value = false
@@ -162,37 +185,30 @@ onBeforeUnmount(() => { if (fetchTimer) clearTimeout(fetchTimer) })
           @blur="onBlur"
         />
 
-        <!-- 멘션 드롭다운 (G안: 아바타 + 이름 + 배지 서브텍스트 + 우측 @handle) -->
-        <div
-          v-if="mentionOpen"
-          class="absolute z-20 left-0 top-full mt-1 w-72 max-h-64 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-lg shadow-black/10 p-1"
-        >
-          <p v-if="mentionItems.length === 0" class="px-3 py-2 text-[11px] text-zinc-400 dark:text-zinc-500">
-            매칭되는 사용자 없음
-          </p>
-          <button
-            v-for="(u, i) in mentionItems"
-            :key="u.userId"
-            type="button"
-            class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-left transition-colors"
-            :class="i === mentionIndex ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-zinc-50 dark:hover:bg-zinc-700/50'"
-            @mouseenter="mentionIndex = i"
-            @mousedown.prevent="applyMention(i)"
-          >
-            <img
-              v-if="u.avatarUrl"
-              :src="u.avatarUrl"
-              :alt="u.displayName"
-              class="w-6 h-6 rounded-full object-cover shrink-0"
-            />
-            <span
-              v-else
-              class="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[9px] font-semibold text-white bg-gradient-to-br from-emerald-300 to-teal-300"
-            >{{ initials(u.displayName) }}</span>
-            <span class="min-w-0 flex-1 text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate">{{ u.displayName }}</span>
-            <span v-if="u.handle" class="shrink-0 text-[11px] font-normal text-zinc-400 dark:text-zinc-500">@{{ u.handle }}</span>
-          </button>
-        </div>
+        <!-- 멘션 드롭다운 (Glass — 반투명 blur + 미끄러지는 하이라이트 + 소프트 아바타) -->
+        <Transition name="mention">
+          <div v-if="mentionOpen" class="mention-dd">
+            <p v-if="mentionItems.length === 0" class="mention-empty">매칭되는 사용자 없음</p>
+            <div v-else ref="mentionListEl" class="mention-list">
+              <div class="mention-pill" :style="{ transform: pillTransform, height: pillHeight + 'px' }" />
+              <button
+                v-for="(u, i) in mentionItems"
+                :key="u.userId"
+                data-mrow
+                type="button"
+                class="mrow"
+                :class="{ on: i === mentionIndex }"
+                @mouseenter="mentionIndex = i"
+                @mousedown.prevent="applyMention(i)"
+              >
+                <img v-if="u.avatarUrl" :src="u.avatarUrl" :alt="u.displayName" class="mav" />
+                <span v-else class="mav" :class="toneClass(u)">{{ initials(u.displayName) }}</span>
+                <span class="mname">{{ u.displayName }}</span>
+                <span v-if="u.handle" class="mhandle">{{ u.handle }}</span>
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
 
       <div class="flex items-center gap-1.5 pb-1">
@@ -210,3 +226,77 @@ onBeforeUnmount(() => { if (fetchTimer) clearTimeout(fetchTimer) })
     </form>
   </div>
 </template>
+
+<!-- 멘션 드롭다운은 전역 <style> — 이 프로젝트는 scoped 의 :global(.dark) 가 빌드에서 누락돼
+     다크가 안 먹는다(PublishStatusBar 와 동일 이슈). 전역 .dark 토큰은 app.css 처럼 정상 동작. -->
+<style>
+.mention-dd {
+  --m-surface: rgba(255, 255, 255, .72);
+  --m-line: rgba(0, 0, 0, .06);
+  --m-tint: rgba(24, 24, 27, .06);
+  --m-name: #52525b;
+  --m-faint: #a1a1aa;
+  --m-accent-ink: #047857;
+  position: absolute; z-index: 20; left: 0; top: 100%; margin-top: 6px;
+  width: 18rem; max-height: 16rem; overflow-y: auto;
+  background: var(--m-surface);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5);
+  border: 1px solid var(--m-line); border-radius: 14px;
+  box-shadow: 0 12px 34px -6px rgba(24, 24, 27, .18), 0 2px 8px -3px rgba(24, 24, 27, .1);
+  padding: 6px; transform-origin: top left;
+}
+.dark .mention-dd {
+  --m-surface: rgba(39, 39, 42, .72);
+  --m-line: rgba(255, 255, 255, .06);
+  --m-tint: rgba(255, 255, 255, .08);
+  --m-name: #d4d4d8; --m-faint: #71717a; --m-accent-ink: #6ee7b7;
+  box-shadow: 0 14px 40px -6px rgba(0, 0, 0, .6), 0 2px 8px -3px rgba(0, 0, 0, .5);
+}
+.mention-empty { padding: 8px 12px; font-size: 11px; color: var(--m-faint); }
+.mention-list { position: relative; }
+.mention-pill {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 0; border-radius: 11px;
+  background: var(--m-tint); pointer-events: none;
+  transition: transform .42s cubic-bezier(.22, 1, .36, 1), height .42s cubic-bezier(.22, 1, .36, 1);
+}
+.mrow {
+  position: relative; z-index: 1; display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 7px 11px; border-radius: 11px; text-align: left; background: none; border: 0; cursor: pointer;
+}
+.mav {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 9999px; overflow: hidden; object-fit: cover;
+  display: grid; place-items: center; font-size: 10px; font-weight: 600; transition: transform .3s;
+}
+.mname {
+  min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--m-name); font-size: .8125rem; font-weight: 400;
+  transition: color .3s, transform .3s cubic-bezier(.22, 1, .36, 1);
+}
+.mhandle { flex-shrink: 0; font-size: 11.5px; color: var(--m-faint); transition: opacity .3s; }
+.mhandle::before { content: "· "; color: var(--m-faint); }
+.mrow:not(.on) .mhandle { opacity: .7; }
+.mrow.on .mname { color: var(--m-accent-ink); font-weight: 500; transform: translateX(2px); }
+@keyframes mAvPop { 0% { transform: scale(1); } 42% { transform: scale(1.16); } 100% { transform: scale(1); } }
+.mrow.on .mav { animation: mAvPop .44s cubic-bezier(.34, 1.56, .64, 1); }
+/* 소프트 아바타 톤 (그라데이션 대신 이름 기반 파스텔 틴트) */
+.mt0 { background: rgba(13, 148, 136, .14); color: #0f766e; }
+.mt1 { background: rgba(99, 102, 241, .14); color: #4f46e5; }
+.mt2 { background: rgba(225, 29, 72, .12); color: #be123c; }
+.mt3 { background: rgba(217, 119, 6, .16); color: #b45309; }
+.mt4 { background: rgba(8, 145, 178, .14); color: #0e7490; }
+.mt5 { background: rgba(147, 51, 234, .13); color: #7e22ce; }
+.dark .mt0 { background: rgba(20, 184, 166, .17); color: #5eead4; }
+.dark .mt1 { background: rgba(129, 140, 248, .19); color: #a5b4fc; }
+.dark .mt2 { background: rgba(251, 113, 133, .17); color: #fda4af; }
+.dark .mt3 { background: rgba(251, 191, 36, .17); color: #fcd34d; }
+.dark .mt4 { background: rgba(34, 211, 238, .16); color: #67e8f9; }
+.dark .mt5 { background: rgba(192, 132, 252, .17); color: #d8b4fe; }
+/* 팝인 트랜지션(스프링) */
+.mention-enter-active { transition: opacity .28s ease, transform .34s cubic-bezier(.22, 1.2, .36, 1); }
+.mention-leave-active { transition: opacity .15s ease, transform .15s ease; }
+.mention-enter-from { opacity: 0; transform: translateY(8px) scale(.96); }
+.mention-leave-to { opacity: 0; transform: translateY(4px) scale(.98); }
+@media (prefers-reduced-motion: reduce) {
+  .mention-pill, .mrow.on .mav, .mname { transition: none; animation: none; }
+}
+</style>
