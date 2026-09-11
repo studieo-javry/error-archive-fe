@@ -111,7 +111,7 @@ async function restoreBySlug(slug: string) {
         <div class="psb-metric"><div class="n">{{ pub.viewCount }}</div><div class="l">Views</div></div>
         <div class="psb-metric"><div class="n">{{ pub.downloadCount }}</div><div class="l">Downloads</div></div>
         <div class="psb-metric"><div class="n">v{{ pub.version }}</div><div class="l">Version</div></div>
-        <div class="psb-metric"><div class="n" :title="formatAbsolute(pub.publishedAt)">{{ publishedRel }}</div><div class="l">Published</div></div>
+        <div class="psb-metric pub-metric" :data-tip="formatAbsolute(pub.publishedAt)"><div class="n">{{ publishedRel }}</div><div class="l">Published</div></div>
       </div>
     </Transition>
 
@@ -297,6 +297,26 @@ async function restoreBySlug(slug: string) {
 .psb-metric { background: var(--psb-metric-bg); border: 1px solid var(--psb-line-soft); border-radius: 10px; padding: 10px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
 .psb-metric .n { font-size: 18px; font-weight: 600; color: var(--psb-ink); font-variant-numeric: tabular-nums; line-height: 1.1; }
 .psb-metric .l { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--psb-faint); margin-top: 3px; }
+
+/* Published 셀 hover 툴팁 — 상대 시간(2h ago)에 마우스 올리면 정확한 일시 표시.
+   토큰(--psb-toast-*)은 전역이라 다크에도 반응한다. */
+.pub-metric { position: relative; cursor: help; }
+.pub-metric::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--psb-toast-bg); color: #e4e4e7; border: 1px solid var(--psb-toast-border);
+  font-size: 11px; font-weight: 500; white-space: nowrap; padding: 6px 10px; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+  opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s; z-index: 20;
+}
+.pub-metric::before {
+  content: ""; position: absolute; bottom: calc(100% + 3px); left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  border: 5px solid transparent; border-top-color: var(--psb-toast-bg);
+  opacity: 0; transition: opacity .15s, transform .15s; z-index: 20;
+}
+.pub-metric:hover::after, .pub-metric:hover::before { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* 토스트 */
 .psb-toast {
