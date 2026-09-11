@@ -542,12 +542,12 @@ function close() {
 .psh-btn:hover { border-color: #a1a1aa; color: #18181b; }
 :global(.dark) .psh-btn { border-color: #3f3f46; color: #a1a1aa; }
 :global(.dark) .psh-btn:hover { color: #e4e4e7; }
-.psh-btn.primary { background: #059669; color: #fff; border-color: #059669; }
-.psh-btn.primary:hover { background: #10b981; border-color: #10b981; color: #fff; }
-.psh-btn.primary:disabled { opacity: .45; cursor: default; background: #059669; }
+.psh-btn.primary { background: #047857; color: #fff; border-color: #047857; }
+.psh-btn.primary:hover { background: #065f46; border-color: #065f46; color: #fff; }
+.psh-btn.primary:disabled { opacity: .45; cursor: default; background: #047857; }
 .psh-btn .ic { width: 14px; height: 14px; }
-.psh-cta { font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 10px; border: 0; background: #059669; color: #fff; cursor: pointer; }
-.psh-cta:hover { background: #10b981; }
+.psh-cta { font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 10px; border: 0; background: #047857; color: #fff; cursor: pointer; }
+.psh-cta:hover { background: #065f46; }
 
 @media (max-width: 640px) {
   .psh-wrap { left: 0; }
