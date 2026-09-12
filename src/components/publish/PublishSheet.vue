@@ -38,6 +38,8 @@ const author = ref(props.authorDefault)
 const visibility = ref<PublishmentVisibility>('PUBLIC')
 
 const busy = ref(false)
+const launching = ref(false) // 최종 발행 버튼: 발사 중
+const launched = ref(false)  // 최종 발행 버튼: 발사 후 '✓ 발행됨' 표시
 const errorMsg = ref('')
 const published = ref<PublishmentDetail | null>(null)
 const copied = ref(false)
@@ -48,6 +50,14 @@ let idemKey = ''
 const orderedSteps = computed(() => [...props.steps].sort((a, b) => a.orderIndex - b.orderIndex))
 const canNextInclude = computed(() => selSteps.value.size > 0)
 const canNextDetails = computed(() => title.value.trim().length > 0)
+// footer '다음' 버튼 비활성 조건 — 단계별 게이트.
+const nextDisabled = computed(
+  () => (stage.value === 0 && !canNextInclude.value) || (stage.value === 1 && !canNextDetails.value),
+)
+function goNext() {
+  if (nextDisabled.value) return
+  if (stage.value < 4) stage.value++
+}
 
 function pill(status: string) {
   if (status === 'RESOLVED') return { cls: 'resolved', label: 'RESOLVED' }
@@ -121,6 +131,7 @@ function bodyPreview(b: string | null): string {
 async function doPublish() {
   if (busy.value) return
   busy.value = true
+  launching.value = true
   errorMsg.value = ''
   if (!idemKey) idemKey = (crypto.randomUUID?.() ?? `${props.caseId}-${Date.now()}-${Math.random()}`)
   const req: PublishRequest = {
@@ -137,9 +148,14 @@ async function doPublish() {
       showStepDuration: options.value.showStepDuration,
     },
   }
+  // 발사(0.55s) → '✓ 발행됨'(0.75s) → 완료 화면. 발사와 발행 요청은 동시에.
+  const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
+  const finishOnButton = async () => { launched.value = true; await delay(750) } // 버튼에 발행됨 잠깐 표시
+  const resetLaunch = () => { launching.value = false; launched.value = false }
   try {
-    const { data } = await publishmentApi.create(req, idemKey)
-    published.value = data
+    const [res] = await Promise.all([publishmentApi.create(req, idemKey), delay(550)])
+    published.value = res.data
+    await finishOnButton()
     stage.value = DONE
   } catch (e) {
     if (axios.isAxiosError(e) && e.response?.status === 409) {
@@ -147,12 +163,15 @@ async function doPublish() {
       try {
         const { data } = await publishmentApi.getByCase(props.caseId)
         published.value = data
+        await finishOnButton()
         stage.value = DONE
-      } catch { errorMsg.value = '이미 발행된 케이스예요. 페이지를 새로고침 해주세요.' }
+      } catch { errorMsg.value = '이미 발행된 케이스예요. 페이지를 새로고침 해주세요.'; resetLaunch() }
     } else if (axios.isAxiosError(e) && e.response?.status === 422) {
       errorMsg.value = '최소 1개의 step 을 포함해야 해요.'
+      resetLaunch()
     } else {
       errorMsg.value = '발행에 실패했어요. 잠시 후 다시 시도해 주세요.'
+      resetLaunch()
     }
   } finally {
     busy.value = false
@@ -364,17 +383,24 @@ function close() {
           </div>
 
           <div class="psh-foot">
-            <button v-if="stage === 0" class="psh-btn" @click="close">취소</button>
-            <button v-else class="psh-btn" @click="stage--"><ChevronLeftIcon class="ic" />뒤로</button>
+            <button v-if="stage === 0" class="psh-back" @click="close">취소</button>
+            <button v-else class="psh-back" @click="stage--"><ChevronLeftIcon class="ic" />뒤로</button>
             <span v-if="stage === 0" class="selinfo">{{ selSteps.size }} steps · {{ selSols.size }} solutions</span>
             <span v-else-if="stage === 2 && includedAttachments.length" class="selinfo">{{ includedAttCount }} / {{ includedAttachments.length }} 첨부 포함</span>
             <span v-if="errorMsg" class="err">{{ errorMsg }}</span>
             <span class="sp" />
-            <button v-if="stage === 0" class="psh-btn primary" :disabled="!canNextInclude" @click="stage = 1">다음: 제목<ChevronRightIcon class="ic" /></button>
-            <button v-else-if="stage === 1" class="psh-btn primary" :disabled="!canNextDetails" @click="stage = 2">다음: 첨부<ChevronRightIcon class="ic" /></button>
-            <button v-else-if="stage === 2" class="psh-btn primary" @click="stage = 3">다음: 옵션<ChevronRightIcon class="ic" /></button>
-            <button v-else-if="stage === 3" class="psh-btn primary" @click="stage = 4">다음: 미리보기<ChevronRightIcon class="ic" /></button>
-            <button v-else class="psh-btn primary" :disabled="busy" @click="doPublish">{{ busy ? '발행 중…' : '발행하기' }}</button>
+            <!-- 다음(0~3): 라벨 없이 단계 인디케이터(완료=● 현재=◉ 예정=○) -->
+            <button v-if="stage < 4" class="psh-prog" :disabled="nextDisabled" @click="goNext" aria-label="다음 단계">
+              <span class="psh-dots"><i v-for="n in 5" :key="n" :class="n - 1 < stage ? 'done' : (n - 1 === stage ? 'cur' : 'up')" /></span>
+            </button>
+            <!-- 최종 발행(4): Launch -->
+            <button v-else class="psh-launch" :class="{ launching, launched }" :disabled="busy" @click="doPublish" aria-label="발행">
+              <span class="lbl"><span class="psh-dots"><i v-for="n in 5" :key="n" :class="n === 5 ? 'cur' : 'done'" /></span></span>
+              <span class="plane" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.5 11.5 21 3l-6 18-4.5-6.5L2.5 11.5Z" /></svg>
+              </span>
+              <span class="okmsg"><CheckIcon class="w-3.5 h-3.5" />발행됨</span>
+            </button>
           </div>
         </template>
       </div>
@@ -568,13 +594,43 @@ function close() {
 .psh-foot .selinfo { font-size: 11.5px; color: var(--psh-faint); }
 .psh-foot .err { font-size: 11.5px; color: var(--psh-rose); }
 
-.psh-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; padding: 9px 16px; border-radius: 10px; cursor: pointer; border: 1px solid var(--psh-line-2); background: none; color: var(--psh-sub); transition: .13s; }
+/* 슬림바 고르기·바로발행 — footer 버튼과 높이/폰트 통일(min-height 36 + 13px) */
+.psh-btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; font-size: 13px; font-weight: 500; padding: 0 15px; border-radius: 10px; cursor: pointer; border: 1px solid var(--psh-line-2); background: none; color: var(--psh-sub); transition: .13s; }
 .psh-btn:hover { border-color: var(--psh-faint); color: var(--psh-ink); }
 /* CTA(다음/발행/완료): emerald-700 고정 — 라이트/다크 모두 흰 글자 대비 확보 */
 .psh-btn.primary { background: #047857; color: #fff; border-color: #047857; }
 .psh-btn.primary:hover { background: #065f46; border-color: #065f46; color: #fff; }
 .psh-btn.primary:disabled { opacity: .45; cursor: default; background: #047857; }
 .psh-btn .ic { width: 14px; height: 14px; }
+
+/* 취소·뒤로: 테두리 없는 텍스트 */
+.psh-back { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; padding: 9px 8px; border: 0; background: none; color: var(--psh-sub); cursor: pointer; transition: color .13s; }
+.psh-back:hover { color: var(--psh-ink); }
+.psh-back .ic { width: 14px; height: 14px; }
+/* 다음: 단계 인디케이터 dots 내장 */
+/* 배경 박스를 .psh-btn.primary(바로 발행)와 동일하게: 대칭 padding + 1px 테두리 + 가운데 정렬 */
+.psh-prog, .psh-launch { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 36px; font-size: 13px; font-weight: 600; padding: 0 15px; border-radius: 10px; border: 1px solid #047857; background: #047857; color: #fff; cursor: pointer; transition: transform .14s cubic-bezier(.34, 1.5, .5, 1), background .13s, border-color .13s; }
+.psh-prog:hover, .psh-launch:hover { background: #065f46; border-color: #065f46; }
+.psh-prog:active, .psh-launch:active { transform: scale(.97); }
+.psh-prog:disabled { opacity: .45; cursor: default; background: #047857; border-color: #047857; transform: none; }
+/* 단계 인디케이터(링 믹스): 완료=흰 점 / 현재=흰 점 + 링 / 예정=빈 원 */
+.psh-dots { display: inline-flex; gap: 7px; align-items: center; }
+.psh-dots i { width: 7px; height: 7px; border-radius: 50%; box-sizing: border-box; transition: background .25s, box-shadow .25s, border-color .25s; }
+.psh-dots i.done { background: #fff; border: 0; }
+.psh-dots i.cur { background: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .3); }
+.psh-dots i.up { background: transparent; border: 1.5px solid rgba(255, 255, 255, .5); }
+/* 최종 발행: Launch(발사) → '✓ 발행됨' */
+.psh-launch { position: relative; overflow: hidden; justify-content: center; min-width: 100px; }
+.psh-launch .lbl { display: inline-flex; align-items: center; gap: 9px; transition: opacity .3s, transform .3s; }
+.psh-launch .okmsg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; opacity: 0; transform: translateY(8px); transition: opacity .3s, transform .3s; }
+.psh-launch.launched .lbl { opacity: 0; }
+.psh-launch.launched .okmsg { opacity: 1; transform: none; transition-delay: .1s; }
+.psh-launch .plane { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
+.psh-launch .plane svg { width: 15px; height: 15px; }
+.psh-launch.launching .lbl { opacity: 0; transform: translateX(-6px); }
+.psh-launch.launching .plane { animation: psh-launch .55s cubic-bezier(.4, 0, .6, 1) forwards; }
+@keyframes psh-launch { 0% { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg); } 100% { opacity: 0; transform: translate(120%, -260%) rotate(18deg); } }
+
 .psh-cta { font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 10px; border: 0; background: #047857; color: #fff; cursor: pointer; }
 .psh-cta:hover { background: #065f46; }
 
