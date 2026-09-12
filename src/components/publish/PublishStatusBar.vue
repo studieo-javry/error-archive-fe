@@ -294,10 +294,10 @@ async function doDelete() {
   --psb-gloss: linear-gradient(rgba(255, 255, 255, .4), transparent);
 }
 .dark {
-  --psb-surface: #1f1f23;
-  --psb-line: #27272a;
-  --psb-line-soft: #27272a;
-  --psb-metric-bg: #232327;
+  --psb-surface: #000;
+  --psb-line: rgba(255, 255, 255, .1);
+  --psb-line-soft: rgba(255, 255, 255, .08);
+  --psb-metric-bg: #18181b;
   --psb-ink: #e4e4e7;
   --psb-sub: #a1a1aa;
   --psb-faint: #71717a;
@@ -313,9 +313,9 @@ async function doDelete() {
   --psb-chev-hover: #d4d4d8;
   --psb-toast-bg: #000;
   --psb-toast-border: #2a2a2f;
-  --psb-shadow-bar: 0 18px 55px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .05);
-  --psb-shadow-card: 0 18px 55px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .05);
-  --psb-gloss: linear-gradient(rgba(255, 255, 255, .045), transparent);
+  --psb-shadow-bar: 0 16px 40px -8px rgba(0, 0, 0, .4);
+  --psb-shadow-card: 0 20px 48px -10px rgba(0, 0, 0, .5);
+  --psb-gloss: transparent;
 }
 </style>
 
