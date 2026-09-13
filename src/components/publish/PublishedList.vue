@@ -141,7 +141,7 @@ const selectClass =
         <article
           v-for="p in items"
           :key="p.slug"
-          class="rounded-xl border border-zinc-200 bg-white px-5 py-[18px] transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+          class="pub-card rounded-xl border border-zinc-200 bg-white px-5 py-[18px] transition-colors hover:border-zinc-300"
           :class="{ 'opacity-60': p.status === 'UNPUBLISHED' }"
         >
           <!-- 헤더: 제목 + slug / 오른쪽 배지들 -->
@@ -278,24 +278,10 @@ const selectClass =
   color: #18181b;
   background: #f4f4f5;
 }
-:global(.dark) .pub-btn {
-  border-color: #27272a;
-  color: #a1a1aa;
-}
-:global(.dark) .pub-btn:hover {
-  border-color: #a1a1aa;
-  color: #e4e4e7;
-  background: #232327;
-}
 .pub-btn-primary:hover {
   border-color: #059669;
   color: #059669;
   background: rgba(16, 185, 129, .06);
-}
-:global(.dark) .pub-btn-primary:hover {
-  border-color: #10b981;
-  color: #34d399;
-  background: rgba(16, 185, 129, .1);
 }
 /* 비활성(재발행) — 점선 + not-allowed, hover 는 색 안 변하고 툴팁만 */
 .pub-btn-disabled {
@@ -306,11 +292,6 @@ const selectClass =
 .pub-btn-disabled:hover {
   border-color: #e4e4e7;
   color: #71717a;
-  background: transparent;
-}
-:global(.dark) .pub-btn-disabled:hover {
-  border-color: #27272a;
-  color: #a1a1aa;
   background: transparent;
 }
 
@@ -346,4 +327,63 @@ const selectClass =
   background: #18181b;
 }
 .tip-wrap:hover .tip { display: block; }
+</style>
+
+<!--
+  다크 모드 전용 카드 스타일. 이 빌드(LightningCSS)는 <style scoped> 안의
+  :global(.dark) 를 드랍하므로, .dark 계열은 반드시 비-scoped 블록에서 처리한다.
+  다크에서는 카드색(zinc-900)이 페이지 배경(#18181b)과 같아 카드가 안 떠 보였다
+  → 테두리·배경을 지우고 hover 시 좌측 액센트 바가 위→아래로 자라도록(playground G).
+  라이트 모드는 기존 유틸리티(border-zinc-200 / bg-white / hover:border-zinc-300) 그대로.
+-->
+<style>
+html.dark .pub-card {
+  position: relative;
+  border-color: transparent;
+  background: transparent;
+  padding-left: 20px;
+  transition: background-color .18s, padding-left .22s cubic-bezier(.4, 0, .2, 1);
+}
+html.dark .pub-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(#34d399, #059669);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform .24s cubic-bezier(.4, 0, .2, 1);
+}
+html.dark .pub-card:hover {
+  border-color: transparent;
+  background: rgba(255, 255, 255, .025);
+  padding-left: 24px;
+}
+html.dark .pub-card:hover::before {
+  transform: scaleY(1);
+}
+
+/* 액션 버튼 다크 (기존 :global(.dark) 가 빌드에서 드랍되던 버그 수정) */
+html.dark .pub-btn {
+  border-color: #27272a;
+  color: #a1a1aa;
+}
+html.dark .pub-btn:hover {
+  border-color: #a1a1aa;
+  color: #e4e4e7;
+  background: #232327;
+}
+html.dark .pub-btn-primary:hover {
+  border-color: #10b981;
+  color: #34d399;
+  background: rgba(16, 185, 129, .1);
+}
+html.dark .pub-btn-disabled:hover {
+  border-color: #27272a;
+  color: #a1a1aa;
+  background: transparent;
+}
 </style>
