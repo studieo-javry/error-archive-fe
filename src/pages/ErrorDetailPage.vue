@@ -485,7 +485,7 @@ onUnmounted(() => {
         </template>
       </div>
 
-      <div class="mt-6 flex items-center justify-center gap-3">
+      <div class="mt-6 flex items-center justify-center gap-5">
         <button
           class="inline-flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
           :class="watching ? 'text-amber-500 hover:text-amber-600' : 'text-zinc-400 hover:text-amber-500'"
@@ -520,19 +520,9 @@ onUnmounted(() => {
           Me too <span class="tabular-nums">· {{ meTooCount }}</span>
         </span>
 
-        <button
-          v-if="canEditCase"
-          class="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-colors"
-          @click="router.push({ name: 'errorEdit', params: { slug: teamStore.currentSlug, id: caseId } })"
-        >Edit</button>
-        <button
-          v-if="canEditCase"
-          class="text-xs text-zinc-400 hover:text-rose-500 transition-colors"
-          @click="showDeleteConfirm = true"
-        >Delete</button>
-
         <!-- 소유자 발행 상태: 미발행이면 발행 트리거, 발행됨이면 Published(초록)/Offline(회색) 표시.
-             실제 조작(내리기/다시공개)은 하단 상태 바에서 한다(참조 publish-case-status-v1). -->
+             실제 조작(내리기/다시공개)은 하단 상태 바에서 한다(참조 publish-case-status-v1).
+             순서상 Watch·Me too 와 Edit·Delete 사이(가운데)에 둔다. -->
         <template v-if="isOwner && pubLoaded">
           <button
             v-if="!publishment"
@@ -552,6 +542,17 @@ onUnmounted(() => {
             {{ publishment.status === 'LIVE' ? 'Published' : 'Offline' }}
           </span>
         </template>
+
+        <button
+          v-if="canEditCase"
+          class="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-colors"
+          @click="router.push({ name: 'errorEdit', params: { slug: teamStore.currentSlug, id: caseId } })"
+        >Edit</button>
+        <button
+          v-if="canEditCase"
+          class="text-xs text-zinc-400 hover:text-rose-500 transition-colors"
+          @click="showDeleteConfirm = true"
+        >Delete</button>
       </div>
     </div>
 
