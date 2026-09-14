@@ -330,21 +330,22 @@ const selectClass =
 </style>
 
 <!--
-  다크 모드 전용 카드 스타일. 이 빌드(LightningCSS)는 <style scoped> 안의
-  :global(.dark) 를 드랍하므로, .dark 계열은 반드시 비-scoped 블록에서 처리한다.
-  다크에서는 카드색(zinc-900)이 페이지 배경(#18181b)과 같아 카드가 안 떠 보였다
-  → 테두리·배경을 지우고 hover 시 좌측 액센트 바가 위→아래로 자라도록(playground G).
-  라이트 모드는 기존 유틸리티(border-zinc-200 / bg-white / hover:border-zinc-300) 그대로.
+  카드 호버 = playground G 확정 디자인(라이트·다크 공통): 테두리를 지우고 hover 시
+  좌측 초록 액센트 바가 위→아래로 자라며 배경이 살짝 뜨고 padding-left 가 벌어진다.
+  이 빌드(LightningCSS)는 <style scoped> 안의 :global(.dark) 를 드랍하므로 비-scoped
+  블록에서 처리하고, 유틸리티(@layer utilities)보다 우선하도록 unlayered 로 둔다
+  (그래서 <article> 의 border-zinc-200 / bg-white / hover:border-zinc-300 유틸을
+  그대로 두어도 여기 값이 이긴다). 다크는 hover 배경만 밝게 오버라이드.
 -->
 <style>
-html.dark .pub-card {
+.pub-card {
   position: relative;
   border-color: transparent;
   background: transparent;
   padding-left: 20px;
   transition: background-color .18s, padding-left .22s cubic-bezier(.4, 0, .2, 1);
 }
-html.dark .pub-card::before {
+.pub-card::before {
   content: "";
   position: absolute;
   left: 0;
@@ -357,13 +358,17 @@ html.dark .pub-card::before {
   transform-origin: top;
   transition: transform .24s cubic-bezier(.4, 0, .2, 1);
 }
-html.dark .pub-card:hover {
+.pub-card:hover {
   border-color: transparent;
-  background: rgba(255, 255, 255, .025);
+  background: rgba(0, 0, 0, .025);
   padding-left: 24px;
 }
-html.dark .pub-card:hover::before {
+.pub-card:hover::before {
   transform: scaleY(1);
+}
+/* 다크: hover 배경만 밝은 톤으로(나머지 좌측 바·padding 은 베이스 공유) */
+html.dark .pub-card:hover {
+  background: rgba(255, 255, 255, .025);
 }
 
 /* 액션 버튼 다크 (기존 :global(.dark) 가 빌드에서 드랍되던 버그 수정) */
