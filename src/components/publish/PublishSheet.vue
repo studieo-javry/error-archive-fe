@@ -208,7 +208,21 @@ function close() {
           <span class="psh-live" />
           <div class="psh-slim-txt">
             <div class="t">이 케이스를 발행물로 만들기</div>
-            <div class="s">기본값: step {{ selSteps.size }}개 · solution {{ selSols.size }}개 선택됨 · 공개</div>
+            <div class="s">기본값: step {{ selSteps.size }}개 · solution {{ selSols.size }}개 선택됨 · 공개
+              <span class="psh-qp" tabindex="0" aria-label="바로 발행 기본값 안내">
+                <span class="psh-qp-i">i</span>
+                <span class="psh-qp-tip" role="tooltip">
+                  <span class="h"><span class="zap">⚡</span> 바로 발행하면 이렇게 나가요</span>
+                  <span class="lead">따로 고르지 않고 <b>가장 포괄적인 기본값</b>으로 즉시 발행합니다.</span>
+                  <span class="row warn"><span class="ico">🌐</span><span class="rt"><span class="k">공개 (Public)</span><span class="v">누구나 링크로 열람 · 검색 노출. <b>즉시 외부 공개</b>돼요.</span></span></span>
+                  <span class="row"><span class="ico">🧩</span><span class="rt"><span class="k">모든 step · solution 포함</span><span class="v"><b>실패한 step 까지</b> 전부 담겨요.</span></span></span>
+                  <span class="row"><span class="ico">📎</span><span class="rt"><span class="k">태그된 첨부 전부</span><span class="v">본문·step 에 넣은 파일만 포함(안 넣은 첨부는 제외).</span></span></span>
+                  <span class="row"><span class="ico">⏱</span><span class="rt"><span class="k">상대 시간 · 소요시간 · 줄번호</span><span class="v">Day N 표기 · step 소요시간 · 코드 줄번호 표시.</span></span></span>
+                  <span class="row"><span class="ico">✍️</span><span class="rt"><span class="k">제목·요약·작성자는 케이스 그대로</span><span class="v">요약이 없으면 본문에서 미리보기를 자동 생성.</span></span></span>
+                  <span class="foot">세부 조정이 필요하면 <b>고르기</b>로 단계별 선택하세요.</span>
+                </span>
+              </span>
+            </div>
           </div>
           <button class="psh-btn" @click="stage = 0">고르기</button>
           <button class="psh-btn primary" :disabled="busy" @click="doPublish">
@@ -472,7 +486,36 @@ function close() {
 .psh-live { width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex-shrink: 0; }
 .psh-slim-txt { flex: 1; min-width: 0; }
 .psh-slim-txt .t { font-size: 13.5px; font-weight: 500; color: var(--psh-ink); }
-.psh-slim-txt .s { font-size: 11.5px; color: var(--psh-faint); margin-top: 2px; }
+.psh-slim-txt .s { font-size: 11.5px; color: var(--psh-faint); margin-top: 2px; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* 슬림 바(진입 화면)일 때만 툴팁이 시트 밖으로 나올 수 있게 clip 해제 (위저드 단계는 그대로 hidden) */
+.psh-panel:has(.psh-slim) { overflow: visible; }
+
+/* '바로 발행' 기본값 안내 툴팁 */
+.psh-qp { position: relative; display: inline-flex; }
+.psh-qp-i { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--psh-line-2); color: var(--psh-sub); font-size: 9.5px; font-weight: 700; line-height: 1; cursor: help; transition: border-color .14s, color .14s, background-color .14s; }
+.psh-qp:hover .psh-qp-i, .psh-qp:focus-within .psh-qp-i { border-color: var(--psh-accent); color: var(--psh-accent); background: var(--psh-accent-soft); }
+.psh-qp-tip { position: absolute; bottom: calc(100% + 12px); left: 0; z-index: 60; width: 290px;
+  background: var(--psh-surface); border: 1px solid var(--psh-line); border-radius: 14px; box-shadow: var(--psh-shadow);
+  padding: 14px 15px; opacity: 0; transform: translateY(6px) scale(.98); transform-origin: bottom left;
+  pointer-events: none; transition: opacity .16s, transform .16s; }
+.psh-qp:hover .psh-qp-tip, .psh-qp:focus-within .psh-qp-tip { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.psh-qp-tip::after { content: ""; position: absolute; top: 100%; left: 18px; width: 12px; height: 12px;
+  background: var(--psh-surface); border-right: 1px solid var(--psh-line); border-bottom: 1px solid var(--psh-line);
+  transform: translateY(-6px) rotate(45deg); }
+.psh-qp-tip .h { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--psh-ink); margin-bottom: 3px; }
+.psh-qp-tip .h .zap { color: var(--psh-accent); }
+.psh-qp-tip .lead { display: block; font-size: 11px; color: var(--psh-sub); line-height: 1.5; margin-bottom: 11px; }
+.psh-qp-tip .row { display: flex; gap: 9px; padding: 6px 0; border-top: 1px solid var(--psh-line); align-items: flex-start; }
+.psh-qp-tip .row:first-of-type { border-top: 0; }
+.psh-qp-tip .row .ico { width: 16px; flex-shrink: 0; text-align: center; font-size: 12px; line-height: 1.5; }
+.psh-qp-tip .row .rt { flex: 1; min-width: 0; display: block; }
+.psh-qp-tip .row .k { display: block; font-size: 11.5px; font-weight: 600; color: var(--psh-ink); line-height: 1.4; }
+.psh-qp-tip .row .v { display: block; font-size: 11px; color: var(--psh-sub); line-height: 1.45; margin-top: 1px; }
+.psh-qp-tip .row .v b { color: var(--psh-ink-2); font-weight: 600; }
+.psh-qp-tip .row.warn .k { color: var(--psh-amber); }
+.psh-qp-tip .foot { display: block; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--psh-line); font-size: 10.5px; color: var(--psh-faint); line-height: 1.5; }
+.psh-qp-tip .foot b { color: var(--psh-sub); }
 
 /* head + stepper */
 .psh-head { display: flex; align-items: center; gap: 12px; padding: 14px 22px 0; flex-shrink: 0; }
