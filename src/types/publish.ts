@@ -47,6 +47,8 @@ export interface PublishmentListItem {
   slug: string
   title: string
   summary: string | null
+  /** 저자 요약이 없을 때의 본문 미리보기(스냅샷 description 파생). 둘 다 없으면 null. */
+  descriptionPreview: string | null
   /** 원본 에러 케이스 id — "from #123" 링크용. */
   originalCaseId: number
   /** PUBLIC | UNLISTED | PRIVATE */

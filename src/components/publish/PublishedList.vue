@@ -188,7 +188,7 @@ const selectClass =
             </div>
           </div>
 
-          <p v-if="p.summary" class="text-[12.5px] leading-relaxed text-zinc-500 dark:text-zinc-400 line-clamp-2 my-2">{{ p.summary }}</p>
+          <p v-if="p.summary || p.descriptionPreview" class="text-[12.5px] leading-relaxed text-zinc-500 dark:text-zinc-400 line-clamp-2 my-2">{{ p.summary || p.descriptionPreview }}</p>
 
           <!-- 지표 + 태그 -->
           <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 pb-2.5 font-mono text-[11.5px] text-zinc-500 dark:text-zinc-400">
