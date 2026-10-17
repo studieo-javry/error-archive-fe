@@ -76,5 +76,5 @@ const rendered = computed(() => {
 </script>
 
 <template>
-  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-1.5 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic [&_h1]:text-[15px] [&_h1]:font-bold [&_h1]:text-zinc-800 dark:[&_h1]:text-zinc-100 [&_h1]:mt-3 [&_h1]:mb-1 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-zinc-800 dark:[&_h2]:text-zinc-100 [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-zinc-700 dark:[&_h3]:text-zinc-200 [&_h3]:mt-2.5 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1.5 [&_li]:mb-0.5" v-html="rendered" />
+  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-2 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic [&_h1]:text-[15px] [&_h1]:font-bold [&_h1]:text-zinc-800 dark:[&_h1]:text-zinc-100 [&_h1]:mt-6 [&_h1]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-zinc-800 dark:[&_h2]:text-zinc-100 [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-zinc-700 dark:[&_h3]:text-zinc-200 [&_h3]:mt-5 [&_h3]:mb-2 [&>h1:first-child]:mt-0 [&>h2:first-child]:mt-0 [&>h3:first-child]:mt-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-0.5" v-html="rendered" />
 </template>
