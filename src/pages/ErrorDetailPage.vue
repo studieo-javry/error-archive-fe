@@ -754,6 +754,8 @@ onUnmounted(() => {
   100% { transform: scale(1.7); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .metoo-ic, .metoo-ring { animation-duration: 0.01ms; }
+  /* 0.01ms 로 줄이면 키프레임 끝 프레임(opacity:0)으로 즉시 점프해 팝이 아예 안 보인다.
+     애니메이션만 끄고 정적 상태(opacity:1)로 잠깐 띄운 뒤, JS 760ms 타이머가 제거한다. */
+  .metoo-ic, .metoo-ring { animation: none; }
 }
 </style>
