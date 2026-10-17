@@ -54,6 +54,17 @@ export interface TokenResponse {
   redirectTo: string | null
 }
 
+/** "로그인 없이 둘러보기"(게스트) 토큰 응답 — OAuth 없이 임시 세션 발급. */
+export interface GuestTokenResponse {
+  tokenType: string
+  accessToken: string
+  accessTokenExpiresAt: string
+  userId: number
+  workspaceId: number
+  workspaceSlug: string
+  displayName: string
+}
+
 export interface AuthorizeUrlResponse {
   authorizationUrl: string
 }

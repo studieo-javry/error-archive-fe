@@ -524,8 +524,9 @@ onUnmounted(() => {
              실제 조작(내리기/다시공개)은 하단 상태 바에서 한다(참조 publish-case-status-v1).
              순서상 Watch·Me too 와 Edit·Delete 사이(가운데)에 둔다. -->
         <template v-if="isOwner && pubLoaded">
+          <!-- 게스트(데모)는 공개 발행 불가 — 서버도 403. 발행 트리거를 숨긴다. -->
           <button
-            v-if="!publishment"
+            v-if="!publishment && !authStore.isGuest"
             class="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
             @click="showPublishSheet = true"
           >

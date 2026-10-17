@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ArrowUpTrayIcon } from '@heroicons/vue/24/outline'
+import { useAuthStore } from '@/stores/authStore'
+
+// 게스트(데모)는 첨부 업로드 불가 — 서버도 403 으로 막지만, UI 에서 먼저 비활성화해 혼란을 줄인다.
+const isGuest = computed(() => useAuthStore().isGuest)
 
 const emit = defineEmits<{
   save: [data: { title?: string; caption?: string; file: File }]
@@ -51,6 +55,10 @@ function onSubmit() {
     <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-4">Add Attachment</h2>
+
+        <div v-if="isGuest" class="mb-4 px-3 py-2.5 rounded-xl text-xs bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/50">
+          데모 모드에서는 파일 업로드를 사용할 수 없어요.
+        </div>
         <form class="space-y-4" @submit.prevent="onSubmit">
           <input v-model="title" type="text" placeholder="Title (optional)" class="raw-input w-full text-sm" />
 
@@ -59,7 +67,8 @@ function onSubmit() {
             <input ref="fileInput" type="file" class="sr-only" @change="onFileChange" />
             <button
               type="button"
-              class="w-full flex flex-col items-center justify-center gap-1.5 px-4 py-7 rounded-xl border border-dashed transition-colors"
+              :disabled="isGuest"
+              class="w-full flex flex-col items-center justify-center gap-1.5 px-4 py-7 rounded-xl border border-dashed transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               :class="dragOver
                 ? 'border-emerald-400 bg-emerald-50/60 dark:border-emerald-500 dark:bg-emerald-900/10'
                 : 'border-zinc-300 dark:border-zinc-600 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/10'"
@@ -86,7 +95,7 @@ function onSubmit() {
 
           <div class="flex justify-end gap-3 pt-2">
             <button type="button" class="px-4 py-2 text-sm rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 transition-colors" @click="emit('close')">Cancel</button>
-            <button type="submit" :disabled="!file" class="px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">Upload</button>
+            <button type="submit" :disabled="!file || isGuest" class="px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">Upload</button>
           </div>
         </form>
       </div>

@@ -31,6 +31,17 @@ export function useAuth() {
     router.push(data.redirectTo || '/home')
   }
 
+  async function loginAsGuest() {
+    const { data } = await authApi.guest()
+    store.setAccessToken(data.accessToken)
+    store.userId = data.userId
+    store.setGuest(true)
+
+    await fetchUser()
+    // 게스트는 공유 데모 워크스페이스로 바로 진입(workspace-scoped 라우트).
+    router.push(`/w/${data.workspaceSlug}/home`)
+  }
+
   async function fetchUser() {
     if (!store.isAuthenticated) return
     const { data } = await authApi.getMe()
@@ -46,5 +57,5 @@ export function useAuth() {
     }
   }
 
-  return { startOAuthFlow, handleCallback, fetchUser, logout }
+  return { startOAuthFlow, handleCallback, loginAsGuest, fetchUser, logout }
 }

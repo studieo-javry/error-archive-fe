@@ -1,6 +1,7 @@
 import apiClient from './apiClient'
 import type {
   TokenResponse,
+  GuestTokenResponse,
   AuthorizeUrlResponse,
   MyProfile,
   PublicProfile,
@@ -19,6 +20,11 @@ export const authApi = {
 
   callback(code: string, state: string, redirectUri: string, rememberMe: boolean) {
     return apiClient.post<TokenResponse>('/auth/oauth/github/callback', { code, state, redirectUri, rememberMe })
+  },
+
+  /** 로그인 없이 둘러보기 — OAuth 없이 임시 게스트 세션 발급(public). 데모 비활성 시 404. */
+  guest() {
+    return apiClient.post<GuestTokenResponse>('/auth/guest')
   },
 
   refresh() {

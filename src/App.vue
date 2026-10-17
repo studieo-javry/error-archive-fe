@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useTheme } from '@/composables/useTheme'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
+import DemoBanner from '@/components/layout/DemoBanner.vue'
 import NotificationToasts from '@/components/layout/NotificationToasts.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
@@ -36,6 +37,7 @@ const isPublic = computed(() => !!route.meta.public)
   <div v-else class="flex h-screen overflow-hidden bg-[#f7f7f5] text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
     <AppSidebar />
     <div class="flex-1 flex flex-col overflow-hidden">
+      <DemoBanner v-if="authStore.isGuest" />
       <AppHeader />
       <main class="flex-1 overflow-y-auto">
         <div v-if="isWideLayout" class="h-full p-6">
