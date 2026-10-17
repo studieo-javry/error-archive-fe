@@ -41,29 +41,40 @@ const rendered = computed(() => {
   // italic
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
 
-  // line breaks → paragraphs (a block on its own line must not be wrapped in a <p>)
-  html = html
-    .split('\n\n')
-    .map(p => p.trim())
-    .filter(p => p)
-    .map((p) => {
-      if (!/@@CODEBLOCK\d+@@/.test(p)) return `<p>${p.replace(/\n/g, '<br/>')}</p>`
-      // a fence glued to surrounding text would otherwise land inside the <p>
-      return p
-        .split(/(@@CODEBLOCK\d+@@)/)
-        .map((part) => {
-          if (/^@@CODEBLOCK\d+@@$/.test(part)) return part
-          const t = part.trim()
-          return t ? `<p>${t.replace(/\n/g, '<br/>')}</p>` : ''
-        })
-        .join('')
-    })
-    .join('')
+  // 블록 레벨: 제목(#/##/###) · 목록(-, 1.) · 문단 · 코드블록 센티넬. 라인 단위로 그룹핑한다.
+  const out: string[] = []
+  let para: string[] = []
+  let list: { type: 'ul' | 'ol'; items: string[] } | null = null
+  const flushPara = () => { if (para.length) { out.push(`<p>${para.join('<br/>')}</p>`); para = [] } }
+  const flushList = () => {
+    if (list) { out.push(`<${list.type}>${list.items.map(i => `<li>${i}</li>`).join('')}</${list.type}>`); list = null }
+  }
+  const flush = () => { flushPara(); flushList() }
+
+  for (const rawLine of html.split('\n')) {
+    const line = rawLine.trim()
+    if (!line) { flush(); continue }
+    // 코드블록은 자체 라인으로 — <p> 안에 넣지 않는다.
+    if (/^@@CODEBLOCK\d+@@$/.test(line)) { flush(); out.push(line); continue }
+    // 제목
+    const h = line.match(/^(#{1,3})\s+(.+)$/)
+    if (h) { flush(); const lvl = h[1].length; out.push(`<h${lvl}>${h[2]}</h${lvl}>`); continue }
+    // 순서 없는 목록 (- )
+    const ul = line.match(/^-\s+(.+)$/)
+    if (ul) { flushPara(); if (list?.type !== 'ul') { flushList(); list = { type: 'ul', items: [] } } list.items.push(ul[1]); continue }
+    // 순서 있는 목록 (1. )
+    const ol = line.match(/^\d+\.\s+(.+)$/)
+    if (ol) { flushPara(); if (list?.type !== 'ol') { flushList(); list = { type: 'ol', items: [] } } list.items.push(ol[1]); continue }
+    // 일반 텍스트 → 문단
+    flushList(); para.push(line)
+  }
+  flush()
+  html = out.join('')
 
   return html.replace(SENTINEL, (_m, i: string) => blocks[Number(i)] ?? '')
 })
 </script>
 
 <template>
-  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-1.5 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic" v-html="rendered" />
+  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-1.5 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic [&_h1]:text-[15px] [&_h1]:font-bold [&_h1]:text-zinc-800 dark:[&_h1]:text-zinc-100 [&_h1]:mt-3 [&_h1]:mb-1 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-zinc-800 dark:[&_h2]:text-zinc-100 [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-zinc-700 dark:[&_h3]:text-zinc-200 [&_h3]:mt-2.5 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1.5 [&_li]:mb-0.5" v-html="rendered" />
 </template>
