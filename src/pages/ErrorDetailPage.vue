@@ -534,7 +534,7 @@ onUnmounted(() => {
             Publish
           </button>
           <span
-            v-else
+            v-else-if="publishment"
             class="inline-flex items-center gap-1 text-xs"
             :class="publishment.status === 'LIVE' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400'"
             :title="publishment.status === 'LIVE' ? '발행됨 — 하단 바에서 관리' : '내려짐 — 하단 바에서 다시 공개'"
