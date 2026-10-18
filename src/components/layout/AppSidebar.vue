@@ -28,16 +28,18 @@ const { logout } = useAuth()
 const teamStore = useTeamStore()
 const authStore = useAuthStore()
 
-type NavItem = { name: string; icon: Component }
+// `global` 항목은 워크스페이스 슬러그를 받지 않는 전역 라우트(Explore 등) — 슬러그 param 을 붙이지 않는다.
+type NavItem = { name: string; icon: Component; global?: boolean }
 
 // Menus differ by space: Public has the community Search; a team has Members instead
-// (a team's Library already shows all of the team's cases). All routes are slug-scoped.
+// (a team's Library already shows all of the team's cases). Workspace items are slug-scoped;
+// Explore 는 전역(공개 발행물 탐색) 이라 slug 무관.
 const navItems = computed<NavItem[]>(() => {
   const isTeam = teamStore.currentWorkspaceId !== null
   return [
     { name: 'home', icon: HomeIcon },
     { name: 'errorList', icon: BookOpenIcon },
-    { name: 'explore', icon: GlobeAltIcon },
+    { name: 'explore', icon: GlobeAltIcon, global: true },
     { name: 'errorCreate', icon: PlusCircleIcon },
     isTeam
       ? { name: 'team', icon: UserGroupIcon }
@@ -47,7 +49,7 @@ const navItems = computed<NavItem[]>(() => {
 })
 
 function targetFor(item: NavItem) {
-  return { name: item.name, params: { slug: teamStore.currentSlug } }
+  return item.global ? { name: item.name } : { name: item.name, params: { slug: teamStore.currentSlug } }
 }
 
 function isActive(item: NavItem) {

@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type { PublicProfile, MyProfile, FollowStatusResponse, UserSummary } from '@/types/user'
 import type { RecentActivity } from '@/types/home'
 import RecentActivities from '@/components/profile/RecentActivities.vue'
+import PublishedList from '@/components/publish/PublishedList.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Modal from '@/components/common/Modal.vue'
 
@@ -235,6 +236,12 @@ watch(() => route.params.id, () => { loadProfile() })
           >+{{ c.metric.weeklyDelta }} this week</p>
         </div>
       </div>
+    </section>
+
+    <!-- Publications — 본인 프로필만. "내가 발행한 글" 은 개인 자산이라 워크스페이스 Library 가 아니라 여기. (/me) -->
+    <section v-if="isOwnProfile" class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
+      <h2 class="text-lg font-light serif-title text-zinc-800 dark:text-zinc-100 mb-4">Publications</h2>
+      <PublishedList />
     </section>
 
     <!-- Recent activities — 본인/타인 모두. 비어 있으면 viewer 별 빈 상태를 컴포넌트가 처리. -->

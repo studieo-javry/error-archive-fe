@@ -10,7 +10,6 @@ const routes = [
   // Workspace-scoped routes — the workspace slug is carried in the URL (/w/:slug/...).
   { path: '/w/:slug/home', name: 'home', component: () => import('@/pages/HomePage.vue') },
   { path: '/w/:slug/errors', name: 'errorList', component: () => import('@/pages/ErrorListPage.vue') },
-  { path: '/w/:slug/explore', name: 'explore', component: () => import('@/pages/ExplorePage.vue') },
   { path: '/w/:slug/errors/new', name: 'errorCreate', component: () => import('@/pages/ErrorFormPage.vue') },
   { path: '/w/:slug/errors/:id', name: 'errorDetail', component: () => import('@/pages/ErrorDetailPage.vue') },
   { path: '/w/:slug/errors/:id/edit', name: 'errorEdit', component: () => import('@/pages/ErrorFormPage.vue') },
@@ -19,6 +18,8 @@ const routes = [
   { path: '/w/:slug/members', name: 'team', component: () => import('@/pages/TeamDashboardPage.vue') },
 
   // Global routes — shared across all workspaces.
+  // Explore = 공개 발행물 탐색(둘러보기/쇼케이스). 워크스페이스 무관 전역 — Profile/Settings 와 동급.
+  { path: '/explore', name: 'explore', component: () => import('@/pages/ExplorePage.vue') },
   { path: '/profile/:id?', name: 'profile', component: () => import('@/pages/ProfilePage.vue') },
   { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true } },
   { path: '/report/:shareToken', name: 'report', component: () => import('@/pages/ReportPage.vue'), meta: { public: true } },
@@ -31,7 +32,6 @@ const routes = [
   // Legacy path redirects → public workspace.
   { path: '/home', redirect: '/w/public/home' },
   { path: '/errors', redirect: '/w/public/errors' },
-  { path: '/explore', redirect: '/w/public/explore' },
   { path: '/errors/new', redirect: '/w/public/errors/new' },
   { path: '/search', redirect: '/w/public/search' },
   { path: '/insights', redirect: '/w/public/insights' },
