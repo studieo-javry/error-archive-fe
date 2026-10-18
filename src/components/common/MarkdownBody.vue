@@ -35,11 +35,12 @@ const rendered = computed(() => {
   // inline code
   html = html.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-[#ececee] text-zinc-800 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 text-xs font-mono">$1</code>')
 
-  // bold
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  // bold — 문단 내 소프트 줄바꿈은 넘되(CommonMark), 빈 줄(\n\n=문단 경계)은 넘지 않는다.
+  // (`.` 는 \n 미매칭이라 과거엔 줄바꿈에 걸친 **볼드** 가 깨졌다.)
+  html = html.replace(/\*\*((?:(?!\n\n)[\s\S])+?)\*\*/g, '<strong>$1</strong>')
 
-  // italic
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
+  // italic — 볼드와 동일 정책.
+  html = html.replace(/\*((?:(?!\n\n)[\s\S])+?)\*/g, '<em>$1</em>')
 
   // 블록 레벨: 제목(#/##/###) · 목록(-, 1.) · 문단 · 코드블록 센티넬. 라인 단위로 그룹핑한다.
   const out: string[] = []
