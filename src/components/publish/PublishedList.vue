@@ -17,6 +17,11 @@ import {
 
 const teamStore = useTeamStore()
 
+// preview 모드(Profile): 툴바·무한스크롤 없이 상위 N건만 + "View all" 링크로 전용 페이지 유도.
+// 기본(false)은 전체 리스트(검색/필터/무한스크롤) — 전용 페이지(/me/publications)에서 사용.
+const props = defineProps<{ preview?: boolean }>()
+const PREVIEW_LIMIT = 5
+
 // 케이스 탭과 달리 검색어를 서버(`q`)로 보낸다 — 커서 페이징이라 클라이언트에서
 // 걸러내면 아직 안 받아온 페이지를 놓친다. 그래서 목록이 검색창을 직접 갖는다.
 const q = ref('')
@@ -41,7 +46,7 @@ async function load(append = false) {
       visibility: visibility.value || undefined,
       sort: sort.value,
       cursor: append ? nextCursor.value ?? undefined : undefined,
-      limit: 20,
+      limit: props.preview ? PREVIEW_LIMIT : 20,
     })
     items.value = append ? [...items.value, ...data.items] : data.items
     nextCursor.value = data.nextCursor
@@ -66,6 +71,8 @@ let observer: IntersectionObserver | null = null
 
 onMounted(() => {
   load()
+  // preview 모드는 상위 N건만 — 무한스크롤 옵저버를 달지 않는다.
+  if (props.preview) return
   observer = new IntersectionObserver(
     (entries) => {
       if (entries[0].isIntersecting && hasNext.value && !loading.value) load(true)
@@ -111,10 +118,10 @@ const selectClass =
 <template>
   <div>
     <!-- 발행물은 워크스페이스 단위가 아니다(BE 에 필터 없음) — 오해하지 않게 밝혀둔다. -->
-    <p class="text-[11px] text-zinc-400 dark:text-zinc-600 mb-4">Everything you've published, across all workspaces.</p>
+    <p v-if="!preview" class="text-[11px] text-zinc-400 dark:text-zinc-600 mb-4">Everything you've published, across all workspaces.</p>
 
-    <!-- 툴바 한 줄: 공개 범위(select) · 정렬(select) · 검색(케이스와 동일한 raw-input). -->
-    <div class="flex flex-wrap items-center gap-3 mb-6">
+    <!-- 툴바 한 줄: 공개 범위(select) · 정렬(select) · 검색(케이스와 동일한 raw-input). preview 모드는 숨김. -->
+    <div v-if="!preview" class="flex flex-wrap items-center gap-3 mb-6">
       <select v-model="visibility" :class="selectClass" aria-label="Visibility filter">
         <option value="">Visibility: All</option>
         <option value="PUBLIC">Public</option>
@@ -137,7 +144,42 @@ const selectClass =
     <LoadingSpinner v-else-if="loading && !items.length" size="lg" />
 
     <template v-else>
-      <div v-if="items.length" class="grid gap-3">
+      <template v-if="items.length">
+      <!-- preview(Profile) = A1: 번호 + 제목 + 메타, hover 시 Open / 초록 Copy 액션 페이드인 -->
+      <div v-if="preview">
+        <div
+          v-for="(p, i) in items"
+          :key="p.slug"
+          class="group relative flex items-center gap-3 rounded-lg border-b border-zinc-100 px-2 py-2.5 transition-colors last:border-0 hover:bg-zinc-50 dark:border-zinc-800/60 dark:hover:bg-zinc-800/40"
+        >
+          <span class="w-5 shrink-0 text-center font-mono text-xs text-zinc-300 transition-colors group-hover:text-emerald-500 dark:text-zinc-600">{{ String(i + 1).padStart(2, '0') }}</span>
+          <a
+            :href="p.publicUrl"
+            target="_blank"
+            rel="noopener"
+            class="min-w-0 flex-1 truncate text-[13.5px] font-medium text-zinc-700 transition-colors group-hover:text-emerald-600 dark:text-zinc-200 dark:group-hover:text-emerald-400"
+          >{{ p.title }}</a>
+          <!-- 평소: 조회수·공개범위 / hover: 같은 자리에 액션 페이드인 -->
+          <span class="whitespace-nowrap font-mono text-[11px] text-zinc-400 transition-opacity group-hover:opacity-0 dark:text-zinc-500">{{ p.viewCount }} views · {{ p.visibility === 'PUBLIC' ? 'Public' : 'Unlisted' }}</span>
+          <span class="pointer-events-none absolute right-2 flex translate-x-1 items-center gap-1.5 opacity-0 transition-all group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100">
+            <a
+              :href="p.publicUrl"
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-1 rounded-md border border-zinc-200 px-2 py-1 font-mono text-[10.5px] text-zinc-500 transition-colors hover:text-zinc-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+            ><LinkIcon class="h-3 w-3" />Open</a>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 font-mono text-[10.5px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
+              @click="copyLink(p)"
+            >
+              <component :is="copiedSlug === p.slug ? CheckIcon : ClipboardDocumentIcon" class="h-3 w-3" />{{ copiedSlug === p.slug ? 'Copied' : 'Copy' }}
+            </button>
+          </span>
+        </div>
+      </div>
+      <!-- full(전용 페이지 /me/publications) = 원본 카드 -->
+      <div v-else class="grid gap-3">
         <article
           v-for="p in items"
           :key="p.slug"
@@ -236,6 +278,7 @@ const selectClass =
           </div>
         </article>
       </div>
+      </template>
 
       <p v-else-if="q.trim() || visibility" class="text-sm text-zinc-400 dark:text-zinc-500 py-16 text-center">
         No published posts match those filters.
@@ -249,12 +292,24 @@ const selectClass =
       </div>
     </template>
 
-    <div ref="sentinel" class="h-1" />
-    <LoadingSpinner v-if="loading && items.length" size="sm" class="py-4" />
+    <!-- preview(Profile): 상위 N건만 보여주고 전체는 전용 페이지로. 더 있을 때만 "View all". -->
+    <router-link
+      v-if="preview && items.length && hasNext"
+      :to="{ name: 'myPublications' }"
+      class="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
+    >
+      View all publications
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+    </router-link>
 
-    <p v-if="totalCount != null && items.length" class="text-[11px] text-zinc-400 dark:text-zinc-600 font-mono text-center pt-2">
-      {{ items.length }} / {{ totalCount }} published
-    </p>
+    <template v-if="!preview">
+      <div ref="sentinel" class="h-1" />
+      <LoadingSpinner v-if="loading && items.length" size="sm" class="py-4" />
+
+      <p v-if="totalCount != null && items.length" class="text-[11px] text-zinc-400 dark:text-zinc-600 font-mono text-center pt-2">
+        {{ items.length }} / {{ totalCount }} published
+      </p>
+    </template>
   </div>
 </template>
 

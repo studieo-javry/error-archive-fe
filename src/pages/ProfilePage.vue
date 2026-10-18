@@ -241,7 +241,8 @@ watch(() => route.params.id, () => { loadProfile() })
     <!-- Publications — 본인 프로필만. "내가 발행한 글" 은 개인 자산이라 워크스페이스 Library 가 아니라 여기. (/me) -->
     <section v-if="isOwnProfile" class="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800/60">
       <h2 class="text-lg font-light serif-title text-zinc-800 dark:text-zinc-100 mb-4">Publications</h2>
-      <PublishedList />
+      <!-- "View all" 은 PublishedList(preview) 하단에서 더 있을 때만(hasNext) 노출 — 헤더 중복 제거. -->
+      <PublishedList preview />
     </section>
 
     <!-- Recent activities — 본인/타인 모두. 비어 있으면 viewer 별 빈 상태를 컴포넌트가 처리. -->

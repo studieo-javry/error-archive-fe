@@ -20,6 +20,7 @@ const routes = [
   // Global routes — shared across all workspaces.
   // Explore = 공개 발행물 탐색(둘러보기/쇼케이스). 워크스페이스 무관 전역 — Profile/Settings 와 동급.
   { path: '/explore', name: 'explore', component: () => import('@/pages/ExplorePage.vue') },
+  { path: '/me/publications', name: 'myPublications', component: () => import('@/pages/MyPublicationsPage.vue') },
   { path: '/profile/:id?', name: 'profile', component: () => import('@/pages/ProfilePage.vue') },
   { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true } },
   { path: '/report/:shareToken', name: 'report', component: () => import('@/pages/ReportPage.vue'), meta: { public: true } },
