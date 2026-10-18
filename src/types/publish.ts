@@ -111,3 +111,22 @@ export interface PublishmentDetail {
   /** 단건 응답은 항상 null(목록에서만 채워짐). */
   sourceStale: boolean | null
 }
+
+/**
+ * `GET /publishments/public` 의 Explore 카드 항목 — 누구나 볼 수 있는 PUBLIC+LIVE 발행물.
+ * 소유자 전용 필드(sourceStale/downloadCount 등) 없음. 카드 → 공개 페이지(`publicUrl`).
+ */
+export interface PublicPublishmentItem {
+  slug: string
+  title: string
+  summary: string | null
+  descriptionPreview: string | null
+  /** 작성자 표시 이름(없으면 null → 익명). */
+  author: string | null
+  tags: string[]
+  stepCount: number
+  solutionCount: number
+  viewCount: number
+  publishedAt: string
+  publicUrl: string
+}

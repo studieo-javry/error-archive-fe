@@ -1,5 +1,6 @@
 import apiClient from './apiClient'
 import type {
+  PublicPublishmentItem,
   PublishmentDetail,
   PublishmentListResponse,
   PublishmentSort,
@@ -29,6 +30,14 @@ export const publishmentApi = {
     limit?: number
   } = {}) {
     return apiClient.get<PublishmentListResponse>('/publishments/me', { params })
+  },
+
+  /**
+   * 공개 발행물 목록 (Explore) — 누구나 볼 수 있는 PUBLIC+LIVE 발행물 최신순.
+   * 소유자 무관. 카드 → 공개 페이지(`publicUrl`). `limit` 기본 50(최대 100).
+   */
+  listPublic(params: { limit?: number } = {}) {
+    return apiClient.get<PublicPublishmentItem[]>('/publishments/public', { params })
   },
 
   /**

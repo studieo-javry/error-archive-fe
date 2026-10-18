@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import {
   HomeIcon,
   BookOpenIcon,
+  GlobeAltIcon,
   PlusCircleIcon,
   MagnifyingGlassIcon,
   ChartBarIcon,
@@ -36,6 +37,7 @@ const navItems = computed<NavItem[]>(() => {
   return [
     { name: 'home', icon: HomeIcon },
     { name: 'errorList', icon: BookOpenIcon },
+    { name: 'explore', icon: GlobeAltIcon },
     { name: 'errorCreate', icon: PlusCircleIcon },
     isTeam
       ? { name: 'team', icon: UserGroupIcon }
