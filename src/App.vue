@@ -27,11 +27,15 @@ const isWideLayout = computed(() => !!route.meta.wideLayout)
 // The sidebar/header eagerly call authenticated APIs (e.g. /workspaces), which 401 while logged
 // out — so they must not mount on public routes.
 const isPublic = computed(() => !!route.meta.public)
+// optionalAuth 라우트(예: /explore)를 로그아웃으로 열면 사이드바/헤더 없이 chrome-less 로 — 그 페이지가
+// 자체 헤더를 그린다. 로그인 상태면 아래 일반 레이아웃(사이드바)로 떨어져 페이지는 피드만 렌더한다.
+const isOptionalLoggedOut = computed(() => !!route.meta.optionalAuth && !authStore.isAuthenticated)
+const isChromeless = computed(() => isPublic.value || isOptionalLoggedOut.value)
 </script>
 
 <template>
   <router-view v-if="isFullScreen" />
-  <div v-else-if="isPublic" class="min-h-screen bg-[#f7f7f5] text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
+  <div v-else-if="isChromeless" class="min-h-screen bg-[#f7f7f5] text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">
     <router-view />
   </div>
   <div v-else class="flex h-screen overflow-hidden bg-[#f7f7f5] text-zinc-900 dark:bg-[#18181b] dark:text-[#e4e4e7]">

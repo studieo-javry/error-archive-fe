@@ -19,7 +19,9 @@ const routes = [
 
   // Global routes — shared across all workspaces.
   // Explore = 공개 발행물 탐색(둘러보기/쇼케이스). 워크스페이스 무관 전역 — Profile/Settings 와 동급.
-  { path: '/explore', name: 'explore', component: () => import('@/pages/ExplorePage.vue') },
+  // optionalAuth: 로그아웃도 접근(랜딩/SEO/데모). 로그인 시엔 앱 chrome(사이드바) 안에서, 로그아웃 시엔
+  // ExplorePage 자체 헤더로 chrome-less 렌더(App.vue 가 레이아웃 분기).
+  { path: '/explore', name: 'explore', component: () => import('@/pages/ExplorePage.vue'), meta: { optionalAuth: true } },
   { path: '/me/publications', name: 'myPublications', component: () => import('@/pages/MyPublicationsPage.vue') },
   { path: '/profile/:id?', name: 'profile', component: () => import('@/pages/ProfilePage.vue') },
   { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true } },
@@ -46,7 +48,8 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
-  if (!to.meta.public && !authStore.isAuthenticated) {
+  // optionalAuth 라우트(예: /explore)는 로그아웃도 통과 — 공개 쇼케이스를 비로그인도 열람.
+  if (!to.meta.public && !to.meta.optionalAuth && !authStore.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
   // Sync the current workspace from the URL slug on workspace-scoped routes.
