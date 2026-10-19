@@ -36,16 +36,21 @@ type NavItem = { name: string; icon: Component; global?: boolean }
 // Explore 는 전역(공개 발행물 탐색) 이라 slug 무관.
 const navItems = computed<NavItem[]>(() => {
   const isTeam = teamStore.currentWorkspaceId !== null
-  return [
+  const items: NavItem[] = [
     { name: 'home', icon: HomeIcon },
     { name: 'errorList', icon: BookOpenIcon },
-    { name: 'explore', icon: GlobeAltIcon, global: true },
-    { name: 'errorCreate', icon: PlusCircleIcon },
+  ]
+  // Explore = 전역 공개 쇼케이스(featured/recent). 개인 스페이스에서만 노출하고
+  // 워크스페이스(팀/데모) 탭에선 제거한다 — 팀 사이드바는 그 팀의 작업 공간에 집중.
+  if (!isTeam) items.push({ name: 'explore', icon: GlobeAltIcon, global: true })
+  items.push({ name: 'errorCreate', icon: PlusCircleIcon })
+  items.push(
     isTeam
       ? { name: 'team', icon: UserGroupIcon }
       : { name: 'search', icon: MagnifyingGlassIcon },
-    { name: 'insights', icon: ChartBarIcon },
-  ]
+  )
+  items.push({ name: 'insights', icon: ChartBarIcon })
+  return items
 })
 
 function targetFor(item: NavItem) {
