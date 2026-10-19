@@ -13,6 +13,7 @@ import {
   ClipboardDocumentIcon,
   CheckIcon,
   ArrowPathIcon,
+  DocumentTextIcon,
 } from '@heroicons/vue/24/outline'
 
 const teamStore = useTeamStore()
@@ -251,6 +252,8 @@ const selectClass =
           <div class="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-zinc-200 pt-3 dark:border-zinc-800">
             <div class="flex items-center gap-1.5">
               <a :href="p.pdfUrl" target="_blank" rel="noopener" class="pub-btn"><ArrowDownTrayIcon class="w-3 h-3" />PDF</a>
+              <!-- Markdown 내보내기 — 도입 예정(비활성). 기능 출시 시 활성화. -->
+              <span class="pub-btn pub-btn-disabled pub-btn-soon" title="Markdown 내보내기 · 도입 예정"><DocumentTextIcon class="w-3 h-3" />MD<em>soon</em></span>
               <button type="button" class="pub-btn pub-btn-primary" @click="copyLink(p)">
                 <component :is="copiedSlug === p.slug ? CheckIcon : ClipboardDocumentIcon" class="w-3 h-3" />
                 {{ copiedSlug === p.slug ? 'Copied' : 'Copy link' }}
@@ -348,6 +351,26 @@ const selectClass =
   border-color: #e4e4e7;
   color: #71717a;
   background: transparent;
+}
+/* 도입 예정 태그(앰버 pill) — MD 버튼 전용 */
+.pub-btn-soon { opacity: .72; }
+.pub-btn-soon em {
+  font-style: normal;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd9a0;
+  padding: 0 4px;
+  border-radius: 999px;
+  margin-left: 2px;
+}
+html.dark .pub-btn-soon em {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, .1);
+  border-color: rgba(251, 191, 36, .3);
 }
 
 /* 호버 툴팁 (배지·비활성 버튼) — 테마 무관 다크 말풍선 */

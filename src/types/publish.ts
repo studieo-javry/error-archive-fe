@@ -68,8 +68,8 @@ export interface PublishmentListItem {
   publishedAt: string
   updatedAt: string
   publicUrl: string
-  /** 주의: 게이트웨이 라우트는 있지만 publish-api 에 핸들러가 아직 없다(404). */
-  markdownUrl: string
+  /** Markdown 내보내기 — 도입 예정. 현재 BE 가 항상 null(핸들러 비활성). 출시 시 export.md URL. */
+  markdownUrl: string | null
   pdfUrl: string
 }
 
@@ -89,7 +89,8 @@ export interface PublishmentListResponse {
 export interface PublishmentDetail {
   slug: string
   publicUrl: string
-  markdownUrl: string
+  /** Markdown 내보내기 — 도입 예정. 현재 BE 가 항상 null(핸들러 비활성). 출시 시 export.md URL. */
+  markdownUrl: string | null
   pdfUrl: string
   ownerUserId: number
   originalCaseId: number

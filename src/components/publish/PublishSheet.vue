@@ -248,6 +248,8 @@ function close() {
             <div class="share">
               <a :href="published.publicUrl" target="_blank" rel="noopener">↗ 열기</a>
               <a :href="published.pdfUrl" target="_blank" rel="noopener">📄 PDF</a>
+              <!-- Markdown 내보내기 — 도입 예정(비활성). -->
+              <span class="soon" title="Markdown 내보내기 · 도입 예정">📝 Markdown<em>도입 예정</em></span>
             </div>
             <p class="tip">이 상세 페이지 하단에 이제 <b>발행 상태 바</b>가 떠요 — 조회수 확인, 발행 내리기, 다시 공개를 거기서 할 수 있어요.</p>
           </div>
@@ -629,6 +631,9 @@ function close() {
 .share { display: flex; gap: 9px; justify-content: center; margin-bottom: 18px; }
 .share a { font-size: 12.5px; color: var(--psh-sub); border: 1px solid var(--psh-line); padding: 7px 14px; border-radius: 9px; text-decoration: none; transition: .13s; }
 .share a:hover { border-color: var(--psh-accent); color: var(--psh-accent); }
+/* Markdown 도입 예정 — 비활성(점선 테두리 + 앰버 태그). 클릭 불가. */
+.share .soon { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--psh-sub); border: 1px dashed var(--psh-amber-ring); padding: 7px 14px; border-radius: 9px; cursor: default; opacity: .78; }
+.share .soon em { font-style: normal; font-size: 9px; font-weight: 700; letter-spacing: .02em; color: var(--psh-amber); background: var(--psh-amber-soft); padding: 1px 6px; border-radius: 999px; }
 .psh-done .tip { font-size: 11.5px; color: var(--psh-faint); line-height: 1.5; max-width: 380px; margin: 0 auto; }
 
 /* footer */

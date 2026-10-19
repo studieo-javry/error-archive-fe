@@ -166,6 +166,8 @@ async function doDelete() {
       <template v-if="isLive">
         <button class="psb-txt" @click="copy">{{ copied ? 'Copied' : 'Copy' }}</button>
         <button class="psb-txt" @click="openPdf">PDF</button>
+        <!-- Markdown 내보내기 — 도입 예정(비활성). 기능 출시 시 활성화. -->
+        <span class="psb-soon" title="Markdown 내보내기 · 도입 예정">MD<em>soon</em></span>
         <span class="psb-div" />
         <!-- 자물쇠: 평소 열림 → hover 시 닫힘(발행 내리기) -->
         <button class="psb-unpub" :disabled="busy" @click="down">
@@ -388,6 +390,9 @@ async function doDelete() {
 
 /* 구분선 + 발행 내리기(자물쇠) — 참조 publish-case-status-v1.html 그대로 */
 .psb-div { width: 1px; height: 16px; background: var(--psb-line); flex-shrink: 0; }
+/* Markdown 도입 예정 — 비활성 placeholder(앰버). 클릭/호버 강조 없음. */
+.psb-soon { display: inline-flex; align-items: center; gap: 4px; font: 400 12px "Inter", sans-serif; color: var(--psb-sub); opacity: .62; cursor: default; padding: 4px 4px; white-space: nowrap; flex-shrink: 0; }
+.psb-soon em { font-style: normal; font-size: 8.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--psb-amber); background: var(--psb-amber-soft); padding: 1px 4px; border-radius: 999px; }
 .psb-unpub { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 9px; font: 400 12px "Inter", sans-serif; border: 0; background: none; color: var(--psb-sub); cursor: pointer; transition: .15s; white-space: nowrap; }
 .psb-unpub:hover { background: var(--psb-rose-soft); color: var(--psb-rose); }
 .psb-unpub:disabled { opacity: .5; cursor: default; }
