@@ -8,6 +8,7 @@ import { formatAbsolute } from '@/utils/timeAgo'
 import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/composables/useAuth'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import LoadMoreButton from '@/components/common/LoadMoreButton.vue'
 
 // Explore = 공개(PUBLIC+LIVE) 발행물 쇼케이스(전역).
 //  - 외부 방문자(세션 아예 없음) → 공개 헤더 + 히어로 + 피드 + 우측 레일(랜딩/SEO 유입·전환).
@@ -20,34 +21,48 @@ const isAuthed = computed(() => authStore.isAuthenticated)
 
 const items = ref<PublicPublishmentItem[]>([])
 const loading = ref(false)
+const loadingMore = ref(false)
 const loadError = ref('')
+const nextCursor = ref<string | null>(null)
+const hasNext = ref(false)
 const query = ref('')
 const sort = ref<'recent' | 'views'>('recent')
 const showSearch = ref(false)
 const toastMsg = ref('')
 const guestBusy = ref(false)
 const aboutDialog = ref<HTMLDialogElement | null>(null)
+const PAGE = 20 // 다른 리스트와 동일(20)
 let toastTimer: number | undefined
 let lastLoaded = 0
 
-async function load(silent = false) {
-  if (!silent) loading.value = true
+// keyset 커서 페이징 — append=false 는 첫 페이지(리셋), append=true 는 Load more.
+async function load(append = false, silent = false) {
+  if (append) loadingMore.value = true
+  else if (!silent) loading.value = true
   loadError.value = ''
   try {
-    const { data } = await publishmentApi.listPublic({ limit: 60 })
-    items.value = data
+    const { data } = await publishmentApi.listPublic({
+      cursor: append ? (nextCursor.value ?? undefined) : undefined,
+      limit: PAGE,
+    })
+    items.value = append ? [...items.value, ...data.items] : data.items
+    nextCursor.value = data.nextCursor
+    hasNext.value = data.hasNext
     lastLoaded = Date.now()
   } catch (e) {
-    if (!silent) {
+    if (!append && !silent) {
       items.value = []
+      hasNext.value = false
       loadError.value = axios.isAxiosError(e)
         ? ((e.response?.data as { detail?: string })?.detail ?? "Couldn't load published posts.")
         : "Couldn't load published posts."
     }
   } finally {
-    if (!silent) loading.value = false
+    loadingMore.value = false
+    if (!append && !silent) loading.value = false
   }
 }
+function loadMore() { if (hasNext.value && !loadingMore.value) load(true) }
 
 const visibleItems = computed(() => {
   const words = query.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
@@ -113,7 +128,8 @@ function onKeydown(e: KeyboardEvent) {
 }
 // ③ 탭 복귀 시 조용히 최신 views 반영(10초 쓰로틀) — 카드가 새 탭으로 열려 재마운트가 안 되는 문제 보완.
 function onVisibility() {
-  if (document.visibilityState === 'visible' && Date.now() - lastLoaded > 10000) load(true)
+  // 탭 복귀 시 첫 페이지만 조용히 새로고침(최신 views 반영). 확장분은 유지 안 함(리셋).
+  if (document.visibilityState === 'visible' && Date.now() - lastLoaded > 10000) load(false, true)
 }
 onMounted(() => {
   load()
@@ -230,7 +246,10 @@ onUnmounted(() => {
               <p v-else>Public write-ups appear here as people publish the cases they've solved.</p>
               <button v-if="items.length" class="text-link" type="button" @click="resetFilters">전체 발행물 보기 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-5-5 5 5-5 5"/></svg></button>
             </div>
-            <p v-else class="list-end">{{ hasFilter ? '조건에 맞는 발행물을 모두 살펴봤어요.' : '공개된 발행물을 모두 살펴봤어요.' }}</p>
+            <template v-else>
+              <LoadMoreButton v-if="hasNext" :loading="loadingMore" @more="loadMore" />
+              <p v-else class="list-end">{{ hasFilter ? '조건에 맞는 발행물을 모두 살펴봤어요.' : '공개된 발행물을 모두 살펴봤어요.' }}</p>
+            </template>
 
             <div v-if="!isAuthed" class="search-direction">
               <p>에러 메시지나 해결 중인 케이스를 찾고 있나요?<br>공개 케이스의 증상과 시도는 로그인 후 Search에서 찾아보세요.</p>

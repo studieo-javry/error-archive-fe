@@ -117,6 +117,13 @@ export interface PublishmentDetail {
  * `GET /publishments/public` 의 Explore 카드 항목 — 누구나 볼 수 있는 PUBLIC+LIVE 발행물.
  * 소유자 전용 필드(sourceStale/downloadCount 등) 없음. 카드 → 공개 페이지(`publicUrl`).
  */
+/** `GET /publishments/public` 봉투 — keyset 커서 페이징. `hasNext=false` 면 끝. */
+export interface PublicPublishmentListResponse {
+  items: PublicPublishmentItem[]
+  nextCursor: string | null
+  hasNext: boolean
+}
+
 export interface PublicPublishmentItem {
   slug: string
   title: string

@@ -1,6 +1,6 @@
 import apiClient from './apiClient'
 import type {
-  PublicPublishmentItem,
+  PublicPublishmentListResponse,
   PublishmentDetail,
   PublishmentListResponse,
   PublishmentSort,
@@ -33,11 +33,11 @@ export const publishmentApi = {
   },
 
   /**
-   * 공개 발행물 목록 (Explore) — 누구나 볼 수 있는 PUBLIC+LIVE 발행물 최신순.
-   * 소유자 무관. 카드 → 공개 페이지(`publicUrl`). `limit` 기본 50(최대 100).
+   * 공개 발행물 목록 (Explore) — PUBLIC+LIVE 최신순, keyset 커서 페이징.
+   * 첫 페이지는 `cursor` 생략, 이후 응답의 `nextCursor` 를 전달. `hasNext=false` 면 끝. `limit` 기본 20(최대 100).
    */
-  listPublic(params: { limit?: number } = {}) {
-    return apiClient.get<PublicPublishmentItem[]>('/publishments/public', { params })
+  listPublic(params: { cursor?: string; limit?: number } = {}) {
+    return apiClient.get<PublicPublishmentListResponse>('/publishments/public', { params })
   },
 
   /**

@@ -6,6 +6,7 @@ import type { PublishmentListItem, PublishmentSort, PublishmentVisibility } from
 import { useTeamStore } from '@/stores/teamStore'
 import { formatAbsolute } from '@/utils/timeAgo'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import LoadMoreButton from '@/components/common/LoadMoreButton.vue'
 import {
   LinkIcon,
   EyeIcon,
@@ -67,22 +68,10 @@ async function load(append = false) {
   }
 }
 
-const sentinel = ref<HTMLElement | null>(null)
-let observer: IntersectionObserver | null = null
-
 onMounted(() => {
   load()
-  // preview 모드는 상위 N건만 — 무한스크롤 옵저버를 달지 않는다.
-  if (props.preview) return
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting && hasNext.value && !loading.value) load(true)
-    },
-    { rootMargin: '200px' },
-  )
-  if (sentinel.value) observer.observe(sentinel.value)
 })
-onUnmounted(() => observer?.disconnect())
+function loadMore() { if (hasNext.value && !loading.value) load(true) }
 
 // 검색어는 타이핑마다 서버를 때리지 않도록 디바운스.
 let queryTimer: ReturnType<typeof setTimeout> | undefined
@@ -306,8 +295,7 @@ const selectClass =
     </router-link>
 
     <template v-if="!preview">
-      <div ref="sentinel" class="h-1" />
-      <LoadingSpinner v-if="loading && items.length" size="sm" class="py-4" />
+      <LoadMoreButton v-if="items.length && hasNext" :loading="loading" @more="loadMore" />
 
       <p v-if="totalCount != null && items.length" class="text-[11px] text-zinc-400 dark:text-zinc-600 font-mono text-center pt-2">
         {{ items.length }} / {{ totalCount }} published

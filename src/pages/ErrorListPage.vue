@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useErrorStore } from '@/stores/errorStore'
 import { useTeamStore } from '@/stores/teamStore'
 import ErrorCard from '@/components/error/ErrorCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import LoadMoreButton from '@/components/common/LoadMoreButton.vue'
 import type { ErrorCaseStatus } from '@/types/error'
 
 const store = useErrorStore()
@@ -30,22 +31,8 @@ const filteredErrors = computed(() => {
   )
 })
 
-const sentinel = ref<HTMLElement | null>(null)
-let observer: IntersectionObserver | null = null
-
 onMounted(() => {
   store.fetchErrors()
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting) store.loadMore()
-    },
-    { rootMargin: '200px' },
-  )
-  if (sentinel.value) observer.observe(sentinel.value)
-})
-
-onUnmounted(() => {
-  observer?.disconnect()
 })
 
 // Re-fetch (and clear the keyword) when the active workspace changes.
@@ -96,8 +83,11 @@ watch(() => teamStore.currentWorkspaceId, () => {
     <LoadingSpinner v-if="store.loading && !store.errors.length" size="lg" />
 
     <template v-else>
-      <div v-if="filteredErrors.length" class="divide-y divide-zinc-200 dark:divide-zinc-800">
-        <ErrorCard v-for="error in filteredErrors" :key="error.id" :error="error" />
+      <div v-if="filteredErrors.length">
+        <div class="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <ErrorCard v-for="error in filteredErrors" :key="error.id" :error="error" />
+        </div>
+        <LoadMoreButton v-if="store.hasNext" :loading="store.loading" @more="store.loadMore" />
       </div>
 
       <p v-else-if="store.errors.length" class="text-sm text-zinc-400 dark:text-zinc-500 py-16 text-center">
@@ -118,8 +108,5 @@ watch(() => teamStore.currentWorkspaceId, () => {
         </router-link>
       </div>
     </template>
-
-    <div ref="sentinel" class="h-1" />
-    <LoadingSpinner v-if="store.loading && store.errors.length" size="sm" class="py-4" />
   </div>
 </template>

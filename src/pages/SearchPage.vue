@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
 import { useTeamStore } from '@/stores/teamStore'
 import type { ErrorCaseSummary } from '@/types/error'
 import ErrorCard from '@/components/error/ErrorCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import LoadMoreButton from '@/components/common/LoadMoreButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,9 +24,6 @@ const statusOptions = [
   { value: 'IN_PROGRESS', label: 'In Progress' },
   { value: 'RESOLVED', label: 'Resolved' },
 ]
-const sentinel = ref<HTMLElement | null>(null)
-let observer: IntersectionObserver | null = null
-
 async function doSearch(append = false) {
   loading.value = true
   try {
@@ -75,14 +73,7 @@ watch(() => route.query.q, (q) => {
 
 onMounted(() => {
   doSearch()
-  observer = new IntersectionObserver(
-    (entries) => { if (entries[0].isIntersecting) loadMore() },
-    { rootMargin: '200px' },
-  )
-  if (sentinel.value) observer.observe(sentinel.value)
 })
-
-onUnmounted(() => { observer?.disconnect() })
 </script>
 
 <template>
@@ -112,15 +103,15 @@ onUnmounted(() => { observer?.disconnect() })
 
     <LoadingSpinner v-if="loading && !results.length" size="lg" />
 
-    <div v-else-if="results.length" class="divide-y divide-zinc-200 dark:divide-zinc-800">
-      <ErrorCard v-for="error in results" :key="error.id" :error="error" />
+    <div v-else-if="results.length">
+      <div class="divide-y divide-zinc-200 dark:divide-zinc-800">
+        <ErrorCard v-for="error in results" :key="error.id" :error="error" />
+      </div>
+      <LoadMoreButton v-if="hasNext" :loading="loading" @more="loadMore" />
     </div>
 
     <p v-else class="text-sm text-zinc-400 dark:text-zinc-500 py-12 text-center">
       {{ query ? `No results found for "${query}"` : 'Search across all public and accessible error cases.' }}
     </p>
-
-    <div ref="sentinel" class="h-1" />
-    <LoadingSpinner v-if="loading && results.length" size="sm" class="py-4" />
   </div>
 </template>
