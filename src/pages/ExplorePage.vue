@@ -121,7 +121,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="ea-explore">
+  <div class="ea-explore" :class="{ authed: isAuthed }">
     <!-- 외부 방문자 전용: 공개 헤더 -->
     <header v-if="!isAuthed" class="public-header">
       <div class="header-context">
@@ -156,13 +156,19 @@ onUnmounted(() => {
 
       <div class="public-explore-layout">
         <div class="explore-feed-content">
-          <header class="explore-head">
+          <!-- 외부 방문자: 랜딩형 헤더(에디토리얼) -->
+          <header v-if="!isAuthed" class="explore-head">
             <p class="section-eyebrow">Community / Publications</p>
             <div class="title-row">
               <h1 class="page-title serif-title">Explore</h1>
               <span class="scope-note"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c4 4 4 14 0 18M12 3c-4 4-4 14 0 18"/></svg>공개 아티클</span>
             </div>
             <p class="page-description">문제에서 해결까지, 개발자들이 남긴 기록.<br>시도와 발견이 담긴 공개 아티클을 둘러보세요.</p>
+          </header>
+          <!-- 로그인(게스트·회원): 앱 내 다른 페이지(Library 등)와 동일한 상단 -->
+          <header v-else class="explore-head-app">
+            <h1 class="app-title serif-title">Explore</h1>
+            <p class="app-sub">개발자들이 공개한 해결 기록을 둘러봅니다.</p>
           </header>
 
           <div class="feed-toolbar">
@@ -294,6 +300,11 @@ onUnmounted(() => {
 
 .page-shell{width:100%;max-width:800px;margin:0 auto;padding:32px 24px 56px}
 .page-shell.has-public-intro{max-width:1080px;padding-top:36px}
+/* 로그인(게스트·회원): App 컨테이너(max-w-5xl p-10)에 그대로 얹혀 Library 등과 폭·여백 통일 */
+.ea-explore.authed .page-shell{max-width:none;padding:0}
+.explore-head-app{margin-bottom:22px}
+.app-title{font-size:24px;font-weight:300;line-height:1.3;letter-spacing:-.01em;color:var(--ink);margin:0}
+.app-sub{font-size:11px;color:var(--soft);margin:8px 0 0}
 
 .hero{display:grid;grid-template-columns:minmax(0,720px) minmax(0,320px);gap:40px;padding:10px 0 34px;border-bottom:1px solid var(--line);align-items:center;--green:#047857;--green-line:#cce5d5;--green-soft:#eaf5ee}
 .hero-eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 15px;color:var(--green);font-size:10px;font-weight:500;letter-spacing:.12em}
