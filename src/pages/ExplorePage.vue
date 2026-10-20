@@ -26,6 +26,7 @@ const sort = ref<'recent' | 'views'>('recent')
 const showSearch = ref(false)
 const toastMsg = ref('')
 const guestBusy = ref(false)
+const aboutDialog = ref<HTMLDialogElement | null>(null)
 let toastTimer: number | undefined
 let lastLoaded = 0
 
@@ -75,7 +76,13 @@ async function copyLink(p: PublicPublishmentItem) {
   }
 }
 function goLogin() { router.push({ name: 'login' }) }
-function goAbout() { router.push('/') }
+function openAbout() { aboutDialog.value?.showModal() }
+function closeAbout() { aboutDialog.value?.close() }
+// 백드롭 클릭 시 닫기(네이티브 dialog 는 Esc 는 기본 처리).
+function onAboutClick(e: MouseEvent) {
+  if (e.target === aboutDialog.value) closeAbout()
+}
+function startFromAbout() { closeAbout(); goLogin() }
 async function goGuest() {
   if (guestBusy.value) return
   guestBusy.value = true
@@ -125,11 +132,11 @@ onUnmounted(() => {
     <!-- 외부 방문자 전용: 공개 헤더 -->
     <header v-if="!isAuthed" class="public-header">
       <div class="header-context">
-        <a class="public-brand" href="/" @click.prevent="goAbout"><span class="serif-title">E</span><span class="brand-name">ErrorArchive</span></a>
+        <a class="public-brand" href="#" @click.prevent><span class="serif-title">E</span><span class="brand-name">ErrorArchive</span></a>
         <div class="public-context"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c4 4 4 14 0 18M12 3c-4 4-4 14 0 18"/></svg>Explore</div>
       </div>
       <div class="header-right">
-        <button class="header-text" type="button" @click="goAbout">서비스 소개</button>
+        <button class="header-text" type="button" aria-haspopup="dialog" @click="openAbout">서비스 소개</button>
         <button class="header-text" type="button" @click="goLogin">로그인</button>
         <button class="action-button public-demo" type="button" :disabled="guestBusy" @click="goGuest">
           <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7V5Z"/></svg>
@@ -249,13 +256,27 @@ onUnmounted(() => {
               <li><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><span>무엇을 시도하고, 어떻게 확인했는지</span></li>
               <li><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><span>마침내 어떤 방법으로 해결했는지</span></li>
             </ul>
-            <button class="text-link rail-about" type="button" @click="goAbout">ErrorArchive 알아보기 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
+            <button class="text-link rail-about" type="button" aria-haspopup="dialog" @click="openAbout">ErrorArchive 알아보기 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
           </section>
         </aside>
       </div>
 
       <p v-if="!isAuthed" class="site-signoff">Today's error becomes tomorrow's weapon.</p>
     </div>
+
+    <!-- 서비스 소개 모달 (외부 방문자 헤더/레일에서 호출) -->
+    <dialog ref="aboutDialog" class="ui-dialog about-dialog" aria-labelledby="about-title" @click="onAboutClick">
+      <button class="icon-button dialog-close" type="button" aria-label="닫기" @click="closeAbout"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
+      <p class="dialog-eyebrow mono">ABOUT ERRORARCHIVE</p>
+      <h2 id="about-title" class="serif-title">해결의 결과와 과정을<br>함께 남기는 곳.</h2>
+      <p>ErrorArchive 는 개발 중 마주친 에러를 기록하고, 시도와 근거를 쌓아 해결의 과정을 공유하는 공간입니다.</p>
+      <ol class="about-steps">
+        <li><strong>01 · 맥락을 기록하세요</strong><p>에러 메시지, 로그, 발생 환경을 함께 남깁니다.</p></li>
+        <li><strong>02 · 시도를 이어 가세요</strong><p>가설과 시도, 결과를 타임라인에 쌓습니다.</p></li>
+        <li><strong>03 · 해결을 나누세요</strong><p>최종 해결책과 과정을 정리해 다른 개발자에게 전합니다.</p></li>
+      </ol>
+      <button class="primary-button" type="button" @click="startFromAbout">나의 기록 시작하기 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
+    </dialog>
 
     <div class="toast" :class="{ visible: toastMsg }" role="status" aria-live="polite">{{ toastMsg }}</div>
   </div>
@@ -386,6 +407,19 @@ onUnmounted(() => {
 
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,8px);padding:12px 18px;max-width:calc(100% - 28px);background:var(--ink);color:var(--bg);border-radius:9px;font-size:11px;line-height:1.7;box-shadow:var(--shadow);opacity:0;pointer-events:none;z-index:100;transition:opacity .15s,transform .15s;width:max-content;text-align:center}
 .toast.visible{opacity:1;transform:translate(-50%,0)}
+
+/* 서비스 소개 모달 */
+.ui-dialog{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:30px;width:420px;max-width:calc(100vw - 28px);max-height:calc(100dvh - 80px);overflow:auto;box-shadow:var(--shadow)}
+.ui-dialog::backdrop{background:rgba(24,24,27,.35);backdrop-filter:blur(4px)}
+.dialog-close{position:absolute;right:10px;top:10px}
+.dialog-eyebrow{font-size:9px;color:var(--green);letter-spacing:.13em;margin:10px 0 14px;font-weight:500;text-transform:uppercase}
+.ui-dialog h2{font-size:24px;line-height:1.5;font-weight:500;letter-spacing:-.04em;margin:0 0 14px;word-break:keep-all;color:var(--ink)}
+.ui-dialog>p{font-size:12px;line-height:1.9;color:var(--muted);word-break:keep-all;margin:0}
+.about-steps{list-style:none;margin:24px 0 0;padding:0}
+.about-steps li{padding:15px 0;border-top:1px solid var(--line)}
+.about-steps strong{font-size:12px;font-weight:600;color:var(--ink)}
+.about-steps p{font-size:12px;margin:5px 0 0;color:var(--muted);line-height:1.7}
+.about-dialog .primary-button{width:100%;margin-top:22px}
 
 /* 카드 — 원본 .pub-card (테두리 없는 플랫 행 + 호버 좌측 에메랄드 바) */
 .grid{display:flex;flex-direction:column;gap:12px}
