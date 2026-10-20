@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/composables/useAuth'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import LoadMoreButton from '@/components/common/LoadMoreButton.vue'
+import ListEnd from '@/components/common/ListEnd.vue'
 
 // Explore = 공개(PUBLIC+LIVE) 발행물 쇼케이스(전역).
 //  - 외부 방문자(세션 아예 없음) → 공개 헤더 + 히어로 + 피드 + 우측 레일(랜딩/SEO 유입·전환).
@@ -75,7 +76,6 @@ const visibleItems = computed(() => {
     sort.value === 'views' ? b.viewCount - a.viewCount : b.publishedAt.localeCompare(a.publishedAt),
   )
 })
-const hasFilter = computed(() => !!query.value.trim())
 
 function notify(msg: string) {
   toastMsg.value = msg
@@ -248,7 +248,7 @@ onUnmounted(() => {
             </div>
             <template v-else>
               <LoadMoreButton v-if="hasNext" :loading="loadingMore" @more="loadMore" />
-              <p v-else class="list-end">{{ hasFilter ? '조건에 맞는 발행물을 모두 살펴봤어요.' : '공개된 발행물을 모두 살펴봤어요.' }}</p>
+              <ListEnd v-else :count="visibleItems.length" />
             </template>
 
             <div v-if="!isAuthed" class="search-direction">

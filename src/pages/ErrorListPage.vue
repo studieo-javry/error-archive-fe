@@ -5,6 +5,7 @@ import { useTeamStore } from '@/stores/teamStore'
 import ErrorCard from '@/components/error/ErrorCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import LoadMoreButton from '@/components/common/LoadMoreButton.vue'
+import ListEnd from '@/components/common/ListEnd.vue'
 import type { ErrorCaseStatus } from '@/types/error'
 
 const store = useErrorStore()
@@ -88,6 +89,7 @@ watch(() => teamStore.currentWorkspaceId, () => {
           <ErrorCard v-for="error in filteredErrors" :key="error.id" :error="error" />
         </div>
         <LoadMoreButton v-if="store.hasNext" :loading="store.loading" @more="store.loadMore" />
+        <ListEnd v-else :count="filteredErrors.length" />
       </div>
 
       <p v-else-if="store.errors.length" class="text-sm text-zinc-400 dark:text-zinc-500 py-16 text-center">

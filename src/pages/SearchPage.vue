@@ -7,6 +7,7 @@ import type { ErrorCaseSummary } from '@/types/error'
 import ErrorCard from '@/components/error/ErrorCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import LoadMoreButton from '@/components/common/LoadMoreButton.vue'
+import ListEnd from '@/components/common/ListEnd.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -108,6 +109,7 @@ onMounted(() => {
         <ErrorCard v-for="error in results" :key="error.id" :error="error" />
       </div>
       <LoadMoreButton v-if="hasNext" :loading="loading" @more="loadMore" />
+      <ListEnd v-else :count="results.length" />
     </div>
 
     <p v-else class="text-sm text-zinc-400 dark:text-zinc-500 py-12 text-center">

@@ -7,6 +7,7 @@ import { useTeamStore } from '@/stores/teamStore'
 import { formatAbsolute } from '@/utils/timeAgo'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import LoadMoreButton from '@/components/common/LoadMoreButton.vue'
+import ListEnd from '@/components/common/ListEnd.vue'
 import {
   LinkIcon,
   EyeIcon,
@@ -294,12 +295,9 @@ const selectClass =
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
     </router-link>
 
-    <template v-if="!preview">
-      <LoadMoreButton v-if="items.length && hasNext" :loading="loading" @more="loadMore" />
-
-      <p v-if="totalCount != null && items.length" class="text-[11px] text-zinc-400 dark:text-zinc-600 font-mono text-center pt-2">
-        {{ items.length }} / {{ totalCount }} published
-      </p>
+    <template v-if="!preview && items.length">
+      <LoadMoreButton v-if="hasNext" :loading="loading" @more="loadMore" />
+      <ListEnd v-else :count="totalCount ?? items.length" />
     </template>
   </div>
 </template>
