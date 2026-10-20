@@ -6,23 +6,26 @@ import { publishmentApi } from '@/services/publishmentApi'
 import type { PublicPublishmentItem } from '@/types/publish'
 import { formatAbsolute } from '@/utils/timeAgo'
 import { useAuthStore } from '@/stores/authStore'
-import { useTheme } from '@/composables/useTheme'
+import { useAuth } from '@/composables/useAuth'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
-// Explore = 공개(PUBLIC+LIVE) 발행물 쇼케이스(전역). 로그아웃도 접근(랜딩/SEO/데모) → 자체 헤더/히어로/레일,
-// 로그인 상태면 앱 사이드바 안에서 피드만 렌더(헤더/히어로/레일 숨김). 데이터는 GET /publishments/public(무인증).
+// Explore = 공개(PUBLIC+LIVE) 발행물 쇼케이스(전역).
+//  - 외부 방문자(세션 아예 없음) → 공개 헤더 + 히어로 + 피드 + 우측 레일(랜딩/SEO 유입·전환).
+//  - 게스트(둘러보기)·회원 → 앱 사이드바 안에서 피드만. 게스트는 레이아웃상 "인증됨"으로 취급(데모=회원 동일).
+// 데이터는 GET /publishments/public(무인증).
 const router = useRouter()
 const authStore = useAuthStore()
-const { toggle: toggleTheme } = useTheme()
-const isAuthed = computed(() => authStore.isAuthenticated && !authStore.isGuest)
+const { loginAsGuest } = useAuth()
+const isAuthed = computed(() => authStore.isAuthenticated)
 
 const items = ref<PublicPublishmentItem[]>([])
 const loading = ref(false)
 const loadError = ref('')
 const query = ref('')
-const activeTag = ref('all')
-const sort = ref<'recent' | 'views' | 'steps'>('recent')
+const sort = ref<'recent' | 'views'>('recent')
+const showSearch = ref(false)
 const toastMsg = ref('')
+const guestBusy = ref(false)
 let toastTimer: number | undefined
 let lastLoaded = 0
 
@@ -45,28 +48,18 @@ async function load(silent = false) {
   }
 }
 
-// 태그 필터 = 큐레이션 고정 카테고리. 데이터에 따라 칩이 변하지 않아(결정적) 쇼케이스가 다루는 영역을
-// 또렷이 노출한다. 칩은 해당 태그를 가진 발행물만 필터(없으면 empty-state → "전체 보기").
-const FILTER_TAGS = ['spring', 'database', 'kafka', 'kubernetes', 'redis']
-
-// 클라이언트 검색(제목/요약/태그/slug) + 태그 필터 + 정렬. (쇼케이스 규모라 로드된 목록 위에서 처리)
 const visibleItems = computed(() => {
   const words = query.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const filtered = items.value.filter((p) => {
-    const tagOk = activeTag.value === 'all' || p.tags.map((t) => t.toLowerCase()).includes(activeTag.value)
-    if (!tagOk) return false
     if (!words.length) return true
     const hay = `${p.title} ${p.summary ?? ''} ${p.descriptionPreview ?? ''} ${p.tags.join(' ')} ${p.slug}`.toLowerCase()
     return words.every((w) => hay.includes(w))
   })
-  const s = sort.value
   return [...filtered].sort((a, b) =>
-    s === 'views' ? b.viewCount - a.viewCount
-      : s === 'steps' ? b.stepCount - a.stepCount
-        : b.publishedAt.localeCompare(a.publishedAt),
+    sort.value === 'views' ? b.viewCount - a.viewCount : b.publishedAt.localeCompare(a.publishedAt),
   )
 })
-const hasFilter = computed(() => !!query.value.trim() || activeTag.value !== 'all')
+const hasFilter = computed(() => !!query.value.trim())
 
 function notify(msg: string) {
   toastMsg.value = msg
@@ -82,17 +75,36 @@ async function copyLink(p: PublicPublishmentItem) {
   }
 }
 function goLogin() { router.push({ name: 'login' }) }
-function resetFilters() { query.value = ''; activeTag.value = 'all' }
+function goAbout() { router.push('/') }
+async function goGuest() {
+  if (guestBusy.value) return
+  guestBusy.value = true
+  try {
+    await loginAsGuest() // 성공 시 데모 워크스페이스로 이동
+  } catch {
+    guestBusy.value = false
+    notify('데모 둘러보기를 시작할 수 없어요. 잠시 후 다시 시도해주세요.')
+  }
+}
+function resetFilters() { query.value = ''; showSearch.value = false }
+function toggleSearch() {
+  showSearch.value = !showSearch.value
+  if (showSearch.value) {
+    requestAnimationFrame(() => (document.getElementById('ea-pub-search') as HTMLInputElement | null)?.focus())
+  } else {
+    query.value = ''
+  }
+}
 
-// '/' 로 검색 포커스
 function onKeydown(e: KeyboardEvent) {
   if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return
   const el = document.activeElement
   if (el && /INPUT|TEXTAREA|SELECT/.test(el.tagName)) return
-  const input = document.getElementById('ea-search') as HTMLInputElement | null
-  if (input) { e.preventDefault(); input.focus() }
+  e.preventDefault()
+  showSearch.value = true
+  requestAnimationFrame(() => (document.getElementById('ea-pub-search') as HTMLInputElement | null)?.focus())
 }
-// ③ 탭 복귀 시 조용히 최신 views 반영(10초 쓰로틀). 카드가 새 탭으로 열려 재마운트가 안 되는 문제 보완.
+// ③ 탭 복귀 시 조용히 최신 views 반영(10초 쓰로틀) — 카드가 새 탭으로 열려 재마운트가 안 되는 문제 보완.
 function onVisibility() {
   if (document.visibilityState === 'visible' && Date.now() - lastLoaded > 10000) load(true)
 }
@@ -109,35 +121,29 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="ea-explore" :class="{ authed: isAuthed }">
-    <!-- 로그아웃: 자체 헤더 -->
-    <header v-if="!isAuthed" class="site-header">
-      <nav class="site-nav shell" aria-label="메인 메뉴">
-        <a class="site-brand" href="/" aria-label="ErrorArchive 홈">
-          <span class="site-brand-mark" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/></svg></span>
-          <span class="site-brand-name">ErrorArchive</span>
-        </a>
-        <div class="site-nav-links">
-          <a class="site-nav-link" href="#explore" aria-current="page"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c4 4 4 14 0 18M12 3c-4 4-4 14 0 18"/></svg>둘러보기</a>
-          <a class="site-nav-link" href="/">서비스 소개</a>
-        </div>
-        <div class="site-actions">
-          <button class="icon-button" type="button" aria-label="테마 전환" @click="toggleTheme">
-            <svg class="ui-icon theme-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 14.1A8.8 8.8 0 0 1 9.9 3.6 8.8 8.8 0 1 0 20.4 14.1Z"/></svg>
-            <svg class="ui-icon theme-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></svg>
-          </button>
-          <button class="login-button" type="button" @click="goLogin">로그인</button>
-          <button class="primary-button" type="button" @click="goLogin"><span><span class="cta-long">기록 </span>시작하기</span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
-        </div>
-      </nav>
+  <div class="ea-explore">
+    <!-- 외부 방문자 전용: 공개 헤더 -->
+    <header v-if="!isAuthed" class="public-header">
+      <div class="header-context">
+        <a class="public-brand" href="/" @click.prevent="goAbout"><span class="serif-title">E</span><span class="brand-name">ErrorArchive</span></a>
+        <div class="public-context"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c4 4 4 14 0 18M12 3c-4 4-4 14 0 18"/></svg>Explore</div>
+      </div>
+      <div class="header-right">
+        <button class="header-text" type="button" @click="goAbout">서비스 소개</button>
+        <button class="header-text" type="button" @click="goLogin">로그인</button>
+        <button class="action-button public-demo" type="button" :disabled="guestBusy" @click="goGuest">
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7V5Z"/></svg>
+          <span>{{ guestBusy ? '들어가는 중…' : '데모 둘러보기' }}</span>
+        </button>
+      </div>
     </header>
 
-    <main class="shell" :class="{ 'shell-authed': isAuthed }">
-      <!-- 로그아웃: 히어로 -->
+    <div class="page-shell" :class="{ 'has-public-intro': !isAuthed }">
+      <!-- 외부 방문자 전용: 히어로 -->
       <section v-if="!isAuthed" class="hero" aria-labelledby="hero-title">
         <div>
           <p class="hero-eyebrow mono">A HOME FOR SOLVED ERRORS</p>
-          <h1 id="hero-title">누군가의 시행착오가,<br>당신의 <em>해결책</em>이 되도록.</h1>
+          <h2 id="hero-title">누군가의 시행착오가,<br>당신의 <em>해결책</em>이 되도록.</h2>
           <p class="hero-copy">증상부터 시도, 그리고 해결까지. <br>개발자들이 남긴 문제 해결의 과정을 함께 탐색하세요.</p>
         </div>
         <div class="hero-story" aria-label="ErrorArchive 의 기록 과정">
@@ -148,42 +154,36 @@ onUnmounted(() => {
         </div>
       </section>
 
-      <div class="explore-layout" :class="{ single: isAuthed }">
-        <section class="feed" id="explore" aria-labelledby="feed-title">
-          <form role="search" @submit.prevent>
-            <div class="search-box">
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
-              <input id="ea-search" v-model="query" type="search" aria-label="에러, 기술 스택, 키워드 검색" placeholder="어떤 에러를 만났나요? 에러·기술 스택·키워드 검색" autocomplete="off">
-              <kbd v-if="!query" class="search-shortcut" aria-hidden="true">/</kbd>
-              <button v-else class="icon-button search-clear" type="button" aria-label="검색어 지우기" @click="query = ''"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
+      <div class="public-explore-layout">
+        <div class="explore-feed-content">
+          <header class="explore-head">
+            <p class="section-eyebrow">Community / Publications</p>
+            <div class="title-row">
+              <h1 class="page-title serif-title">Explore</h1>
+              <span class="scope-note"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c4 4 4 14 0 18M12 3c-4 4-4 14 0 18"/></svg>공개 아티클</span>
             </div>
+            <p class="page-description">문제에서 해결까지, 개발자들이 남긴 기록.<br>시도와 발견이 담긴 공개 아티클을 둘러보세요.</p>
+          </header>
+
+          <div class="feed-toolbar">
+            <div class="feed-meta"><b class="feed-count">{{ visibleItems.length }}</b> publications</div>
+            <div class="toolbar-actions">
+              <div class="sort-seg" role="group" aria-label="발행물 정렬">
+                <button type="button" :aria-pressed="sort === 'recent'" @click="sort = 'recent'">Recent</button>
+                <button type="button" :aria-pressed="sort === 'views'" @click="sort = 'views'">Most read</button>
+              </div>
+              <button class="icon-button small-search-toggle" type="button" :aria-expanded="showSearch" aria-label="발행물 안에서 찾기" title="발행물 안에서 찾기" @click="toggleSearch"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg></button>
+            </div>
+          </div>
+
+          <form v-show="showSearch" class="publication-search" role="search" @submit.prevent>
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+            <input id="ea-pub-search" v-model="query" type="search" aria-label="발행물 제목·요약·태그로 찾기" placeholder="발행물 제목·요약·태그로 좁히기" autocomplete="off">
+            <button class="icon-button" type="button" aria-label="발행물 검색 닫기" @click="toggleSearch"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
           </form>
-
-          <div class="filter-row" role="group" aria-label="태그 필터">
-            <button class="filter-chip" type="button" :aria-pressed="activeTag === 'all'" @click="activeTag = 'all'">전체</button>
-            <button v-for="t in FILTER_TAGS" :key="t" class="filter-chip" type="button" :aria-pressed="activeTag === t" @click="activeTag = t"><span>#</span>{{ t }}</button>
-          </div>
-
-          <div class="feed-heading">
-            <div class="feed-title">
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c4 4 4 14 0 18M12 3c-4 4-4 14 0 18"/></svg>
-              <h2 id="feed-title">공개된 해결 기록</h2>
-              <span class="feed-count mono" aria-live="polite">{{ visibleItems.length }}</span>
-            </div>
-            <label class="feed-sort" aria-label="정렬 기준">
-              <svg class="ui-icon sort-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h11M4 17h6"/></svg>
-              <select v-model="sort">
-                <option value="recent">최신순</option>
-                <option value="views">조회순</option>
-                <option value="steps">시도 많은 순</option>
-              </select>
-              <svg class="ui-icon sort-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
-            </label>
-          </div>
 
           <LoadingSpinner v-if="loading && !items.length" size="lg" />
           <p v-else-if="loadError" class="load-error">{{ loadError }}</p>
-
           <template v-else>
             <div class="grid">
               <article v-for="p in visibleItems" :key="p.slug" class="pub-card">
@@ -212,18 +212,22 @@ onUnmounted(() => {
             </div>
 
             <div v-if="!visibleItems.length" class="empty-state">
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
-              <h3>{{ items.length ? '아직 일치하는 기록이 없어요.' : 'Nothing to Explore Yet' }}</h3>
-              <p v-if="items.length">다른 키워드로 검색하거나 태그를 바꿔 보세요.</p>
+              <h3>{{ items.length ? '일치하는 발행물이 없어요.' : 'Nothing to Explore Yet' }}</h3>
+              <p v-if="items.length">검색어를 지우고 다시 둘러보세요.</p>
               <p v-else>Public write-ups appear here as people publish the cases they've solved.</p>
-              <button v-if="items.length" class="text-button" type="button" @click="resetFilters">전체 기록 보기 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
+              <button v-if="items.length" class="text-link" type="button" @click="resetFilters">전체 발행물 보기 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-5-5 5 5-5 5"/></svg></button>
             </div>
-            <p v-else class="feed-end">{{ hasFilter ? '조건에 맞는 기록을 모두 살펴봤어요.' : '공개된 기록을 모두 살펴봤어요.' }}</p>
-          </template>
-        </section>
+            <p v-else class="list-end">{{ hasFilter ? '조건에 맞는 발행물을 모두 살펴봤어요.' : '공개된 발행물을 모두 살펴봤어요.' }}</p>
 
-        <!-- 로그아웃: 우측 레일(가입 유도 + 가이드) -->
-        <aside v-if="!isAuthed" class="rail" aria-label="처음 방문하셨나요?">
+            <div v-if="!isAuthed" class="search-direction">
+              <p>에러 메시지나 해결 중인 케이스를 찾고 있나요?<br>공개 케이스의 증상과 시도는 로그인 후 Search에서 찾아보세요.</p>
+              <button class="text-link" type="button" @click="goLogin">로그인 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-5-5 5 5-5 5"/></svg></button>
+            </div>
+          </template>
+        </div>
+
+        <!-- 외부 방문자 전용: 우측 레일 -->
+        <aside v-if="!isAuthed" class="visitor-rail" aria-label="처음 방문하셨나요?">
           <p class="rail-note"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-3-2-6-2-10-1v15c4-1 7-1 10 1 3-2 6-2 10-1V4c-4-1-7-1-10 1Zm0 0v15"/></svg>공개된 기록은 가입 없이 읽을 수 있어요.</p>
           <section class="rail-join">
             <div class="rail-mark" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/></svg></div>
@@ -239,17 +243,13 @@ onUnmounted(() => {
               <li><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><span>무엇을 시도하고, 어떻게 확인했는지</span></li>
               <li><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><span>마침내 어떤 방법으로 해결했는지</span></li>
             </ul>
+            <button class="text-link rail-about" type="button" @click="goAbout">ErrorArchive 알아보기 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
           </section>
         </aside>
       </div>
-    </main>
 
-    <footer v-if="!isAuthed" class="site-footer">
-      <div class="shell footer-inner">
-        <div><span class="footer-brand">ErrorArchive</span><p class="footer-tagline">Today's error becomes tomorrow's weapon.</p></div>
-        <span class="footer-right">Built for the next breakthrough.</span>
-      </div>
-    </footer>
+      <p v-if="!isAuthed" class="site-signoff">Today's error becomes tomorrow's weapon.</p>
+    </div>
 
     <div class="toast" :class="{ visible: toastMsg }" role="status" aria-live="polite">{{ toastMsg }}</div>
   </div>
@@ -258,42 +258,48 @@ onUnmounted(() => {
 <style scoped>
 .ea-explore{
   --bg:#f7f7f5;--surface:#fff;--ink:#27272a;--muted:#71717a;--soft:#a1a1aa;--line:#e4e4e7;
-  --green:#047857;--green-hover:#065f46;--green-soft:#eaf5ee;--green-line:#cce5d5;--tint:#f0f2ed;
-  --shadow:0 16px 64px rgba(24,24,27,.14);
+  --green:#059669;--green-soft:#ecfdf5;--green-line:#cce5d5;--hover:#f4f4f5;--glass:rgba(255,255,255,.8);
+  --shadow:0 12px 36px rgba(24,24,27,.1);
+  background:var(--bg);color:var(--ink);min-height:100%;
 }
-.ea-explore :focus-visible{outline:2px solid var(--green);outline-offset:4px}
-.shell{width:calc(100% - 64px);max-width:1080px;margin:0 auto}
-.shell-authed{width:100%;max-width:none}
-.ui-icon{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.ea-explore :focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.ui-icon{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+.serif-title{font-family:"Fraunces","Nanum Myeongjo","Noto Serif KR",Georgia,serif;font-optical-sizing:auto;font-weight:400;letter-spacing:-.01em}
 
-.site-header{border-bottom:1px solid var(--line);background:var(--bg)}
-.site-nav{display:flex;align-items:center;height:76px;gap:36px}
-.site-brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;flex:none}
-.site-brand-mark{display:grid;place-items:center;width:33px;height:33px;background:var(--green-soft);border:1px solid var(--green-line);border-radius:9px;color:var(--green)}
-.site-brand-mark svg{width:19px;height:19px}
-.site-brand-name{font-size:18px;letter-spacing:-.035em;font-weight:700}
-.site-nav-links{display:flex;align-items:stretch;align-self:stretch;gap:25px}
-.site-nav-link{position:relative;display:flex;align-items:center;gap:6px;border:0;background:none;color:var(--muted);font-size:12px;text-decoration:none;white-space:nowrap;font-weight:500;cursor:pointer}
-.site-nav-link:hover{color:var(--ink)}
-.site-nav-link[aria-current]{color:var(--green)}
-.site-nav-link[aria-current]::after{content:"";height:2px;position:absolute;bottom:-1px;left:0;right:0;background:var(--green)}
-.site-nav-link .ui-icon{width:15px;height:15px}
-.site-actions{display:flex;align-items:center;gap:18px;margin-left:auto}
-.icon-button{border:0;background:none;width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:var(--muted);cursor:pointer}
-.icon-button:hover{background:var(--tint);color:var(--ink)}
-.theme-light{display:none}
-.login-button{padding:0;border:0;background:none;color:var(--muted);font-size:12px;font-weight:500;white-space:nowrap;cursor:pointer}
-.login-button:hover{color:var(--ink)}
-.primary-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:#047857;border:1px solid #047857;color:#fff;border-radius:8px;min-height:37px;padding:9px 14px;font-size:12px;font-weight:500;text-decoration:none;transition:background .15s,transform .15s;white-space:nowrap;cursor:pointer}
-.primary-button:hover{background:#065f46;border-color:#065f46;transform:translateY(-1px)}
-.primary-button .ui-icon{width:15px;height:15px}
+.icon-button{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:12px;background:none;color:var(--muted);cursor:pointer}
+.icon-button:hover{color:var(--ink);background:var(--hover)}
+.icon-button .ui-icon{width:18px;height:18px}
+.action-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap}
+.action-button:hover{border-color:var(--soft);background:var(--hover)}
+.action-button:disabled{opacity:.6;cursor:default}
+.action-button .ui-icon{width:14px;height:14px}
+.action-primary{color:#fff;background:#059669;border-color:#059669}
+.action-primary:hover{color:#fff;background:#047857;border-color:#047857}
+.text-link{display:inline-flex;align-items:center;gap:6px;padding:0;border:0;background:none;color:var(--green);font-size:11px;line-height:1.5;text-decoration:none;cursor:pointer}
+.text-link:hover{text-decoration:underline;text-underline-offset:4px}
+.text-link .ui-icon{width:14px;height:14px}
 
-.hero{display:grid;grid-template-columns:minmax(0,720px) minmax(0,320px);gap:40px;padding:42px 0 34px;border-bottom:1px solid var(--line);align-items:center}
+.public-header{position:sticky;top:0;z-index:30;height:68px;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--glass);backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,.05)}
+.header-context{display:flex;align-items:center;gap:12px;min-width:0}
+.public-brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none}
+.public-brand .serif-title{font-size:26px;color:#10b981;line-height:1}
+.brand-name{font-size:16px;font-weight:700;letter-spacing:-.035em}
+.public-context{display:flex;gap:8px;align-items:center;margin-left:15px;padding-left:24px;border-left:1px solid var(--line);font-size:11px;color:var(--green)}
+.public-context .ui-icon{width:15px;height:15px}
+.header-right{display:flex;align-items:center;gap:10px}
+.header-text{border:0;background:none;color:var(--muted);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap}
+.header-text:hover{color:var(--ink)}
+.public-demo .ui-icon{width:14px;height:14px}
+
+.page-shell{width:100%;max-width:800px;margin:0 auto;padding:32px 24px 56px}
+.page-shell.has-public-intro{max-width:1080px;padding-top:36px}
+
+.hero{display:grid;grid-template-columns:minmax(0,720px) minmax(0,320px);gap:40px;padding:10px 0 34px;border-bottom:1px solid var(--line);align-items:center;--green:#047857;--green-line:#cce5d5;--green-soft:#eaf5ee}
 .hero-eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 15px;color:var(--green);font-size:10px;font-weight:500;letter-spacing:.12em}
 .hero-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green)}
-.hero h1{font-size:36px;line-height:1.4;letter-spacing:-.045em;font-weight:600;margin:0;color:var(--ink);word-break:keep-all}
-.hero h1 em{font-style:normal;color:var(--green)}
+.hero h2{font-size:36px;line-height:1.4;letter-spacing:-.045em;font-weight:600;margin:0;color:var(--ink);word-break:keep-all}
+.hero h2 em{font-style:normal;color:var(--green)}
 .hero-copy{margin:14px 0 0;font-size:13px;line-height:1.85;letter-spacing:-.02em;color:var(--muted);word-break:keep-all}
 .hero-story{padding:5px 0 5px 25px;border-left:1px solid var(--line)}
 .story-caption{font-size:9px;letter-spacing:.12em;color:var(--soft);margin:0 0 18px}
@@ -306,45 +312,48 @@ onUnmounted(() => {
 .story-item strong{display:block;font-size:12px;font-weight:600;letter-spacing:-.025em;color:var(--ink)}
 .story-item small{display:block;font-size:11px;line-height:1.5;color:var(--muted);margin-top:3px;letter-spacing:-.015em}
 
-.explore-layout{display:grid;grid-template-columns:minmax(0,720px) minmax(0,320px);gap:40px;padding:28px 0 48px;align-items:start}
-.explore-layout.single{grid-template-columns:minmax(0,1fr);padding-top:4px}
-.feed{min-width:0}
-.search-box{display:flex;align-items:center;gap:11px;padding:0 15px;background:var(--surface);height:48px;border:1px solid var(--line);border-radius:9px;transition:border-color .15s,box-shadow .15s}
-.search-box:focus-within{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
-.search-box>.ui-icon{color:var(--soft)}
-.search-box input{outline:none;border:0;background:none;color:var(--ink);font-size:12px;width:100%;min-width:0;height:100%;padding:0;letter-spacing:-.015em}
-.search-box input::placeholder{color:var(--soft)}
-.search-box input::-webkit-search-cancel-button{display:none}
-.search-shortcut{display:flex;align-items:center;gap:3px;flex:none;color:var(--soft);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;border:1px solid var(--line);border-radius:4px;padding:3px 5px}
-.search-clear{width:25px;height:25px}
-.search-clear .ui-icon{width:14px;height:14px}
-.filter-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:13px 0 23px}
-.filter-chip{background:transparent;border:1px solid transparent;border-radius:6px;color:var(--muted);font-size:10px;padding:6px 9px;line-height:1.2;transition:background .15s,color .15s;cursor:pointer}
-.filter-chip:hover{background:var(--tint);color:var(--ink)}
-.filter-chip[aria-pressed="true"]{color:var(--green);background:var(--green-soft);border-color:var(--green-line)}
-.filter-chip:not(:first-child){font-family:"JetBrains Mono",ui-monospace,monospace}
-.filter-chip span{color:var(--soft);margin-right:2px}
-.feed-heading{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:0 0 14px;margin-bottom:9px;gap:12px}
-.feed-title{display:flex;align-items:center;gap:8px}
-.feed-title .ui-icon{width:17px;height:17px;color:var(--green)}
-.feed-title h2{font-size:15px;letter-spacing:-.03em;font-weight:600;margin:0;color:var(--ink)}
-.feed-count{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 5px;line-height:1.5}
-.feed-sort{position:relative;display:flex;align-items:center;gap:6px;color:var(--muted)}
-.feed-sort .sort-icon{position:absolute;left:0;pointer-events:none;width:13px;height:13px}
-.feed-sort .sort-chevron{position:absolute;right:0;pointer-events:none;width:12px;height:12px}
-.feed-sort select{font-size:10px;border:0;appearance:none;background:transparent;color:var(--muted);padding:4px 17px 4px 20px;cursor:pointer}
-.feed-sort option{background:var(--surface);color:var(--ink)}
-.load-error{font-size:13px;color:#e11d48;padding:24px 4px}
-.empty-state{padding:55px 20px;text-align:center;color:var(--muted)}
-.empty-state>.ui-icon{width:24px;height:24px;color:var(--soft);margin-bottom:5px}
-.empty-state h3{font-size:14px;font-weight:500;color:var(--ink)}
-.empty-state p{font-size:12px;line-height:1.8}
-.text-button{border:0;background:none;padding:0;color:var(--green);font-size:12px;display:inline-flex;align-items:center;gap:6px;font-weight:500;cursor:pointer}
-.text-button:hover{text-decoration:underline;text-underline-offset:4px}
-.text-button .ui-icon{width:14px;height:14px}
-.feed-end{margin:22px 20px 0;border-top:1px solid var(--line);padding-top:19px;text-align:center;font-size:10px;color:var(--soft)}
+.public-explore-layout{display:block}
+.has-public-intro .public-explore-layout{display:grid;grid-template-columns:minmax(0,720px) minmax(0,320px);gap:40px;padding-top:28px;align-items:start}
+.explore-feed-content{min-width:0}
+.explore-head{margin-bottom:27px}
+.section-eyebrow{display:flex;align-items:center;gap:8px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:9px;color:var(--green);letter-spacing:.13em;font-weight:500;margin:0 0 13px;text-transform:uppercase}
+.section-eyebrow::before{content:"";width:9px;height:1px;background:var(--green)}
+.title-row{display:flex;align-items:baseline;justify-content:space-between;gap:15px}
+.page-title{font-size:32px;line-height:1.25;margin:0;color:var(--ink)}
+.scope-note{font-size:9px;color:var(--soft);letter-spacing:.01em;display:flex;align-items:center;gap:5px}
+.scope-note .ui-icon{width:12px;height:12px}
+.page-description{margin:12px 0 0;font-size:12px;color:var(--muted);line-height:1.8;letter-spacing:-.015em;word-break:keep-all}
 
-.rail{min-width:0}
+.feed-toolbar{display:flex;align-items:center;justify-content:space-between;gap:15px;border-bottom:1px solid var(--line);min-height:41px;margin-bottom:13px;padding-bottom:11px}
+.feed-meta{font-size:11px;color:var(--soft);letter-spacing:-.01em}
+.feed-count{font-family:"JetBrains Mono",monospace;color:var(--ink);font-size:12px;font-weight:600}
+.toolbar-actions{display:flex;align-items:center;gap:8px}
+.sort-seg{display:inline-flex;background:var(--hover);border-radius:9px;padding:3px}
+.sort-seg button{border:0;background:none;font:inherit;font-size:11px;color:var(--soft);padding:6px 12px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.sort-seg button:hover{color:var(--ink)}
+.sort-seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);font-weight:500}
+.small-search-toggle{width:25px;height:25px;border-radius:6px}
+.small-search-toggle .ui-icon{width:15px;height:15px}
+.small-search-toggle[aria-expanded="true"]{background:var(--green-soft);color:var(--green)}
+.publication-search{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);margin:0 0 16px;padding:6px 0 11px}
+.publication-search>.ui-icon{width:16px;height:16px;color:var(--soft)}
+.publication-search input{background:transparent;border:0;outline:none;padding:5px 0;color:var(--ink);font-size:12px;min-width:0;width:100%}
+.publication-search input::placeholder{color:var(--soft)}
+.publication-search input::-webkit-search-cancel-button{display:none}
+.publication-search .icon-button{height:23px;width:23px}
+.publication-search .icon-button .ui-icon{height:14px;width:14px}
+
+.load-error{font-size:13px;color:#e11d48;padding:24px 4px}
+.empty-state{padding:48px 20px;text-align:center;color:var(--muted)}
+.empty-state h3{font-size:14px;font-weight:500;color:var(--ink)}
+.empty-state p{font-size:12px;line-height:1.7;margin:8px 0 14px}
+.list-end{font-size:10px;color:var(--soft);text-align:center;margin:23px 0 0}
+.search-direction{display:flex;align-items:center;justify-content:space-between;gap:18px;border-top:1px solid var(--line);padding-top:19px;margin:28px 0 0}
+.search-direction p{font-size:11px;color:var(--muted);line-height:1.8;margin:0;letter-spacing:-.015em}
+.search-direction .text-link{flex:none}
+.site-signoff{font-size:9px;color:var(--soft);text-align:center;margin:38px 0 0}
+
+.visitor-rail{min-width:0;--green:#047857;--green-line:#cce5d5;--green-soft:#eaf5ee}
 .rail-note{display:flex;align-items:center;gap:7px;margin:0 0 20px;height:28px;font-size:11px;color:var(--muted);letter-spacing:-.02em}
 .rail-note .ui-icon{width:14px;height:14px;color:var(--green)}
 .rail-join{border:1px solid var(--line);border-radius:12px;padding:25px 23px 22px;background:var(--surface)}
@@ -359,13 +368,12 @@ onUnmounted(() => {
 .rail-guide ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .rail-guide li{display:flex;align-items:flex-start;gap:9px;font-size:11px;color:var(--muted);line-height:1.65;letter-spacing:-.02em}
 .rail-guide .ui-icon{width:13px;height:13px;margin-top:3px;color:var(--green)}
+.rail-about{margin-top:18px}
+.primary-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:#047857;border:1px solid #047857;color:#fff;border-radius:8px;min-height:37px;padding:9px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:background .15s,transform .15s;white-space:nowrap}
+.primary-button:hover{background:#065f46;border-color:#065f46;transform:translateY(-1px)}
+.primary-button .ui-icon{width:15px;height:15px}
 
-.site-footer{border-top:1px solid var(--line);padding:22px 0 28px}
-.footer-inner{display:flex;justify-content:space-between;align-items:center;gap:16px}
-.footer-brand{font-weight:600;font-size:11px;color:var(--muted);letter-spacing:-.025em}
-.footer-tagline{color:var(--soft);font-size:10px;margin:7px 0 0}
-.footer-right{font-size:10px;color:var(--soft)}
-.toast{position:fixed;left:50%;bottom:24px;z-index:60;transform:translate(-50%,12px);opacity:0;pointer-events:none;background:var(--ink);color:var(--bg);border:1px solid var(--line);border-radius:9px;padding:12px 18px;font-size:12px;line-height:1.6;text-align:center;max-width:calc(100% - 32px);width:max-content;box-shadow:var(--shadow);transition:opacity .18s,transform .18s}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,8px);padding:12px 18px;max-width:calc(100% - 28px);background:var(--ink);color:var(--bg);border-radius:9px;font-size:11px;line-height:1.7;box-shadow:var(--shadow);opacity:0;pointer-events:none;z-index:100;transition:opacity .15s,transform .15s;width:max-content;text-align:center}
 .toast.visible{opacity:1;transform:translate(-50%,0)}
 
 /* 카드 — 원본 .pub-card (테두리 없는 플랫 행 + 호버 좌측 에메랄드 바) */
@@ -398,21 +406,20 @@ onUnmounted(() => {
 .when .au{border-right:1px solid #e4e4e7;padding-right:12px}
 .when b{font-weight:500;color:#71717a}
 
-@media(max-width:1100px){.shell{max-width:1000px}.site-nav{gap:28px}.site-nav-links{gap:20px}.hero,.explore-layout{grid-template-columns:minmax(0,1fr) 270px;gap:30px}.hero h1{font-size:33px}.hero-story{padding-left:20px}.rail-join{padding:22px 20px}}
-@media(max-width:900px){.shell{width:calc(100% - 48px);max-width:720px}.hero{grid-template-columns:minmax(0,1fr);padding:33px 0 28px}.hero-story{display:none}.hero-copy br{display:none}.explore-layout{grid-template-columns:minmax(0,1fr);gap:26px;padding-top:24px}.rail{display:none}}
-@media(max-width:660px){.shell{width:calc(100% - 32px)}.site-nav{height:auto;flex-wrap:wrap;gap:0;padding-top:15px}.site-actions{gap:10px}.site-actions .login-button{display:none}.site-actions .primary-button{padding:8px 10px;font-size:11px;min-height:34px}.cta-long{display:none}.site-nav-links{order:3;width:100%;margin-top:9px;height:42px;gap:25px}.hero{padding:28px 0 25px}.hero h1{font-size:28px;line-height:1.5}.hero-copy{font-size:12px}.search-shortcut{display:none}}
+@media(max-width:1100px){.page-shell.has-public-intro{max-width:1000px}.hero,.has-public-intro .public-explore-layout{grid-template-columns:minmax(0,1fr) 270px;gap:30px}.hero h2{font-size:33px}.hero-story{padding-left:20px}.rail-join{padding:22px 20px}}
+@media(max-width:900px){.page-shell.has-public-intro{max-width:800px}.hero{grid-template-columns:minmax(0,1fr);padding:0 0 28px}.hero-story{display:none}.hero h2{font-size:34px}.hero-copy br{display:none}.has-public-intro .public-explore-layout{grid-template-columns:minmax(0,1fr);gap:30px;padding-top:24px}.visitor-rail{border-top:1px solid var(--line);padding-top:24px}}
+@media(max-width:660px){.public-header{height:62px;padding:10px 16px}.public-context{display:none}.header-text{font-size:11px}.hero{padding:4px 0 25px}.hero h2{font-size:28px;line-height:1.5}.hero-copy{font-size:12px}.page-title{font-size:28px}.search-direction{flex-direction:column;align-items:flex-start;gap:10px}}
 @media(prefers-reduced-motion:reduce){.ea-explore *,.ea-explore *::before,.ea-explore *::after{animation:none!important;transition:none!important}}
 </style>
 
-<!-- 다크 오버라이드는 non-scoped (LightningCSS 가 scoped :global(.dark) 를 드랍 → 플레인 클래스로 매칭). -->
+<!-- 다크 오버라이드는 non-scoped (플레인 클래스로 매칭). -->
 <style>
-html.dark .ea-explore{
-  --bg:#18181b;--surface:#202023;--ink:#e4e4e7;--muted:#a1a1aa;--soft:#81818b;--line:#323237;
-  --green:#6ee7b7;--green-hover:#a7f3d0;--green-soft:#21372e;--green-line:#345847;--tint:#232725;
-  --shadow:0 16px 64px rgba(0,0,0,.4);
-}
-html.dark .ea-explore .theme-light{display:block}
-html.dark .ea-explore .theme-dark{display:none}
+html.dark .ea-explore{--bg:#18181b;--surface:#18181b;--ink:#e4e4e7;--muted:#a1a1aa;--soft:#71717a;--line:#27272a;--green:#34d399;--green-soft:#022c22;--green-line:#345847;--hover:#27272a;--glass:rgba(39,39,42,.4);--shadow:0 12px 36px rgba(0,0,0,.3)}
+html.dark .ea-explore .public-header{border-bottom-color:rgba(255,255,255,.05)}
+html.dark .ea-explore .sort-seg button[aria-pressed="true"]{background:#34343a;color:#e4e4e7}
+html.dark .ea-explore .public-brand .serif-title{color:#10b981}
+html.dark .ea-explore .action-primary{background:#10b981;border-color:#10b981;color:#082f25}
+html.dark .ea-explore .hero,html.dark .ea-explore .visitor-rail{--green:#6ee7b7;--green-line:#345847;--green-soft:#21372e}
 html.dark .ea-explore .primary-button{background:#10b981;border-color:#10b981;color:#102c23}
 html.dark .ea-explore .primary-button:hover{background:#34d399;border-color:#34d399}
 html.dark .ea-explore .c-title{color:#e4e4e7}
