@@ -409,7 +409,7 @@ onUnmounted(() => {
 .toast.visible{opacity:1;transform:translate(-50%,0)}
 
 /* 서비스 소개 모달 */
-.ui-dialog{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:30px;width:420px;max-width:calc(100vw - 28px);max-height:calc(100dvh - 80px);overflow:auto;box-shadow:var(--shadow)}
+.ui-dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:30px;width:420px;max-width:calc(100vw - 28px);max-height:calc(100dvh - 80px);overflow:auto;box-shadow:var(--shadow)}
 .ui-dialog::backdrop{background:rgba(24,24,27,.35);backdrop-filter:blur(4px)}
 .dialog-close{position:absolute;right:10px;top:10px}
 .dialog-eyebrow{font-size:9px;color:var(--green);letter-spacing:.13em;margin:10px 0 14px;font-weight:500;text-transform:uppercase}
