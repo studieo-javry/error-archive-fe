@@ -1,26 +1,22 @@
 <script setup lang="ts">
 import { watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { useTour } from '@/composables/useTour'
+import { useTour, TOUR_OUTLINE, TOUR_STEPS } from '@/composables/useTour'
 import { useTourStore } from '@/stores/tourStore'
-import { XMarkIcon } from '@heroicons/vue/24/outline'
+import DemoIcon from '@/components/demo/DemoIcon.vue'
 
 const route = useRoute()
 const tourStore = useTourStore()
-const { active, current, stepIndex, isLast, TOUR_STEPS, next, prev, dismiss, convert } = useTour()
+const { active, current, stepIndex, isLast, next, prev, dismiss, convert } = useTour()
 
 // ── 현재 스텝 대상 요소 강조 ───────────────────────────────────────────────
 let highlighted: Element | null = null
 function clearHighlight() {
-  if (highlighted) {
-    highlighted.classList.remove('tour-highlight')
-    highlighted = null
-  }
+  if (highlighted) { highlighted.classList.remove('tour-highlight'); highlighted = null }
 }
 function selector(): string | null {
   const step = current.value
   if (!step || !step.anchor) return null
-  // 케이스 목록에선 투어가 고른 그 케이스만 강조.
   if (step.key === 'case' && tourStore.caseId != null) return `[data-case-id="${tourStore.caseId}"]`
   return step.anchor
 }
@@ -30,7 +26,6 @@ async function applyHighlight() {
   const sel = selector()
   if (!sel) return
   await nextTick()
-  // 라우트 전환 직후 렌더가 끝나길 잠깐 기다린다.
   window.setTimeout(() => {
     if (!active.value) return
     const el = document.querySelector(sel)
@@ -40,87 +35,79 @@ async function applyHighlight() {
     el.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, 120)
 }
-
 watch([() => tourStore.step, () => route.fullPath, active], applyHighlight, { flush: 'post' })
 onMounted(applyHighlight)
 onBeforeUnmount(clearHighlight)
+
+function back() {
+  if (stepIndex.value === 0) dismiss()
+  else prev()
+}
 </script>
 
 <template>
-  <aside
+  <div
     v-if="active && current"
-    class="fixed z-50 right-4 bottom-4 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl shadow-zinc-900/10 overflow-hidden"
-    role="complementary"
-    aria-label="사용 가이드"
+    class="demo-ui"
+    style="position:fixed;right:24px;bottom:24px;width:330px;max-width:calc(100vw - 2rem);z-index:50"
   >
-    <!-- header -->
-    <div class="flex items-center justify-between px-4 h-11 border-b border-zinc-100 dark:border-zinc-800">
-      <span class="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m16 8-2 6-6 2 2-6 6-2Z" /></svg>
-        사용 가이드
-        <span class="text-zinc-400 dark:text-zinc-500 font-normal">{{ stepIndex + 1 }} / {{ TOUR_STEPS.length }}</span>
-      </span>
-      <button
-        type="button"
-        class="w-7 h-7 -mr-1 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-        aria-label="가이드 닫기"
-        @click="dismiss"
-      >
-        <XMarkIcon class="w-4 h-4" />
-      </button>
-    </div>
-
-    <!-- body -->
-    <div class="p-4">
-      <h2 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-snug mb-1.5">{{ current.title }}</h2>
-      <p class="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{{ current.body }}</p>
-
-      <!-- progress -->
-      <div class="flex items-center gap-1.5 mt-4" aria-hidden="true">
-        <span
-          v-for="(s, i) in TOUR_STEPS"
-          :key="s.key"
-          class="h-1 rounded-full transition-colors"
-          :class="i === stepIndex ? 'w-5 bg-emerald-500' : i < stepIndex ? 'w-2.5 bg-emerald-300 dark:bg-emerald-800' : 'w-2.5 bg-zinc-200 dark:bg-zinc-700'"
-        />
+    <!-- 완료 카드 -->
+    <aside v-if="isLast" class="guide-aside" aria-label="사용 가이드 완료">
+      <div class="guide-card guide-complete">
+        <div class="guide-top">
+          <span class="guide-label"><DemoIcon name="compass" />사용 가이드<span class="mobile-guide-step">완료</span></span>
+          <div class="guide-tools">
+            <button type="button" class="icon-btn" aria-label="가이드 닫기" @click="dismiss"><DemoIcon name="close" /></button>
+          </div>
+        </div>
+        <div class="guide-body">
+          <div class="guide-complete-icon"><DemoIcon name="check" /></div>
+          <h2>이제, 내 에러도<br>기록해 볼까요?</h2>
+          <p>{{ current.body }}</p>
+          <div class="complete-chips"><span>케이스</span><span>시도</span><span>솔루션</span><span>아티클</span></div>
+          <div class="guide-actions">
+            <button type="button" class="btn btn-primary" @click="convert"><DemoIcon name="arrow" />{{ current.cta }}</button>
+            <button type="button" class="btn btn-quiet" @click="dismiss">계속 둘러보기</button>
+          </div>
+        </div>
       </div>
+      <p class="guide-passive-note">가이드는 언제든 상단에서 다시 열 수 있어요.</p>
+    </aside>
 
-      <!-- actions -->
-      <div v-if="isLast" class="flex flex-col gap-2 mt-4">
-        <button
-          type="button"
-          class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700 transition-colors"
-          @click="convert"
-        >
-          {{ current.cta }}
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
-        </button>
-        <button
-          type="button"
-          class="rounded-xl px-4 py-2 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          @click="dismiss"
-        >
-          계속 둘러보기
-        </button>
+    <!-- 진행 카드 -->
+    <aside v-else class="guide-aside" :aria-label="`사용 가이드 ${stepIndex + 1}단계`">
+      <div class="guide-card">
+        <div class="guide-top">
+          <span class="guide-label"><DemoIcon name="compass" />사용 가이드<span class="mobile-guide-step">{{ stepIndex + 1 }} / 4</span></span>
+          <div class="guide-tools">
+            <button type="button" class="icon-btn" aria-label="가이드 접기" title="접고 자유롭게 둘러보기" @click="dismiss"><DemoIcon name="minus" /></button>
+            <button type="button" class="icon-btn" aria-label="가이드 닫기" @click="dismiss"><DemoIcon name="close" /></button>
+          </div>
+        </div>
+        <ol class="guide-outline">
+          <li v-for="(t, i) in TOUR_OUTLINE" :key="i" :class="i === stepIndex ? 'active' : i < stepIndex ? 'done' : ''">
+            <span class="num mono"><DemoIcon v-if="i < stepIndex" name="check" /><template v-else>{{ '0' + (i + 1) }}</template></span>
+            {{ t }}
+            <span v-if="i === stepIndex" class="current-label">지금 보고 있어요</span>
+          </li>
+        </ol>
+        <div class="guide-body">
+          <div class="guide-count mono">{{ '0' + (stepIndex + 1) }} <span>/ 04</span></div>
+          <h2>{{ current.title }}</h2>
+          <p>{{ current.body }}</p>
+          <div v-if="current.hint" class="guide-hint"><DemoIcon name="bulb" /><span>{{ current.hint }}</span></div>
+          <div class="guide-actions">
+            <button type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />{{ current.cta }}</button>
+          </div>
+          <div class="guide-bottom">
+            <button type="button" class="guide-back" @click="back"><DemoIcon name="back" />{{ stepIndex === 0 ? '처음으로' : '이전 단계' }}</button>
+            <span class="guide-dots" aria-hidden="true">
+              <span v-for="i in TOUR_STEPS.length" :key="i" :class="i - 1 === stepIndex ? 'active' : i - 1 < stepIndex ? 'done' : ''" />
+            </span>
+          </div>
+        </div>
       </div>
-      <div v-else class="flex items-center gap-2 mt-4">
-        <button
-          v-if="stepIndex > 0"
-          type="button"
-          class="rounded-xl px-3 py-2 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          @click="prev"
-        >
-          이전
-        </button>
-        <button
-          type="button"
-          class="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700 transition-colors"
-          @click="next"
-        >
-          {{ current.cta }}
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
-        </button>
-      </div>
-    </div>
-  </aside>
+      <p class="guide-passive-note">안내를 접어도 자유롭게 이동할 수 있어요.<br>상단의 '사용 가이드'에서 다시 이어보세요.</p>
+    </aside>
+  </div>
 </template>

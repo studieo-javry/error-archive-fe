@@ -8,13 +8,20 @@ import { useTeamStore } from '@/stores/teamStore'
 
 export interface TourStep {
   key: string
+  /** 아웃라인(좌측 단계 목록)에 쓰는 짧은 제목. */
+  outline: string
   title: string
   body: string
+  /** 보조 힌트(전구 아이콘 옆). */
+  hint: string
   /** 현재 라우트에서 강조할 요소 셀렉터. null = 강조 없음(완료 카드 등). */
   anchor: string | null
-  /** 다음 버튼 라벨. */
+  /** 1차 버튼 라벨. */
   cta: string
 }
+
+/** 아웃라인용 4단계 제목(목업 GUIDE_TITLES 대응). */
+export const TOUR_OUTLINE = ['샘플 케이스 열기', '상황 이해하기', '시도와 해결', '기록으로 남기기']
 
 /**
  * 게스트 가이드 투어 스텝. 실제 FE 화면에 앵커한다:
@@ -26,29 +33,37 @@ export interface TourStep {
 export const TOUR_STEPS: TourStep[] = [
   {
     key: 'case',
-    title: '샘플 케이스로 시작해요',
+    outline: TOUR_OUTLINE[0],
+    title: '샘플 케이스로 시작해요.',
     body: '먼저 에러 하나를 따라가 볼게요. 강조된 케이스를 열면 기록이 쌓이는 흐름을 볼 수 있어요.',
+    hint: '해결된 샘플을 열어 전체 흐름을 살펴볼게요.',
     anchor: '[data-case-id]',
-    cta: '케이스 열기',
+    cta: '샘플 케이스 열기',
   },
   {
     key: 'context',
-    title: '상황부터 이해하기',
-    body: '에러 메시지만으로는 부족해요. 발생 조건·환경·관찰한 현상을 한 케이스에 모아 둡니다.',
+    outline: TOUR_OUTLINE[1],
+    title: '먼저, 에러가 발생한 맥락을 읽어보세요.',
+    body: '에러 메시지만으로는 상황을 알기 어려워요. 발생 조건·환경·관찰한 현상을 케이스 하나에 모아 둡니다.',
+    hint: '이 기록이 이후 모든 시도의 출발점이 됩니다.',
     anchor: '[data-tour="context"]',
-    cta: '다음',
+    cta: '시도 살펴보기',
   },
   {
     key: 'timeline',
-    title: '시도와 해결 따라가기',
-    body: '실패한 시도도 지우지 않아요. 무엇을 해봤고 어떻게 확인했는지, 근거와 함께 타임라인에 쌓이고 솔루션으로 이어집니다.',
+    outline: TOUR_OUTLINE[2],
+    title: '실패한 시도도 다음의 단서가 됩니다.',
+    body: '무엇을 해봤고 어떻게 확인했는지, 근거와 함께 타임라인에 쌓이고 해결에 기여한 시도가 솔루션으로 이어집니다.',
+    hint: '솔루션은 정답 한 줄이 아니라, 해결을 뒷받침하는 시도의 묶음입니다.',
     anchor: '[data-tour="timeline"]',
-    cta: '다음',
+    cta: '마무리하기',
   },
   {
     key: 'done',
+    outline: TOUR_OUTLINE[3],
     title: '이제, 내 에러도 기록해 볼까요?',
-    body: '케이스에서 시작한 기록이 솔루션이 되고, 공개 글로 이어져요. 가입하면 내 워크스페이스에서 그대로 남길 수 있어요.',
+    body: '케이스에서 시작한 시도가 솔루션이 되고, 하나의 글로 이어졌어요. 내 워크스페이스에서 나만의 해결 기록을 쌓아보세요.',
+    hint: '',
     anchor: null,
     cta: '가입하기',
   },

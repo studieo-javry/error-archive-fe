@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './app.css'
+import './styles/demo-ui.css'
 
 async function bootstrap() {
   // Inlined on purpose: a function call here would hide the constant from Rollup, keeping the

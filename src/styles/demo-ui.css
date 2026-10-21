@@ -1,0 +1,145 @@
+/* Demo/guide chrome — EXACT proposal design ported from the approved HTML mockup. Scoped under .demo-ui so it never touches FE Tailwind. */
+.demo-ui{--bg:#f7f7f5;--surface:#fff;--ink:#27272a;--muted:#71717a;--soft:#a1a1aa;--line:#e4e4e7;--green:#059669;--deep:#047857;--green-soft:#ecfdf5;--guide-bg:#f4faf6;--guide-line:#b9d9c7;--hover:#f1f1ef;--glass:rgba(255,255,255,.86);--red:#e65b73;--blue:#508ad5;--amber:#a77220;--shadow:0 12px 40px rgba(24,24,27,.07);font-family:'Inter','Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;color:var(--ink)}
+html.dark .demo-ui{--bg:#18181b;--surface:#202023;--ink:#e4e4e7;--muted:#a1a1aa;--soft:#71717a;--line:#343438;--green:#6acba4;--deep:#92dcbb;--green-soft:#16382d;--guide-bg:#202d25;--guide-line:#3b6550;--hover:#2b2b2f;--glass:rgba(32,32,35,.88);--red:#f28a9c;--blue:#81b1ee;--amber:#d7ad62;--shadow:0 12px 40px rgba(0,0,0,.18)}
+.demo-ui *{box-sizing:border-box}
+.demo-ui .serif{font-family:'Fraunces','Nanum Myeongjo','Noto Sans KR',Georgia,serif}
+.demo-ui .mono{font-family:'JetBrains Mono','Noto Sans KR',ui-monospace,Menlo,monospace}
+.demo-ui .serif{font-family:Fraunces,"Nanum Myeongjo","Noto Serif KR",Georgia,serif;font-weight:400;letter-spacing:-.025em}
+.demo-ui .mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace}
+.demo-ui .soft{color:var(--soft)}
+.demo-ui .session-banner{min-height:37px;padding:7px 26px;display:flex;align-items:center;justify-content:space-between;gap:18px;background:#edf3ee;border-bottom:1px solid #dfe8e1;font-size:11px;color:#56695c}
+html.dark .demo-ui .session-banner{background:#1d2b24;border-color:#2b3c32;color:#acc4b3}
+.demo-ui .session-left,.demo-ui .session-right{display:flex;align-items:center;gap:10px}
+.demo-ui .session-dot{height:5px;width:5px;border-radius:50%;background:#639a77}
+.demo-ui .session-left strong{font-weight:500}
+.demo-ui .session-copy{font-size:10px;color:inherit;opacity:.85}
+.demo-ui .session-right{gap:18px;flex:none}
+.demo-ui .timer{font-size:10px;display:flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
+.demo-ui .timer .icon{width:12px;height:12px}
+.demo-ui .banner-guide{display:flex;align-items:center;gap:6px;border:0;background:none;color:inherit;font-size:11px;font-weight:500;padding:2px 0}
+.demo-ui .banner-guide .icon{height:14px;width:14px}
+.demo-ui .banner-guide:hover{text-decoration:underline;text-underline-offset:4px}
+.demo-ui .session-expired{background:#fbf3e6;color:#88612f;border-color:#eedec6}
+html.dark .demo-ui .session-expired{background:#332a20;color:#ddbc88;border-color:#514334}
+.demo-ui .icon-btn{border:0;border-radius:9px;background:transparent;display:grid;place-items:center;width:34px;height:34px;color:var(--muted);padding:0}
+.demo-ui .icon-btn:hover{background:var(--hover);color:var(--ink)}
+.demo-ui .icon-btn .icon{height:18px;width:18px}
+.demo-ui .pill{border:1px solid var(--line);border-radius:5px;padding:4px 7px;font-size:9px;line-height:1;white-space:nowrap;display:inline-flex;gap:5px;align-items:center;color:var(--muted)}
+.demo-ui .pill .icon{width:11px;height:11px}
+.demo-ui .pill-green{border-color:var(--guide-line);background:var(--green-soft);color:var(--green)}
+.demo-ui .text-btn{background:none;border:0;padding:0;color:var(--green);display:inline-flex;align-items:center;gap:6px;font-size:11px;line-height:1.7}
+.demo-ui .text-btn:hover{text-decoration:underline;text-underline-offset:4px}
+.demo-ui .text-btn .icon{height:14px;width:14px}
+.demo-ui .btn{min-height:37px;padding:9px 13px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:11px;font-weight:500;white-space:nowrap;line-height:1.5}
+.demo-ui .btn .icon{height:14px;width:14px}
+.demo-ui .btn:hover{background:var(--hover);border-color:var(--soft)}
+.demo-ui .btn-primary{background:#15825c;color:white;border-color:#15825c}
+.demo-ui .btn-primary:hover{background:#106e4d;border-color:#106e4d}
+html.dark .demo-ui .btn-primary{background:#6acba4;color:#112c21;border-color:#6acba4}
+html.dark .demo-ui .btn-primary:hover{background:#92dcbb;border-color:#92dcbb}
+.demo-ui .btn-quiet{background:transparent;border-color:transparent;color:var(--muted)}
+.demo-ui .btn-quiet:hover{border-color:transparent}
+.demo-ui .btn-full{width:100%}
+.demo-ui .action-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.demo-ui .welcome{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:30px;margin:29px 0 38px;padding:27px 29px;border:1px solid var(--guide-line);border-radius:13px;background:linear-gradient(115deg,var(--surface) 5%,var(--guide-bg) 100%);position:relative;overflow:hidden}
+.demo-ui .welcome-meta{display:flex;gap:9px;align-items:center;margin-bottom:14px;color:var(--green);font-size:9px;font-weight:500;letter-spacing:.11em}
+.demo-ui .welcome-meta .icon{height:15px;width:15px}
+.demo-ui .welcome-meta span:last-child{letter-spacing:0;color:var(--soft);font-weight:400}
+.demo-ui .welcome h2{font-size:20px;font-weight:500;line-height:1.55;letter-spacing:-.035em;word-break:keep-all}
+.demo-ui .welcome p{font-size:11px;color:var(--muted);line-height:1.9;margin:10px 0 20px;max-width:420px;word-break:keep-all}
+.demo-ui .welcome .btn{min-height:36px}
+.demo-ui .welcome-steps{border-left:1px solid var(--guide-line);padding:4px 0 4px 25px;align-self:center;list-style:none;margin:0;display:grid;gap:17px}
+.demo-ui .welcome-steps li{display:flex;gap:11px;align-items:center;font-size:11px;color:var(--muted);position:relative}
+.demo-ui .welcome-steps li:not(:last-child):after{content:"";position:absolute;left:9px;top:23px;height:10px;width:1px;background:var(--guide-line)}
+.demo-ui .step-num{font-size:9px;height:20px;width:20px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--guide-line);background:var(--surface);color:var(--green)}
+.demo-ui .welcome-steps li:last-child{color:var(--deep)}
+.demo-ui .welcome-steps .icon{height:11px;width:11px}
+.demo-ui .section-heading .text-btn{font-size:10px}
+.demo-ui .person{width:29px;height:29px;flex:none;display:grid;place-items:center;font-size:10px;font-weight:500;border-radius:50%;background:#e7eceb;color:#668078}
+.demo-ui .person.lilac{background:#eeebf3;color:#8e7b9e}
+html.dark .demo-ui .person{background:#303c38;color:#9eb8ad}
+html.dark .demo-ui .person.lilac{background:#36313f;color:#c0aacc}
+.demo-ui .tab .mono{font-size:9px;color:var(--soft);font-weight:400}
+.demo-ui .empty .text-btn{margin-top:14px}
+.demo-ui .publication-callout .text-btn{white-space:nowrap}
+.demo-ui .guide-aside{position:sticky;top:24px;min-width:0}
+.demo-ui .guide-card{border:1px solid var(--guide-line);border-radius:12px;background:var(--surface);box-shadow:0 5px 18px rgba(20,80,50,.035);overflow:hidden}
+.demo-ui .guide-top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;gap:12px;border-bottom:1px solid var(--line)}
+.demo-ui .guide-label{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--green);font-weight:500}
+.demo-ui .guide-label .icon{height:15px;width:15px}
+.demo-ui .guide-tools{display:flex;align-items:center;gap:2px}
+.demo-ui .guide-tools .icon-btn{width:24px;height:24px;border-radius:5px}
+.demo-ui .guide-tools .icon{width:13px;height:13px}
+.demo-ui .guide-outline{list-style:none;margin:0;padding:17px 19px 16px;border-bottom:1px solid var(--line);display:grid;gap:12px}
+.demo-ui .guide-outline li{display:flex;align-items:center;gap:10px;font-size:10px;color:var(--soft)}
+.demo-ui .guide-outline li.active{color:var(--green);font-weight:500}
+.demo-ui .guide-outline li.done{color:var(--muted)}
+.demo-ui .guide-outline .num{display:grid;place-items:center;width:19px;height:19px;border:1px solid var(--line);border-radius:50%;font-size:8px;font-weight:400;flex:none}
+.demo-ui .guide-outline .active .num{background:var(--green);color:var(--surface);border-color:var(--green)}
+.demo-ui .guide-outline .done .num{border-color:var(--guide-line);background:var(--green-soft);color:var(--green)}
+.demo-ui .guide-outline .num .icon{height:11px;width:11px}
+.demo-ui .guide-outline .current-label{font-size:8px;color:var(--green);font-weight:400;margin-left:auto}
+.demo-ui .guide-body{padding:21px 20px 19px;background:linear-gradient(180deg,var(--guide-bg),var(--surface) 80%)}
+.demo-ui .guide-count{display:flex;align-items:center;gap:8px;font-size:9px;color:var(--green);letter-spacing:.06em;margin-bottom:12px}
+.demo-ui .guide-count span{color:var(--soft)}
+.demo-ui .guide-body h2{font-size:17px;font-weight:500;line-height:1.65;letter-spacing:-.035em;word-break:keep-all}
+.demo-ui .guide-body p{font-size:11px;color:var(--muted);line-height:1.9;margin-top:12px;word-break:keep-all}
+.demo-ui .guide-body strong{font-weight:500;color:var(--ink)}
+.demo-ui .guide-hint{padding:11px 12px;background:var(--bg);border:1px solid var(--line);border-radius:7px;font-size:10px;color:var(--muted);line-height:1.8;margin-top:16px;display:flex;align-items:flex-start;gap:7px;word-break:keep-all}
+.demo-ui .guide-hint .icon{color:var(--green);width:13px;height:13px;margin-top:2px}
+.demo-ui .guide-actions{margin-top:20px;display:grid;gap:10px}
+.demo-ui .guide-actions .btn{font-size:11px;min-height:38px;white-space:normal}
+.demo-ui .guide-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:11px}
+.demo-ui .guide-back{padding:0;border:0;background:none;display:flex;gap:4px;align-items:center;color:var(--soft);font-size:10px}
+.demo-ui .guide-back .icon{height:12px;width:12px}
+.demo-ui .guide-back:hover{color:var(--ink)}
+.demo-ui .guide-dots{display:flex;gap:4px}
+.demo-ui .guide-dots span{width:18px;height:3px;border-radius:3px;background:var(--line)}
+.demo-ui .guide-dots .done{background:var(--guide-line)}
+.demo-ui .guide-dots .active{background:var(--green)}
+.demo-ui .guide-passive-note{font-size:9px;line-height:1.8;color:var(--soft);padding:13px 8px 0;text-align:center;word-break:keep-all}
+.demo-ui .guide-complete-icon{height:38px;width:38px;border:1px solid var(--guide-line);border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;margin:4px 0 17px}
+.demo-ui .complete-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:16px}
+.demo-ui .complete-chips span{font-size:9px;padding:4px 6px;border:1px solid var(--guide-line);border-radius:4px;color:var(--green)}
+.demo-ui .guide-complete .guide-body{padding-top:23px}
+.demo-ui .guide-complete .text-btn{justify-content:center}
+.demo-ui .mobile-guide-step{display:none}
+.demo-ui .pub-author .person{width:20px;height:20px;font-size:8px}
+.demo-ui .explore-bottom .text-btn{white-space:nowrap}
+.demo-ui .preview-controls>.icon-btn{height:27px;width:27px}
+.demo-ui .preview-controls>.icon-btn .icon{height:14px;width:14px}
+.demo-ui .demo-dialog{width:430px;max-width:calc(100vw - 28px);max-height:calc(100dvh - 60px);padding:30px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);overflow:auto}
+.demo-ui .demo-dialog::backdrop{background:rgba(24,24,27,.3);backdrop-filter:blur(3px)}
+.demo-ui .dialog-eyebrow{font-size:9px;color:var(--green);letter-spacing:.1em;margin-bottom:15px;margin-top:7px}
+.demo-ui .dialog-title{font-size:23px;font-weight:500;line-height:1.5;letter-spacing:-.035em;word-break:keep-all}
+.demo-ui .dialog-copy{font-size:12px;line-height:1.9;color:var(--muted);margin-top:13px;word-break:keep-all}
+.demo-ui .dialog-actions{display:grid;gap:9px;margin-top:23px}
+.demo-ui .dialog-note{font-size:10px;color:var(--soft);line-height:1.8;margin-top:17px;text-align:center}
+.demo-ui .dialog-feature{padding:12px 0;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.demo-ui .dialog-feature .icon{width:14px;height:14px;color:var(--green)}
+.demo-ui .dialog-features{margin-top:15px}
+.demo-ui .dialog-menu{display:grid;gap:4px;margin-top:16px}
+.demo-ui .dialog-menu button{background:none;border:0;padding:12px 10px;font-size:12px;text-align:left;border-radius:7px;display:flex;justify-content:space-between;align-items:center}
+.demo-ui .dialog-menu button:hover{background:var(--hover)}
+.demo-ui .dialog-menu .icon{width:15px;height:15px;color:var(--green)}
+.fe-guide-companion .guide-aside{position:static;top:auto;width:auto;max-height:none}
+.common-welcome .welcome{margin-top:12px}
+.demo-ui .preview-controls>.icon-btn{width:24px;height:24px}
+.demo-ui .demo-dialog{box-sizing:border-box}
+.fe-guide-companion .guide-aside{position:static;max-height:none}
+.fe-guide-companion .guide-outline,.fe-guide-companion .guide-count,.fe-guide-companion .guide-passive-note,.fe-guide-companion .guide-hint{display:none}
+.fe-guide-companion .guide-body{padding:12px 16px}
+.fe-guide-companion .guide-body h2{font-size:14px;line-height:1.5;margin-bottom:5px}
+.fe-guide-companion .guide-body>p{font-size:11px;line-height:1.7}
+.fe-guide-companion .guide-actions{margin-top:12px}
+.fe-guide-companion .guide-top{padding:8px 16px}
+.fe-guide-companion .guide-bottom{margin-top:9px}
+@media(min-width:1600px){.demo-ui .guide-aside{top:35px}}
+@media(max-width:1180px){.demo-ui .guide-body{padding:19px 17px}.demo-ui .guide-outline{padding-left:17px;padding-right:17px}.demo-ui .welcome{grid-template-columns:minmax(0,1fr) 185px;gap:22px;padding:25px}.demo-ui .welcome-steps{padding-left:22px}}
+@media(max-width:1020px){.demo-ui .guide-aside{order:-1;position:sticky;top:12px;z-index:10;width:100%}.demo-ui .guide-card{box-shadow:0 8px 22px rgba(24,24,27,.07)}.demo-ui .guide-outline,.demo-ui .guide-passive-note,.demo-ui .guide-hint{display:none}.demo-ui .guide-top{padding:8px 15px}.demo-ui .guide-body{padding:14px 17px;display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:0 24px}.demo-ui .guide-count{display:none}.demo-ui .guide-body h2{font-size:15px;grid-column:1;grid-row:1}.demo-ui .guide-body p{font-size:11px;margin-top:6px;grid-column:1;grid-row:2}.demo-ui .guide-actions{margin-top:0;grid-column:2;grid-row:1/3;align-self:center}.demo-ui .guide-bottom{grid-column:2;grid-row:3;margin-top:9px}.demo-ui .mobile-guide-step{display:inline;font-size:9px;color:var(--soft);font-weight:400;margin-left:6px}.demo-ui .guide-complete .guide-body{padding-top:17px}.demo-ui .guide-complete-icon{display:none}.demo-ui .complete-chips{grid-column:1;margin-top:10px}.demo-ui .guide-complete .guide-actions{grid-row:1/4}.demo-ui .session-copy{display:none}}
+@media(max-width:760px){.demo-ui .session-banner{padding-left:19px;padding-right:19px}.demo-ui .welcome{grid-template-columns:1fr;gap:22px;padding:24px}.demo-ui .welcome-steps{border-left:0;border-top:1px solid var(--guide-line);padding:17px 0 0;display:flex;flex-wrap:wrap;gap:12px 18px}.demo-ui .welcome-steps li{font-size:10px;gap:6px}.demo-ui .welcome-steps li:after{display:none}.demo-ui .guide-body{grid-template-columns:minmax(0,1fr) 165px;gap:0 15px}.demo-ui .guide-body h2{font-size:14px}.demo-ui .guide-body p{font-size:10px;line-height:1.8}.demo-ui .guide-actions .btn{font-size:10px}.demo-ui .guide-bottom{margin-top:8px}.demo-ui .guide-dots span{width:13px}.demo-ui .publication-callout .text-btn{margin-top:2px}}
+@media(max-width:560px){.demo-ui .session-banner{font-size:10px;min-height:34px;padding:7px 12px;gap:7px}.demo-ui .session-left{gap:6px}.demo-ui .session-right{gap:10px}.demo-ui .timer{font-size:9px;gap:4px}.demo-ui .timer .icon{display:none}.demo-ui .banner-guide{font-size:10px;gap:4px}.demo-ui .banner-guide .icon{width:12px;height:12px}.demo-ui .session-expired .session-left .session-dot{display:none}.demo-ui .session-expired .session-left strong{font-size:9px}.demo-ui .welcome{margin-top:23px;margin-bottom:29px;padding:20px 19px;gap:20px}.demo-ui .welcome h2{font-size:18px}.demo-ui .welcome-meta{font-size:8px;gap:7px;margin-bottom:13px}.demo-ui .welcome-meta span:last-child{font-size:8px}.demo-ui .welcome p{font-size:10px;margin-bottom:18px}.demo-ui .welcome .btn{font-size:10px;padding:9px 10px}.demo-ui .welcome .btn-quiet{padding-left:4px;padding-right:4px}.demo-ui .welcome-steps{display:grid;grid-template-columns:1fr 1fr;gap:11px 13px;padding-top:16px}.demo-ui .welcome-steps li{font-size:9px}.demo-ui .welcome-steps .step-num{width:18px;height:18px;font-size:8px}.demo-ui .tab .mono{font-size:8px}.demo-ui .resume-strip .text-btn{font-size:10px;white-space:nowrap}.demo-ui .guide-aside{top:8px}.demo-ui .guide-top{padding:7px 12px}.demo-ui .guide-label{font-size:9px;gap:6px}.demo-ui .guide-label .icon{width:13px;height:13px}.demo-ui .guide-tools .icon-btn{width:23px;height:23px}.demo-ui .mobile-guide-step{font-size:8px;margin-left:3px}.demo-ui .guide-body{display:block;padding:12px 13px 13px}.demo-ui .guide-body h2{font-size:13px;line-height:1.6}.demo-ui .guide-body p{font-size:10px;line-height:1.8;margin-top:6px}.demo-ui .guide-actions{margin-top:11px;display:flex;align-items:center;gap:8px}.demo-ui .guide-actions .btn{min-height:32px;padding:7px 9px;flex:1;font-size:10px}.demo-ui .guide-bottom{margin-top:9px}.demo-ui .guide-back{font-size:9px}.demo-ui .guide-dots span{width:20px}.demo-ui .guide-complete .guide-actions{display:grid}.demo-ui .guide-complete .guide-body{padding:14px}.demo-ui .complete-chips{margin-top:11px}.demo-ui .complete-chips span{font-size:8px}.demo-ui .explore-bottom .text-btn{margin-top:10px}.demo-ui .preview-controls>.icon-btn{width:24px;height:24px}.demo-ui .demo-dialog{padding:25px 22px}.demo-ui .dialog-title{font-size:21px}.demo-ui .dialog-copy{font-size:11px}.demo-ui .dialog-eyebrow{font-size:8px}.demo-ui .dialog-feature{font-size:10px}}
+@media(max-width:360px){.demo-ui .session-dot{display:none}.demo-ui .session-right{gap:8px}.demo-ui .banner-guide{font-size:9px}.demo-ui .session-left strong{font-size:9px}.demo-ui .welcome{padding:17px 15px}.demo-ui .welcome .action-row{gap:6px}.demo-ui .welcome .btn{font-size:9px}.demo-ui .guide-body p{font-size:9px}}
+@media(max-height:650px) and (min-width:1021px){.demo-ui .guide-outline{gap:9px;padding-top:12px;padding-bottom:12px}.demo-ui .guide-body{padding-top:15px;padding-bottom:15px}.demo-ui .guide-body h2{font-size:15px}.demo-ui .guide-hint{display:none}.demo-ui .guide-aside{top:15px}.demo-ui .guide-passive-note{display:none}.demo-ui .guide-actions{margin-top:15px}}
+@media print{.demo-ui .rail,.demo-ui .header,.demo-ui .session-banner,.demo-ui .preview-bar,.demo-ui .guide-aside,.demo-ui .case-actions,.demo-ui .toast{display:none!important}}
+.demo-ui .icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}

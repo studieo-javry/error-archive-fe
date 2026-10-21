@@ -387,19 +387,18 @@ main::-webkit-scrollbar {
 .dark .hljs-deletion { color: #ffdcd7;
   background-color: #67060c }
 
-/* ── Guest tour: current-step highlight (useTour / TourCompanion) ───────────── */
+/* ── Guest tour: current-step highlight — 목업의 가이드 하이라이트와 동일 ───────── */
 .tour-highlight {
-  position: relative;
-  border-radius: 12px;
-  outline: 2px solid #10b981;
-  outline-offset: 6px;
-  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.12);
+  outline: 1.5px solid #b9d9c7;
+  outline-offset: 9px;
+  background: #f4faf6;
+  border-radius: 6px;
   scroll-margin: 120px;
-  transition: outline-color 0.2s ease, box-shadow 0.2s ease;
+  transition: outline-color 0.25s, background 0.25s;
 }
 .dark .tour-highlight {
-  outline-color: #34d399;
-  box-shadow: 0 0 0 6px rgba(52, 211, 153, 0.14);
+  outline-color: #3b6550;
+  background: #202d25;
 }
 @media (prefers-reduced-motion: reduce) {
   .tour-highlight { transition: none; }
