@@ -46,18 +46,21 @@ const isChromeless = computed(() => isPublic.value || isOptionalLoggedOut.value)
     <div class="flex-1 flex flex-col overflow-hidden">
       <DemoBanner v-if="authStore.isGuest" />
       <AppHeader />
-      <main class="flex-1 overflow-y-auto">
-        <div v-if="isWideLayout" class="h-full p-6">
-          <router-view />
-        </div>
-        <div v-else class="max-w-5xl mx-auto p-10 pb-32">
-          <router-view />
-        </div>
-      </main>
+      <!-- 게스트 가이드는 본문 오른쪽 컬럼으로 붙는다(목업 .fe-workarea) — 좁은 화면에선 하단 고정 -->
+      <div class="fe-workarea">
+        <main class="flex-1 overflow-y-auto">
+          <div v-if="isWideLayout" class="h-full p-6">
+            <router-view />
+          </div>
+          <div v-else class="max-w-5xl mx-auto p-10 pb-32">
+            <router-view />
+          </div>
+        </main>
+        <TourCompanion v-if="authStore.isGuest" />
+      </div>
     </div>
     <NotificationToasts />
     <GuestExpiryOverlay v-if="authStore.isGuest" />
-    <TourCompanion v-if="authStore.isGuest" />
     <DemoLayer v-if="authStore.isGuest" />
   </div>
 </template>

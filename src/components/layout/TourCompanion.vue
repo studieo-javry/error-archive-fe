@@ -48,8 +48,7 @@ function back() {
 <template>
   <div
     v-if="active && current"
-    class="demo-ui"
-    style="position:fixed;right:24px;bottom:24px;width:330px;max-width:calc(100vw - 2rem);z-index:50"
+    class="demo-ui fe-guide-companion"
   >
     <!-- 완료 카드 -->
     <aside v-if="isLast" class="guide-aside" aria-label="사용 가이드 완료">
