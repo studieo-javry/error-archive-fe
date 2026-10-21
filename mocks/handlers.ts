@@ -702,6 +702,11 @@ export const handlers = [
     })
   }),
 
+  // 게스트 사용 가이드 대상 — core-api GET /demo/guide
+  http.get('/api/v1/demo/guide', () => {
+    return HttpResponse.json({ caseId: 4, articleSlug: 'demo-hikaricp-503' })
+  }),
+
   http.get('/api/v1/workspaces', () => {
     return HttpResponse.json(mockWorkspaces)
   }),

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/composables/useAuth'
 import { useErrorStore } from '@/stores/errorStore'
 import { useTeamStore } from '@/stores/teamStore'
+import { demoApi } from '@/services/demoApi'
 
 /**
  * 게스트 사용 가이드 — 목업 GUIDE_TITLES / reduceGuide / guidePrimary / guideCopy 를 실제 FE 화면에 옮긴 것.
@@ -12,7 +13,7 @@ import { useTeamStore } from '@/stores/teamStore'
  *  01 상황 이해하기   Library 의 샘플 케이스 → 상세 Context
  *  02 시도 살펴보기   타임라인 아래 조사 근거(GuideEvidence) 펼치기
  *  03 솔루션 확인하기 솔루션 탭에서 해결안을 선택해 연결된 시도 강조
- *  04 발행된 글 읽기  샘플 케이스의 공개 아티클(새 탭) — BE 가 demoArticle 을 줄 때만
+ *  04 발행된 글 읽기  샘플 케이스의 공개 아티클(새 탭) — core `GET /demo/guide` 가 응답할 때만
  *  완료              가입 전환
  *
  * 각 단계는 버튼을 두 번 누르는 구조다: 먼저 그 단계의 행동(열기/펼치기/선택)을 하고, 다음 단계로 넘어간다.
@@ -130,7 +131,25 @@ export function useTour() {
     if (article.value) window.open(article.value.publicUrl, '_blank', 'noopener')
   }
 
-  function start() {
+  /**
+   * 가이드 대상(샘플 케이스·아티클)을 새로 받는다. 데모 케이스는 야간 리셋마다 id 가 바뀌어 시작할 때마다 조회.
+   * 실패(404 = 데모 비활성/시드 없음, 네트워크)면 아티클 단계 없이 목록에서 샘플을 고른다.
+   */
+  async function refreshGuideTarget() {
+    try {
+      const { data } = await demoApi.guide()
+      auth.setGuestDemoArticle({
+        caseId: data.caseId,
+        slug: data.articleSlug,
+        publicUrl: `${window.location.origin}/p/${encodeURIComponent(data.articleSlug)}`,
+      })
+    } catch {
+      auth.setGuestDemoArticle(null)
+    }
+  }
+
+  async function start() {
+    await refreshGuideTarget()
     tour.setCase(pickCaseId())
     tour.resetFlags()
     tour.setStep(0)

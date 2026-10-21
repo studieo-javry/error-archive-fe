@@ -48,7 +48,7 @@ export function useAuth() {
     store.setAccessToken(data.accessToken)
     store.userId = data.userId
     // 실제 세션 수명(accessTokenExpiresAt)을 보존 → 데모 타이머/만료 오버레이가 사용.
-    store.setGuest(true, data.accessTokenExpiresAt, data.demoArticle)
+    store.setGuest(true, data.accessTokenExpiresAt)
 
     await fetchUser()
     // 게스트는 데모 워크스페이스의 '에러 목록'으로 바로 진입. (홈 대시보드는 '내 활동' 중심이라

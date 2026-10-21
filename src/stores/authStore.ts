@@ -29,7 +29,13 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('accessToken', token)
   }
 
-  function setGuest(value: boolean, expiresAt?: string | null, demoArticle?: DemoArticle | null) {
+  function setGuestDemoArticle(article: DemoArticle | null) {
+    guestDemoArticle.value = article
+    if (article) localStorage.setItem('guestDemoArticle', JSON.stringify(article))
+    else localStorage.removeItem('guestDemoArticle')
+  }
+
+  function setGuest(value: boolean, expiresAt?: string | null) {
     isGuest.value = value
     if (value) {
       localStorage.setItem('isGuest', 'true')
@@ -37,15 +43,11 @@ export const useAuthStore = defineStore('auth', () => {
         guestExpiresAt.value = expiresAt
         localStorage.setItem('guestExpiresAt', expiresAt)
       }
-      guestDemoArticle.value = demoArticle ?? null
-      if (demoArticle) localStorage.setItem('guestDemoArticle', JSON.stringify(demoArticle))
-      else localStorage.removeItem('guestDemoArticle')
     } else {
       localStorage.removeItem('isGuest')
       guestExpiresAt.value = null
       localStorage.removeItem('guestExpiresAt')
-      guestDemoArticle.value = null
-      localStorage.removeItem('guestDemoArticle')
+      setGuestDemoArticle(null)
     }
   }
 
@@ -61,5 +63,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('accessToken')
   }
 
-  return { user, accessToken, userId, isGuest, guestExpiresAt, guestDemoArticle, isAuthenticated, setAccessToken, setGuest, setUser, logout }
+  return { user, accessToken, userId, isGuest, guestExpiresAt, guestDemoArticle, isAuthenticated, setAccessToken, setGuest, setGuestDemoArticle, setUser, logout }
 })
