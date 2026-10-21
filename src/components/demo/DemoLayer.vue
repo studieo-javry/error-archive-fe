@@ -10,7 +10,7 @@ import DemoIcon from '@/components/demo/DemoIcon.vue'
 const demo = useDemoStore()
 const teamStore = useTeamStore()
 const { startSignup } = useAuth()
-const { start: startTour } = useTour()
+const { resume: startTour } = useTour()
 
 function openGuide() {
   demo.closeDialog()

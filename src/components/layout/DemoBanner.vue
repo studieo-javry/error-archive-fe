@@ -6,12 +6,13 @@ import { useTourStore } from '@/stores/tourStore'
 import DemoIcon from '@/components/demo/DemoIcon.vue'
 
 const { remainingLabel } = useGuestSession()
-const { start: startTour } = useTour()
+const { resume: startTour, total, isComplete } = useTour()
 const tourStore = useTourStore()
 
 // 목업의 상태별 가이드 라벨.
 const guideLabel = computed(() => {
-  if (tourStore.status === 'active') return `가이드 진행 중 · ${tourStore.step + 1}/4`
+  if (tourStore.status === 'active') return isComplete.value ? '가이드 완료' : `가이드 진행 중 · ${tourStore.step + 1}/${total.value}`
+  if (tourStore.status === 'paused') return '가이드 이어보기'
   if (tourStore.status === 'done') return '가이드 다시 보기'
   return '사용 가이드'
 })

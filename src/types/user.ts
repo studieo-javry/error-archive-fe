@@ -63,6 +63,19 @@ export interface GuestTokenResponse {
   workspaceId: number
   workspaceSlug: string
   displayName: string
+  /**
+   * 데모 시드 케이스의 공개 아티클 — 사용 가이드 4단계("발행된 글 읽기")가 연다.
+   * BE 가 아직 내려주지 않으면 undefined/null → 가이드는 3단계 + 완료로 진행한다.
+   */
+  demoArticle?: DemoArticle | null
+}
+
+export interface DemoArticle {
+  /** 아티클의 원본 케이스 — 가이드가 따라갈 샘플 케이스로도 쓴다. */
+  caseId: number
+  slug: string
+  /** 공개 페이지 URL (/p/{slug}). */
+  publicUrl: string
 }
 
 export interface AuthorizeUrlResponse {

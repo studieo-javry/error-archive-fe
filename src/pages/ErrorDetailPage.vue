@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
 import { formatAbsolute } from '@/utils/timeAgo'
 import { useRoute, useRouter } from 'vue-router'
@@ -15,6 +15,8 @@ import ErrorStatusBadge from '@/components/error/ErrorStatusBadge.vue'
 import TimelineList from '@/components/timeline/TimelineList.vue'
 import StepForm, { type StepFormValues } from '@/components/timeline/StepForm.vue'
 import DemoStepForm from '@/components/demo/DemoStepForm.vue'
+import GuideEvidence from '@/components/demo/GuideEvidence.vue'
+import { useTourStore } from '@/stores/tourStore'
 import SolutionSelector from '@/components/timeline/SolutionSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
@@ -77,6 +79,25 @@ const activeSolution = computed(() => {
 })
 
 const caseId = Number(route.params.id)
+
+// ── 게스트 사용 가이드 연동(2단계 조사 근거 · 3단계 솔루션 선택) ──
+const tourStore = useTourStore()
+const onTourCase = computed(() => authStore.isGuest && tourStore.status === 'active' && tourStore.caseId === caseId)
+const showGuideEvidence = computed(() => onTourCase.value && tourStore.step >= 1)
+// 가이드 카드 문구에 쓸 첫 솔루션 정보를 알려준다.
+watch([solutions, onTourCase], () => {
+  if (!onTourCase.value) return
+  const sol = solutions.value[0]
+  tourStore.setSolutionInfo(sol?.title ?? null, sol?.stepIds.length ?? 0)
+}, { immediate: true })
+// 가이드의 "솔루션 선택하기" → 첫 솔루션 선택.
+watch(() => tourStore.solutionRequest, () => {
+  if (onTourCase.value && solutions.value.length) activeFilter.value = solutions.value[0].id
+})
+// 게스트가 직접 솔루션 탭을 눌러도 3단계 행동을 한 것으로 친다.
+watch(activeFilter, (id) => {
+  if (id != null && onTourCase.value && tourStore.step === 2) tourStore.setFlag('solutionSelected', true)
+})
 
 const isOwner = computed(() =>
   Boolean(errorCase.value && authStore.user && errorCase.value.ownerUserId === authStore.user.userId),
@@ -592,7 +613,7 @@ onUnmounted(() => {
         />
       </div>
 
-      <div v-if="solutions.length" class="flex items-center gap-4 mb-6">
+      <div v-if="solutions.length" class="flex items-center gap-4 mb-6" data-tour="solutions" data-tour-chip>
         <button
           class="pb-1 text-xs font-medium uppercase tracking-widest transition-colors"
           :class="activeFilter === null
@@ -627,6 +648,8 @@ onUnmounted(() => {
         @update="updateStep"
         @delete="deleteStep"
       />
+      <!-- 가이드 진행 중에만: 샘플 케이스 타임라인에서 뽑은 조사 근거 -->
+      <GuideEvidence v-if="showGuideEvidence" :steps="steps" />
       <!-- 게스트는 쓰기 권한이 없어 실제 폼 대신 저장되지 않는 데모 폼으로 흐름만 체험 -->
       <DemoStepForm v-if="authStore.isGuest" />
       <StepForm v-else-if="canWriteContent" @submit="addStep" />

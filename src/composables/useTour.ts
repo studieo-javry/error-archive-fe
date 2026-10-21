@@ -6,68 +6,30 @@ import { useAuth } from '@/composables/useAuth'
 import { useErrorStore } from '@/stores/errorStore'
 import { useTeamStore } from '@/stores/teamStore'
 
-export interface TourStep {
-  key: string
-  /** 아웃라인(좌측 단계 목록)에 쓰는 짧은 제목. */
-  outline: string
+/**
+ * 게스트 사용 가이드 — 목업 GUIDE_TITLES / reduceGuide / guidePrimary / guideCopy 를 실제 FE 화면에 옮긴 것.
+ *
+ *  01 상황 이해하기   Library 의 샘플 케이스 → 상세 Context
+ *  02 시도 살펴보기   타임라인 아래 조사 근거(GuideEvidence) 펼치기
+ *  03 솔루션 확인하기 솔루션 탭에서 해결안을 선택해 연결된 시도 강조
+ *  04 발행된 글 읽기  샘플 케이스의 공개 아티클(새 탭) — BE 가 demoArticle 을 줄 때만
+ *  완료              가입 전환
+ *
+ * 각 단계는 버튼을 두 번 누르는 구조다: 먼저 그 단계의 행동(열기/펼치기/선택)을 하고, 다음 단계로 넘어간다.
+ */
+export const GUIDE_TITLES = ['상황 이해하기', '시도 살펴보기', '솔루션 확인하기', '발행된 글 읽기']
+
+/** 현재 단계 카드에 보여줄 내용. body 는 강조(<strong>)가 들어간 고정 문구라 v-html 로 렌더한다. */
+export interface TourCard {
   title: string
   body: string
-  /** 보조 힌트(전구 아이콘 옆). */
   hint: string
-  /** 현재 라우트에서 강조할 요소 셀렉터. null = 강조 없음(완료 카드 등). */
-  anchor: string | null
-  /** 1차 버튼 라벨. */
   cta: string
+  /** 강조할 요소 셀렉터(없으면 강조 없음). */
+  anchor: string | null
+  /** 강조 영역 제목 옆 칩 문구. */
+  chip: string
 }
-
-/** 아웃라인용 4단계 제목(목업 GUIDE_TITLES 대응). */
-export const TOUR_OUTLINE = ['샘플 케이스 열기', '상황 이해하기', '시도와 해결', '기록으로 남기기']
-
-/**
- * 게스트 가이드 투어 스텝. 실제 FE 화면에 앵커한다:
- *  0) 케이스 목록에서 샘플 케이스(= tour.caseId 의 ErrorCard) 강조 → 열기
- *  1) 케이스 상세의 Context 영역
- *  2) 케이스 상세의 Resolution Timeline(시도·해결)
- *  3) 완료 카드 — 가입 전환
- */
-export const TOUR_STEPS: TourStep[] = [
-  {
-    key: 'case',
-    outline: TOUR_OUTLINE[0],
-    title: '샘플 케이스로 시작해요.',
-    body: '먼저 에러 하나를 따라가 볼게요. 강조된 케이스를 열면 기록이 쌓이는 흐름을 볼 수 있어요.',
-    hint: '해결된 샘플을 열어 전체 흐름을 살펴볼게요.',
-    anchor: '[data-case-id]',
-    cta: '샘플 케이스 열기',
-  },
-  {
-    key: 'context',
-    outline: TOUR_OUTLINE[1],
-    title: '먼저, 에러가 발생한 맥락을 읽어보세요.',
-    body: '에러 메시지만으로는 상황을 알기 어려워요. 발생 조건·환경·관찰한 현상을 케이스 하나에 모아 둡니다.',
-    hint: '이 기록이 이후 모든 시도의 출발점이 됩니다.',
-    anchor: '[data-tour="context"]',
-    cta: '시도 살펴보기',
-  },
-  {
-    key: 'timeline',
-    outline: TOUR_OUTLINE[2],
-    title: '실패한 시도도 다음의 단서가 됩니다.',
-    body: '무엇을 해봤고 어떻게 확인했는지, 근거와 함께 타임라인에 쌓이고 해결에 기여한 시도가 솔루션으로 이어집니다.',
-    hint: '솔루션은 정답 한 줄이 아니라, 해결을 뒷받침하는 시도의 묶음입니다.',
-    anchor: '[data-tour="timeline"]',
-    cta: '마무리하기',
-  },
-  {
-    key: 'done',
-    outline: TOUR_OUTLINE[3],
-    title: '이제, 내 에러도 기록해 볼까요?',
-    body: '케이스에서 시작한 시도가 솔루션이 되고, 하나의 글로 이어졌어요. 내 워크스페이스에서 나만의 해결 기록을 쌓아보세요.',
-    hint: '',
-    anchor: null,
-    cta: '가입하기',
-  },
-]
 
 export function useTour() {
   const tour = useTourStore()
@@ -77,16 +39,73 @@ export function useTour() {
   const teamStore = useTeamStore()
   const { startSignup } = useAuth()
 
+  const article = computed(() => auth.guestDemoArticle)
+  // 아티클을 모르면 04 단계를 건너뛴다(3단계 + 완료).
+  const titles = computed(() => (article.value ? GUIDE_TITLES : GUIDE_TITLES.slice(0, 3)))
+  const total = computed(() => titles.value.length)
+
   // 투어는 게스트 전용. status 가 active 일 때만 컴패니언/하이라이트가 보인다.
   const active = computed(() => auth.isGuest && tour.status === 'active')
-  const stepIndex = computed(() => tour.step)
-  const current = computed<TourStep | null>(() => TOUR_STEPS[tour.step] ?? null)
-  const isLast = computed(() => tour.step >= TOUR_STEPS.length - 1)
-  // 한 번이라도 끝냈거나 자유 둘러보기로 닫은 뒤의 재시작용.
+  const stepIndex = computed(() => Math.min(tour.step, total.value))
+  const isComplete = computed(() => stepIndex.value >= total.value)
   const canResume = computed(() => auth.isGuest && tour.status !== 'active')
 
-  /** 투어가 따라갈 샘플 케이스 — 해결된 케이스 우선, 없으면 첫 케이스. 하드코딩 ID 대신 동적 선택. */
+  const card = computed<TourCard | null>(() => {
+    const f = tour.flags
+    switch (stepIndex.value) {
+      case 0:
+        return {
+          title: '먼저, 에러가 발생한 맥락을 읽어보세요.',
+          body: '에러 메시지만으로는 상황을 알기 어려워요. <strong>발생 조건, 환경, 관찰한 현상</strong>을 케이스 하나에 모아둡니다.',
+          hint: f.contextOpened ? '이 기록이 이후 모든 시도의 출발점이 됩니다.' : '해결된 샘플을 열어 전체 흐름을 살펴볼게요.',
+          cta: f.contextOpened ? '시도 살펴보기' : '샘플 케이스 열기',
+          anchor: f.contextOpened
+            ? '[data-tour="context"]'
+            : tour.caseId != null ? `[data-case-id="${tour.caseId}"]` : '[data-case-id]',
+          chip: f.contextOpened ? '01 · 상황 이해하기' : '이 케이스로 시작',
+        }
+      case 1:
+        return {
+          title: '실패한 시도도 다음의 단서가 됩니다.',
+          body: f.evidenceRead
+            ? '시도마다 <strong>변경한 내용과 관찰한 결과</strong>를 함께 남기면, 다음 시도의 이유가 분명해집니다.'
+            : '첫 시도가 늘 답이 되지는 않아요. 타임라인 아래의 <strong>조사 근거</strong>를 펼쳐, 어떻게 원인을 좁혀 갔는지 확인해 보세요.',
+          hint: '실패한 시도도 지우지 않아요. 같은 시행착오를 줄이는 기록입니다.',
+          cta: f.evidenceRead ? '솔루션 확인하기' : '조사 근거 펼치기',
+          anchor: '[data-tour="evidence"]',
+          chip: '02 · 조사 근거',
+        }
+      case 2: {
+        const sol = tour.solutionTitle
+        const n = tour.solutionStepCount
+        return {
+          title: f.solutionSelected ? '해결에 기여한 시도가 연결됐어요.' : '해결에 기여한 시도만 묶어보세요.',
+          body: f.solutionSelected
+            ? `${n > 0 ? `<strong>${n}개의 시도가 하나의 솔루션</strong>에` : '<strong>솔루션</strong>에'} 연결되어 강조됐어요. 관련 없는 시도도 타임라인에 그대로 남아 있습니다.`
+            : `타임라인 위의 <strong>‘${escapeHtml(sol ?? '솔루션')}’</strong>을 선택해 보세요. 이 해결안에 연결된 시도를 함께 확인할 수 있어요.`,
+          hint: '솔루션은 정답 한 줄이 아니라, 해결을 뒷받침하는 시도의 묶음입니다.',
+          cta: f.solutionSelected ? (article.value ? '발행된 아티클 보기' : '가이드 마치기') : '솔루션 선택하기',
+          anchor: '[data-tour="solutions"]',
+          chip: '03 · 솔루션 확인',
+        }
+      }
+      case 3:
+        return {
+          title: '작업 기록이 공유할 글이 됩니다.',
+          body: '방금 본 케이스를 읽기 좋은 이야기로 정리한 아티클이에요. <strong>원본 케이스와 연결</strong>되어, 다른 사람도 시도와 근거를 따라갈 수 있습니다.',
+          hint: '정리된 기록을 발행하면 공개 글이 되어, 다른 사람에게 단서가 됩니다.',
+          cta: '가이드 마치기',
+          anchor: null,
+          chip: '',
+        }
+      default:
+        return null
+    }
+  })
+
+  /** 투어가 따라갈 샘플 케이스 — 아티클이 있는 시드 케이스 우선, 다음은 해결된 케이스, 없으면 첫 케이스. */
   function pickCaseId(): number | null {
+    if (article.value) return article.value.caseId
     const list = errorStore.errors
     const resolved = list.find((e) => e.status === 'RESOLVED')
     return (resolved ?? list[0])?.id ?? null
@@ -98,37 +117,71 @@ export function useTour() {
     }
   }
 
+  function goCase() {
+    const id = tour.caseId ?? pickCaseId()
+    tour.setCase(id)
+    const r = router.currentRoute.value
+    if (id != null && !(r.name === 'errorDetail' && Number(r.params.id) === id)) {
+      router.push({ name: 'errorDetail', params: { slug: teamStore.currentSlug, id } })
+    }
+  }
+
+  function openArticle() {
+    if (article.value) window.open(article.value.publicUrl, '_blank', 'noopener')
+  }
+
   function start() {
     tour.setCase(pickCaseId())
+    tour.resetFlags()
     tour.setStep(0)
     tour.setStatus('active')
     goList()
   }
 
+  /** 배너·사이드바 진입점 — 접어 둔 가이드는 그 자리에서 이어보고, 처음이거나 끝냈으면 새로 시작(목업 resumeGuide). */
+  function resume() {
+    if (tour.status !== 'paused') { start(); return }
+    tour.setStatus('active')
+    const i = stepIndex.value
+    if (i === 0 && !tour.flags.contextOpened) goList()
+    else if (i <= 2) goCase()
+  }
+
+  /** 카드의 1차 버튼 — 그 단계의 행동을 먼저 하고, 한 번 더 누르면 다음 단계로. */
   function next() {
-    const i = tour.step
-    if (i === 0) {
-      const id = tour.caseId ?? pickCaseId()
-      tour.setCase(id)
-      if (id != null) {
-        router.push({ name: 'errorDetail', params: { slug: teamStore.currentSlug, id } })
-      }
-      tour.setStep(1)
-      return
+    const f = tour.flags
+    switch (stepIndex.value) {
+      case 0:
+        if (!f.contextOpened) { tour.setFlag('contextOpened', true); goCase(); return }
+        tour.setStep(1); goCase(); return
+      case 1:
+        if (!f.evidenceRead) { tour.setFlag('evidenceRead', true); goCase(); return }
+        tour.setStep(2); goCase(); return
+      case 2:
+        if (!f.solutionSelected) { tour.setFlag('solutionSelected', true); tour.requestSolution(); goCase(); return }
+        tour.setStep(3)
+        // 아티클 단계: 공개 페이지(/p/*)는 SPA 밖이라 새 탭으로 열고, 가이드는 앱에서 이어간다.
+        if (article.value) openArticle()
+        return
+      default:
+        tour.setStep(total.value)
     }
-    if (i < TOUR_STEPS.length - 1) tour.setStep(i + 1)
   }
 
   function prev() {
-    const i = tour.step
-    if (i <= 0) return
-    if (i === 1) goList()
+    const i = stepIndex.value
+    if (i === 0) {
+      tour.setFlag('contextOpened', false)
+      goList()
+      return
+    }
     tour.setStep(i - 1)
+    if (i - 1 <= 2) goCase()
   }
 
-  /** X / 자유 둘러보기 — 투어를 접지만 재시작할 수 있게 둔다. */
+  /** 접기 / X — 투어를 접지만 재시작할 수 있게 둔다. */
   function dismiss() {
-    tour.setStatus('idle')
+    tour.setStatus(isComplete.value ? 'done' : 'paused')
   }
 
   /** 완료 카드의 1차 CTA — 가입(= GitHub OAuth) 전환. */
@@ -137,5 +190,12 @@ export function useTour() {
     startSignup()
   }
 
-  return { TOUR_STEPS, active, canResume, stepIndex, current, isLast, start, next, prev, dismiss, convert }
+  return {
+    titles, total, active, canResume, stepIndex, isComplete, card, article,
+    start, resume, next, prev, dismiss, convert, openArticle,
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 }

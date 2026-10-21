@@ -261,3 +261,21 @@ html.dark .ev-val{color:#e4e4e7}
 .ev-note{margin-top:10px;font-size:12px;color:#71717a;line-height:1.7}
 html.dark .ev-note{color:#a1a1aa}
 .ev-empty-line{font-size:12px;color:#a1a1aa;padding:9px 0}
+
+/* ── 가이드 2단계 조사 근거 블록(GuideEvidence) — 목업 .mock-common .evidence 그대로 ── */
+.demo-ui.common-evidence{margin-top:24px}
+.demo-ui .addition-label{display:block;font:500 9px/1.5 Inter,"Pretendard Variable",sans-serif;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+.demo-ui .evidence{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:var(--surface);overflow:hidden}
+.demo-ui .evidence summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:10px;color:var(--muted);padding:11px 12px;list-style:none;gap:8px}
+.demo-ui .evidence summary::-webkit-details-marker{display:none}
+.demo-ui .evidence summary>span{display:flex;align-items:center;gap:6px}
+.demo-ui .evidence summary .icon{height:13px;width:13px}
+.demo-ui .evidence[open] summary{border-bottom:1px solid var(--line);color:var(--green)}
+.demo-ui .evidence[open] summary>.icon{transform:rotate(180deg)}
+.demo-ui .evidence-content{padding:13px 14px;font-size:10px;line-height:1.9;color:var(--muted)}
+.demo-ui .evidence-line{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);gap:10px;font-size:10px}
+.demo-ui .evidence-line strong{font-weight:500;color:var(--ink);white-space:nowrap}
+.demo-ui .evidence-content p{margin-top:9px}
+.demo-ui .guide-reopen{justify-content:center}
+.demo-ui .evidence-source{margin-left:6px}
+@media(max-width:560px){.demo-ui .evidence summary{font-size:9px;padding:10px}.demo-ui .evidence-content{font-size:9px;padding:10px}.demo-ui .evidence-line{font-size:9px}}

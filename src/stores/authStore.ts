@@ -1,6 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { MyProfile } from '@/types/user'
+import type { MyProfile, DemoArticle } from '@/types/user'
+
+function loadDemoArticle(): DemoArticle | null {
+  try {
+    const raw = localStorage.getItem('guestDemoArticle')
+    return raw ? (JSON.parse(raw) as DemoArticle) : null
+  } catch {
+    return null
+  }
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<MyProfile | null>(null)
@@ -10,6 +19,8 @@ export const useAuthStore = defineStore('auth', () => {
   const isGuest = ref<boolean>(localStorage.getItem('isGuest') === 'true')
   // 게스트 세션 만료 시각(ISO). /auth/guest 의 accessTokenExpiresAt — 데모 타이머·만료 오버레이가 사용.
   const guestExpiresAt = ref<string | null>(localStorage.getItem('guestExpiresAt'))
+  // 데모 시드 케이스의 공개 아티클(가이드 4단계). BE 가 내려줄 때만 존재.
+  const guestDemoArticle = ref<DemoArticle | null>(loadDemoArticle())
 
   const isAuthenticated = computed(() => !!accessToken.value)
 
@@ -18,7 +29,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('accessToken', token)
   }
 
-  function setGuest(value: boolean, expiresAt?: string | null) {
+  function setGuest(value: boolean, expiresAt?: string | null, demoArticle?: DemoArticle | null) {
     isGuest.value = value
     if (value) {
       localStorage.setItem('isGuest', 'true')
@@ -26,10 +37,15 @@ export const useAuthStore = defineStore('auth', () => {
         guestExpiresAt.value = expiresAt
         localStorage.setItem('guestExpiresAt', expiresAt)
       }
+      guestDemoArticle.value = demoArticle ?? null
+      if (demoArticle) localStorage.setItem('guestDemoArticle', JSON.stringify(demoArticle))
+      else localStorage.removeItem('guestDemoArticle')
     } else {
       localStorage.removeItem('isGuest')
       guestExpiresAt.value = null
       localStorage.removeItem('guestExpiresAt')
+      guestDemoArticle.value = null
+      localStorage.removeItem('guestDemoArticle')
     }
   }
 
@@ -45,5 +61,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('accessToken')
   }
 
-  return { user, accessToken, userId, isGuest, guestExpiresAt, isAuthenticated, setAccessToken, setGuest, setUser, logout }
+  return { user, accessToken, userId, isGuest, guestExpiresAt, guestDemoArticle, isAuthenticated, setAccessToken, setGuest, setUser, logout }
 })

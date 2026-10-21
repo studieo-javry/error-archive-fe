@@ -29,7 +29,7 @@ const { isDark, toggle } = useTheme()
 const { logout, startSignup } = useAuth()
 const teamStore = useTeamStore()
 const authStore = useAuthStore()
-const { start: startTour } = useTour()
+const { resume: startTour } = useTour()
 const demo = useDemoStore()
 
 // `global` 항목은 워크스페이스 슬러그를 받지 않는 전역 라우트(Explore 등) — 슬러그 param 을 붙이지 않는다.
