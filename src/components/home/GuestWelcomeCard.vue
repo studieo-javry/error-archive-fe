@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useAuth } from '@/composables/useAuth'
+import { useTour } from '@/composables/useTour'
 
 // 게스트 세션을 정리하고 로그인(= GitHub 회원가입) 화면으로.
 const { startSignup: goSignup } = useAuth()
+// 사용 가이드(투어) 시작.
+const { start: startTour } = useTour()
 </script>
 
 <template>
@@ -22,14 +25,18 @@ const { startSignup: goSignup } = useAuth()
         <button
           type="button"
           class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 text-white px-5 py-2.5 text-sm font-medium hover:bg-emerald-700 transition-colors"
+          @click="startTour"
+        >
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m16 8-2 6-6 2 2-6 6-2Z" /></svg>
+          가이드 시작하기
+        </button>
+        <button
+          type="button"
+          class="block w-full mt-2 text-[12px] text-emerald-700 dark:text-emerald-400 hover:underline"
           @click="goSignup"
         >
-          가입하기
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M5 12h14m-5-5 5 5-5 5" />
-          </svg>
+          바로 가입하기
         </button>
-        <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-2">GitHub 계정으로 간편하게</p>
       </div>
     </div>
   </section>

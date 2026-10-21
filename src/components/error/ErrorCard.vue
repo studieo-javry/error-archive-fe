@@ -30,6 +30,7 @@ const statusTextColor: Record<string, string> = {
 <template>
   <router-link
     :to="{ name: 'errorDetail', params: { slug: teamStore.currentSlug, id: error.id } }"
+    :data-case-id="error.id"
     class="block py-5 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 -mx-4 px-4 rounded-lg transition-colors cursor-pointer"
   >
     <div class="flex items-start gap-3">

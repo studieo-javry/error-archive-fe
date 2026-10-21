@@ -6,6 +6,7 @@ import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import DemoBanner from '@/components/layout/DemoBanner.vue'
 import GuestExpiryOverlay from '@/components/layout/GuestExpiryOverlay.vue'
+import TourCompanion from '@/components/layout/TourCompanion.vue'
 import NotificationToasts from '@/components/layout/NotificationToasts.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
@@ -55,5 +56,6 @@ const isChromeless = computed(() => isPublic.value || isOptionalLoggedOut.value)
     </div>
     <NotificationToasts />
     <GuestExpiryOverlay v-if="authStore.isGuest" />
+    <TourCompanion v-if="authStore.isGuest" />
   </div>
 </template>

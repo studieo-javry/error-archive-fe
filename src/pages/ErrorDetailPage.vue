@@ -557,7 +557,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="space-y-10 mb-12">
+    <div class="space-y-10 mb-12" data-tour="context">
       <div v-if="errorCase.description" data-quote-context>
         <h3 class="font-bold text-zinc-800 dark:text-zinc-200 mb-3">Context</h3>
         <BodyRenderer
@@ -579,7 +579,7 @@ onUnmounted(() => {
       />
     </div>
 
-    <section class="mb-12">
+    <section class="mb-12" data-tour="timeline">
       <div class="flex items-center justify-between mb-6 border-b border-zinc-200 dark:border-zinc-800/50 pb-4 pt-8">
         <h3 class="font-bold text-zinc-800 dark:text-zinc-200">Resolution Timeline</h3>
         <SolutionSelector

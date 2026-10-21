@@ -2,10 +2,13 @@
 import { ClockIcon } from '@heroicons/vue/24/outline'
 import { useGuestSession } from '@/composables/useGuestSession'
 import { useAuth } from '@/composables/useAuth'
+import { useTour } from '@/composables/useTour'
 
 const { remainingLabel } = useGuestSession()
 // 게스트 세션을 정리하고 로그인(= GitHub 회원가입) 화면으로.
 const { startSignup: goSignup } = useAuth()
+// 사용 가이드(투어) 시작/재시작.
+const { active: tourActive, start: startTour } = useTour()
 </script>
 
 <template>
@@ -32,6 +35,15 @@ const { startSignup: goSignup } = useAuth()
       >
         <ClockIcon class="w-3.5 h-3.5" />{{ remainingLabel }}
       </span>
+      <button
+        v-if="!tourActive"
+        type="button"
+        class="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium text-emerald-800 hover:bg-emerald-100/70 dark:text-emerald-300 dark:hover:bg-emerald-900/40 transition-colors"
+        @click="startTour"
+      >
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m16 8-2 6-6 2 2-6 6-2Z" /></svg>
+        사용 가이드
+      </button>
       <button
         type="button"
         class="inline-flex items-center gap-1 rounded-full bg-emerald-600 text-white px-3 py-1 font-medium hover:bg-emerald-700 transition-colors"
