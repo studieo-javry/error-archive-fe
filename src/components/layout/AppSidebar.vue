@@ -24,7 +24,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const { isDark, toggle } = useTheme()
-const { logout } = useAuth()
+const { logout, startSignup } = useAuth()
 const teamStore = useTeamStore()
 const authStore = useAuthStore()
 
@@ -86,6 +86,11 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onDocPointerDown)
   document.removeEventListener('keydown', onKeydown)
 })
+function goSignup() {
+  menuOpen.value = false
+  // 게스트 세션을 정리하고 로그인(= GitHub 회원가입) 화면으로.
+  startSignup()
+}
 function goProfile() {
   menuOpen.value = false
   router.push({ name: 'profile' })
@@ -141,6 +146,14 @@ async function onLogout() {
         role="menu"
         class="absolute left-12 bottom-0 w-44 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-xl z-50 py-1.5"
       >
+        <template v-if="authStore.isGuest">
+          <button role="menuitem" class="w-full flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors" @click="goSignup">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
+            가입하기
+          </button>
+          <div class="border-t border-zinc-100 dark:border-zinc-700 my-1" />
+        </template>
+
         <button role="menuitem" class="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors" @click="goProfile">
           <UserCircleIcon class="w-4 h-4 text-zinc-400" />
           Profile

@@ -2,6 +2,7 @@
 import ActiveCasesSection from '@/components/home/ActiveCasesSection.vue'
 import FollowingFeedSection from '@/components/home/FollowingFeedSection.vue'
 import WatchlistSection from '@/components/home/WatchlistSection.vue'
+import GuestWelcomeCard from '@/components/home/GuestWelcomeCard.vue'
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamStore } from '@/stores/teamStore'
@@ -22,6 +23,9 @@ const greeting = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening'
 
     <!-- sits above .ambient-glow (z-0) without competing with the app chrome -->
     <div class="relative">
+      <!-- Guest onboarding + signup conversion (guests only) -->
+      <GuestWelcomeCard v-if="authStore.isGuest" />
+
       <!-- Header -->
       <header class="mb-20">
         <div class="text-emerald-600 dark:text-emerald-500 font-mono text-[10px] font-bold tracking-widest uppercase mb-3 flex items-center gap-2">
