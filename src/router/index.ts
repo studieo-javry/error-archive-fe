@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
-import { useTeamStore } from '@/stores/teamStore'
+import { useTeamStore, PUBLIC_SLUG } from '@/stores/teamStore'
+import { useDemoStore } from '@/stores/demoStore'
 
 const routes = [
   { path: '/', name: 'landing', component: () => import('@/pages/LandingPage.vue'), meta: { public: true, fullScreen: true } },
@@ -41,6 +42,11 @@ const routes = [
   { path: '/team', redirect: '/w/public/members' },
 ]
 
+// 게스트(데모)가 들어갈 수 없는 공개 공간 — 전역 Explore, 커뮤니티 Search, 그리고 /w/public/* 전체.
+const PUBLIC_ONLY_ROUTES = new Set(['explore', 'search'])
+// 공개 공간 → 데모 워크스페이스로 돌려보낼 때 같은 화면을 유지할 수 있는 라우트(나머진 Home 으로).
+const GUEST_PORTABLE_ROUTES = new Set(['home', 'errorList', 'errorCreate', 'insights', 'team'])
+
 const router = createRouter({
   history: createWebHistory(),
   routes,
@@ -52,8 +58,18 @@ router.beforeEach(async (to) => {
   if (!to.meta.public && !to.meta.optionalAuth && !authStore.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
-  // Sync the current workspace from the URL slug on workspace-scoped routes.
   const slug = to.params.slug as string | undefined
+  if (authStore.isGuest && (PUBLIC_ONLY_ROUTES.has(String(to.name)) || slug === PUBLIC_SLUG)) {
+    const teamStore = useTeamStore()
+    if (!teamStore.workspaces.length) await teamStore.fetchWorkspaces().catch(() => {})
+    const demoSlug = teamStore.workspaces[0]?.slug
+    if (demoSlug) {
+      useDemoStore().toast('공개 공간(Search · Explore)은 가입 후 이용할 수 있어요.')
+      const name = GUEST_PORTABLE_ROUTES.has(String(to.name)) ? String(to.name) : 'home'
+      return { name, params: { slug: demoSlug } }
+    }
+  }
+  // Sync the current workspace from the URL slug on workspace-scoped routes.
   if (slug) {
     await useTeamStore().resolveSlug(slug)
   }

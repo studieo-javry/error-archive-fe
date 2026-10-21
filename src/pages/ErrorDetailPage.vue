@@ -14,6 +14,7 @@ import type { ErrorCaseDetail, Step, Solution, Comment, CommentAuthor } from '@/
 import ErrorStatusBadge from '@/components/error/ErrorStatusBadge.vue'
 import TimelineList from '@/components/timeline/TimelineList.vue'
 import StepForm, { type StepFormValues } from '@/components/timeline/StepForm.vue'
+import DemoStepForm from '@/components/demo/DemoStepForm.vue'
 import SolutionSelector from '@/components/timeline/SolutionSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
@@ -626,7 +627,9 @@ onUnmounted(() => {
         @update="updateStep"
         @delete="deleteStep"
       />
-      <StepForm v-if="canWriteContent" @submit="addStep" />
+      <!-- 게스트는 쓰기 권한이 없어 실제 폼 대신 저장되지 않는 데모 폼으로 흐름만 체험 -->
+      <DemoStepForm v-if="authStore.isGuest" />
+      <StepForm v-else-if="canWriteContent" @submit="addStep" />
     </section>
 
     <section id="comment-section" class="mb-8">

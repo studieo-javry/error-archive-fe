@@ -26,6 +26,10 @@ function freeBrowse() {
           <button type="button" class="btn btn-primary" @click="startTour"><DemoIcon name="arrow" />가이드 시작하기</button>
           <button type="button" class="btn btn-quiet" @click="freeBrowse">자유롭게 둘러보기</button>
         </div>
+        <p class="welcome-public">
+          <DemoIcon name="meridian" />
+          <span><strong>공개 공간</strong> — 이 워크스페이스 밖에선 다른 사람들의 케이스를 검색(Search)하고, 발행된 해결 글을 둘러볼(Explore) 수 있어요. 가입하면 내 워크스페이스와 함께 쓸 수 있어요.</span>
+        </p>
       </div>
       <ol class="welcome-steps">
         <li><span class="step-num mono">01</span>에러의 맥락 읽기</li>

@@ -6,6 +6,8 @@ import { useTheme } from '@/composables/useTheme'
 import { useAuth } from '@/composables/useAuth'
 import { useTeamStore } from '@/stores/teamStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useTour } from '@/composables/useTour'
+import { useDemoStore } from '@/stores/demoStore'
 import {
   HomeIcon,
   BookOpenIcon,
@@ -27,6 +29,8 @@ const { isDark, toggle } = useTheme()
 const { logout, startSignup } = useAuth()
 const teamStore = useTeamStore()
 const authStore = useAuthStore()
+const { start: startTour } = useTour()
+const demo = useDemoStore()
 
 // `global` 항목은 워크스페이스 슬러그를 받지 않는 전역 라우트(Explore 등) — 슬러그 param 을 붙이지 않는다.
 type NavItem = { name: string; icon: Component; global?: boolean }
@@ -35,7 +39,8 @@ type NavItem = { name: string; icon: Component; global?: boolean }
 // (a team's Library already shows all of the team's cases). Workspace items are slug-scoped;
 // Explore 는 전역(공개 발행물 탐색) 이라 slug 무관.
 const navItems = computed<NavItem[]>(() => {
-  const isTeam = teamStore.currentWorkspaceId !== null
+  // 게스트는 공개 공간(Explore·Search)을 쓸 수 없으므로 전역 라우트에 있어도 항상 팀 메뉴로.
+  const isTeam = teamStore.currentWorkspaceId !== null || authStore.isGuest
   const items: NavItem[] = [
     { name: 'home', icon: HomeIcon },
     { name: 'errorList', icon: BookOpenIcon },
@@ -93,10 +98,13 @@ function goSignup() {
 }
 function goProfile() {
   menuOpen.value = false
+  // 게스트는 실제 프로필 대신 세션 안내 모달(목업 openAccount).
+  if (authStore.isGuest) return demo.openDialog('account')
   router.push({ name: 'profile' })
 }
 function goSettings() {
   menuOpen.value = false
+  if (authStore.isGuest) return demo.openDialog('settings')
   router.push({ name: 'settings' })
 }
 async function onLogout() {
@@ -121,6 +129,18 @@ async function onLogout() {
         <component :is="item.icon" class="w-5 h-5" />
       </router-link>
     </div>
+
+    <!-- 게스트 전용: 사용 가이드 다시 열기(목업 injectRailGuide) — 프로필 바로 위 -->
+    <button
+      v-if="authStore.isGuest"
+      type="button"
+      class="w-10 h-10 mb-4 rounded-xl flex items-center justify-center transition-colors text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:text-zinc-200 dark:hover:bg-zinc-800"
+      title="사용 가이드"
+      aria-label="사용 가이드"
+      @click="startTour"
+    >
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m16 8-2 6-6 2 2-6 6-2Z" /></svg>
+    </button>
 
     <!-- Account menu: profile / settings / theme (global, shared across workspaces) -->
     <div ref="menuWrap" class="relative">

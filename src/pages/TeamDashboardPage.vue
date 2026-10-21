@@ -3,10 +3,13 @@ import { ref, computed, watch } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useTeamStore } from '@/stores/teamStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useDemoStore } from '@/stores/demoStore'
 import { teamApi } from '@/services/teamApi'
 import type { WorkspaceMember, InvitationItem } from '@/types/team'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Modal from '@/components/common/Modal.vue'
+import DemoNotice from '@/components/demo/DemoNotice.vue'
 import {
   EllipsisHorizontalIcon,
   ArrowRightOnRectangleIcon,
@@ -23,6 +26,12 @@ const router = useRouter()
 // (ChangeMemberRoleUseCase / InviteMemberUseCase call WorkspaceAccess.requireAdmin),
 // so don't offer either to anyone else.
 const isAdmin = computed(() => teamStore.currentWorkspace?.role === 'ADMIN')
+
+// 게스트(데모)는 관리 화면을 그대로 보되 실제 호출 없이 안내만 한다(초대·나가기·삭제는 가입 후).
+const isGuest = computed(() => useAuthStore().isGuest)
+const demo = useDemoStore()
+const canInvite = computed(() => isAdmin.value || isGuest.value)
+const canDelete = canInvite
 
 function openProfile(userId: number) {
   router.push({ name: 'profile', params: { id: String(userId) } })
@@ -67,6 +76,10 @@ function resetInviteResult() {
 }
 
 async function createInvite() {
+  if (isGuest.value) {
+    demo.toast('데모 미리보기예요 — 실제 초대는 보내지지 않습니다.')
+    return
+  }
   const wsId = teamStore.currentWorkspaceId
   if (wsId == null || inviteBusy.value) return
   const email = inviteEmail.value.trim()
@@ -132,7 +145,7 @@ function isExpiringSoon(expiresAt: string): boolean {
 
 async function loadInvitations() {
   const wsId = teamStore.currentWorkspaceId
-  if (wsId == null) return
+  if (wsId == null || isGuest.value) return
   invitesLoading.value = true
   try {
     const { data } = await teamApi.listInvitations(wsId)
@@ -187,6 +200,12 @@ async function changeRole(member: WorkspaceMember, event: Event) {
   const prevRole = member.role
   const wsId = teamStore.currentWorkspaceId
   if (wsId == null || newRole === prevRole) return
+  // 게스트: 드롭다운으로 기능은 보여주되 변경은 막는다 — 선택을 되돌리고 안내.
+  if (isGuest.value) {
+    el.value = prevRole
+    demo.toast('데모에서는 역할을 바꿀 수 없어요. 가입하면 내 워크스페이스에서 멤버 역할을 관리할 수 있어요.')
+    return
+  }
   setRoleError('')
   try {
     await teamApi.changeMemberRole(wsId, member.userId, newRole)
@@ -217,6 +236,24 @@ const showWsMenu = ref(false)
 const showLeaveConfirm = ref(false)
 const showDeleteConfirm = ref(false)
 const wsActionBusy = ref(false)
+
+function onLeaveClick() {
+  showWsMenu.value = false
+  if (isGuest.value) {
+    demo.toast('데모에서는 워크스페이스를 나갈 수 없어요. 가입하면 내가 속한 워크스페이스를 직접 관리할 수 있어요.')
+    return
+  }
+  showLeaveConfirm.value = true
+}
+
+function onDeleteClick() {
+  showWsMenu.value = false
+  if (isGuest.value) {
+    demo.toast('데모 워크스페이스는 삭제할 수 없어요. 가입 후 내 워크스페이스에서 이용할 수 있어요.')
+    return
+  }
+  showDeleteConfirm.value = true
+}
 
 // 나가기/삭제 성공 후: 목록 재조회 + Public 워크스페이스로 이동.
 async function afterWorkspaceGone() {
@@ -266,7 +303,7 @@ async function deleteWorkspace() {
       </h1>
       <div v-if="teamStore.currentWorkspaceId != null" class="flex items-center gap-2">
         <button
-          v-if="isAdmin"
+          v-if="canInvite"
           class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
           @click="showInviteModal = true"
         >
@@ -293,17 +330,17 @@ async function deleteWorkspace() {
             <button
               role="menuitem"
               class="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-left rounded-xl text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 transition-colors"
-              @click="showWsMenu = false; showLeaveConfirm = true"
+              @click="onLeaveClick"
             >
               <ArrowRightOnRectangleIcon class="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
               워크스페이스 나가기
             </button>
-            <template v-if="isAdmin">
+            <template v-if="canDelete">
               <div class="h-px bg-zinc-200 dark:bg-zinc-700 mx-1 my-1" />
               <button
                 role="menuitem"
                 class="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-left rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                @click="showWsMenu = false; showDeleteConfirm = true"
+                @click="onDeleteClick"
               >
                 <TrashIcon class="w-4 h-4" />
                 워크스페이스 삭제
@@ -349,7 +386,7 @@ async function deleteWorkspace() {
         </button>
 
         <select
-          v-if="isAdmin"
+          v-if="isAdmin || isGuest"
           :value="member.role"
           class="text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-2 py-1 dark:text-zinc-300"
           @change="changeRole(member, $event)"
@@ -359,10 +396,16 @@ async function deleteWorkspace() {
           <option value="READ">Read</option>
         </select>
       </div>
+      <p v-if="isGuest" class="pt-5 text-xs text-zinc-400 dark:text-zinc-500 font-light">
+        둘러보기용 샘플 멤버예요. 역할 변경·초대·나가기·삭제는 가입 후 내 워크스페이스에서 이용할 수 있어요.
+      </p>
     </div>
 
     <Modal :show="showInviteModal" title="Invite Member" @close="showInviteModal = false">
       <div class="space-y-5">
+        <DemoNotice v-if="isGuest">
+          <b>데모 모드</b> — 실제 초대는 보내지지 않아요. 가입하면 팀원을 초대할 수 있어요.
+        </DemoNotice>
         <!-- how to deliver the invite -->
         <div class="flex items-center gap-5 text-xs">
           <button

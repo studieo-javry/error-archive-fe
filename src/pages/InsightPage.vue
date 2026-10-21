@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { insightApi, type ActivityGrassResponse } from '@/services/insightApi'
 import InsightHeatmap from '@/components/insight/InsightHeatmap.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { useAuthStore } from '@/stores/authStore'
+import { demoActivityGrass } from '@/utils/demoInsights'
 
 const grass = ref<ActivityGrassResponse | null>(null)
 const loading = ref(true)
@@ -62,6 +64,12 @@ const dailyRhythms = computed(() => {
 })
 
 onMounted(async () => {
+  // 게스트 계정은 활동 이력이 없어 화면이 비므로, 구성을 보여줄 샘플 데이터로 대신한다.
+  if (useAuthStore().isGuest) {
+    grass.value = demoActivityGrass()
+    loading.value = false
+    return
+  }
   try {
     const { data } = await insightApi.myGrass()
     grass.value = data

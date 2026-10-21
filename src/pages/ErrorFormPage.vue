@@ -6,6 +6,8 @@ import { snippetApi } from '@/services/snippetApi'
 import { attachmentApi } from '@/services/attachmentApi'
 import { teamApi } from '@/services/teamApi'
 import { useTeamStore } from '@/stores/teamStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useDemoStore } from '@/stores/demoStore'
 import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse, ErrorCaseSnippet, ErrorCaseAttachment, MyPendingAttachment, MyPendingSnippet } from '@/types/error'
 import type { WorkspaceListItem } from '@/types/team'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
@@ -13,11 +15,14 @@ import SnippetModal from '@/components/snippet/SnippetModal.vue'
 import SnippetCard from '@/components/snippet/SnippetCard.vue'
 import AttachmentModal from '@/components/attachment/AttachmentModal.vue'
 import AttachmentCard from '@/components/attachment/AttachmentCard.vue'
+import DemoNotice from '@/components/demo/DemoNotice.vue'
 import { CodeBracketIcon, PaperClipIcon, ClockIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
 const teamStore = useTeamStore()
+const authStore = useAuthStore()
+const demo = useDemoStore()
 const isEdit = !!route.params.id
 const caseId = route.params.id ? Number(route.params.id) : undefined
 
@@ -142,6 +147,11 @@ async function loadError() {
 }
 
 async function onSubmit() {
+  // 게스트(데모)는 입력만 체험 — 저장하지 않고 가입 전환 다이얼로그로 안내한다.
+  if (authStore.isGuest) {
+    demo.openDialog('signup')
+    return
+  }
   const snippetMarkerIds = snippetMarkers.value.map(s => s.markerId)
   const attachmentMarkerIds = attachmentMarkers.value.map(a => a.markerId)
 
@@ -263,6 +273,10 @@ onMounted(async () => {
       {{ isEdit ? 'Edit Error' : 'New Entry' }}
     </h1>
 
+    <DemoNotice v-if="authStore.isGuest" class="mb-8">
+      <b>데모 미리보기</b> — 입력은 해볼 수 있지만 저장되지 않아요. 가입하면 내 워크스페이스에 실제로 기록됩니다.
+    </DemoNotice>
+
     <!-- 미연결(pending) 자료 안내 배너 — 새 케이스 작성 시만 -->
     <div
       v-if="showPending"
@@ -287,7 +301,8 @@ onMounted(async () => {
       </div>
     </div>
 
-    <form class="space-y-10" @submit.prevent="onSubmit">
+    <!-- 게스트는 저장하지 않으므로 필수값 검사 없이 바로 가입 안내로 -->
+    <form class="space-y-10" :novalidate="authStore.isGuest" @submit.prevent="onSubmit">
       <div>
         <input v-model="title" type="text" placeholder="Error title" class="raw-input w-full text-lg font-medium" required />
       </div>

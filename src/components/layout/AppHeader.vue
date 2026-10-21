@@ -1,11 +1,36 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
 import { BellIcon } from '@heroicons/vue/24/outline'
 import WorkspaceSelector from '@/components/layout/WorkspaceSelector.vue'
 import NotificationCenter from '@/components/layout/NotificationCenter.vue'
+import DemoIcon from '@/components/demo/DemoIcon.vue'
 import { useNotificationStore } from '@/stores/notificationStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useTeamStore } from '@/stores/teamStore'
+import { useDemoStore } from '@/stores/demoStore'
 
 const store = useNotificationStore()
+const authStore = useAuthStore()
+const teamStore = useTeamStore()
+const demo = useDemoStore()
+const route = useRoute()
+
+// 게스트 헤더(목업 feDemoHeader): 워크스페이스 전환 대신 데모 공간 안내 버튼 + 현재 화면 캡션.
+const wsName = computed(() => teamStore.currentWorkspace?.name ?? 'Demo workspace')
+const ROUTE_LABELS: Record<string, string> = {
+  home: 'Home',
+  errorList: 'Library',
+  errorCreate: 'New Entry',
+  errorEdit: 'Edit Entry',
+  errorDetail: 'Error case',
+  team: 'Members',
+  insights: 'Insights',
+  profile: 'Profile',
+  settings: 'Settings',
+  myPublications: 'Publications',
+}
+const routeLabel = computed(() => ROUTE_LABELS[String(route.name)] ?? '')
 const open = ref(false)
 const ringing = ref(false)
 const wrap = ref<HTMLElement | null>(null)
@@ -41,8 +66,35 @@ watch(() => store.ringSignal, () => {
 </script>
 
 <template>
+  <div v-if="authStore.isGuest" class="demo-ui relative z-30">
+    <header class="header">
+      <div class="context">
+        <button type="button" class="workspace" aria-haspopup="dialog" @click="demo.openDialog('workspace')">
+          <span class="workspace-mark">{{ wsName.charAt(0).toUpperCase() }}</span><span>{{ wsName }}</span><DemoIcon name="down" />
+        </button>
+        <span v-if="routeLabel" class="context-caption">{{ routeLabel }}</span>
+      </div>
+      <div class="header-end">
+        <span class="guest-caption">Guest session</span>
+        <div ref="wrap" class="relative">
+          <button
+            type="button"
+            class="icon-btn"
+            :class="{ 'notice-dot': store.unreadCount > 0, 'bell-ring': ringing }"
+            aria-label="Notifications"
+            :aria-expanded="open"
+            @click="open = !open"
+          >
+            <DemoIcon name="bell" />
+          </button>
+          <NotificationCenter v-if="open" @close="open = false" />
+        </div>
+      </div>
+    </header>
+  </div>
+
   <!-- z-30: the header owns overlays (notification panel), so it must stack above page content -->
-  <header class="glass sticky top-0 z-30 px-6 py-3 flex items-center justify-between">
+  <header v-else class="glass sticky top-0 z-30 px-6 py-3 flex items-center justify-between">
     <WorkspaceSelector class="shrink-0" />
 
     <div ref="wrap" class="relative">
