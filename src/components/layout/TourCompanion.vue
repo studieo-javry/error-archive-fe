@@ -10,9 +10,14 @@ const tourStore = useTourStore()
 const { active, current, stepIndex, isLast, next, prev, dismiss, convert } = useTour()
 
 // ── 현재 스텝 대상 요소 강조 ───────────────────────────────────────────────
+// 목업 applyGuideHighlight: 대상 영역에 초록 박스(.tour-highlight) + 제목 옆 스텝 칩(.tour-chip).
 let highlighted: Element | null = null
+let chip: HTMLElement | null = null
+let pollTimer: number | null = null
 function clearHighlight() {
+  if (pollTimer != null) { clearInterval(pollTimer); pollTimer = null }
   if (highlighted) { highlighted.classList.remove('tour-highlight'); highlighted = null }
+  if (chip) { chip.remove(); chip = null }
 }
 function selector(): string | null {
   const step = current.value
@@ -20,20 +25,41 @@ function selector(): string | null {
   if (step.key === 'case' && tourStore.caseId != null) return `[data-case-id="${tourStore.caseId}"]`
   return step.anchor
 }
+function chipLabel(): string {
+  const step = current.value
+  if (!step) return ''
+  if (step.key === 'case') return '이 케이스로 시작'
+  return `${String(stepIndex.value + 1).padStart(2, '0')} · ${TOUR_OUTLINE[stepIndex.value]}`
+}
+function mark(el: Element) {
+  el.classList.add('tour-highlight')
+  highlighted = el
+  const heading = el.querySelector('h2, h3')
+  if (heading) {
+    chip = document.createElement('span')
+    chip.className = 'tour-chip'
+    chip.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m16 8-2 6-6 2 2-6 6-2Z"/></svg>'
+    chip.append(chipLabel())
+    heading.appendChild(chip)
+  }
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+}
 async function applyHighlight() {
   clearHighlight()
   if (!active.value) return
   const sel = selector()
   if (!sel) return
   await nextTick()
-  window.setTimeout(() => {
-    if (!active.value) return
+  // 스텝 전환 직후엔 상세 페이지가 아직 로딩 중(스피너)일 수 있어, 대상이 렌더될 때까지 잠깐 기다린다.
+  const deadline = Date.now() + 5000
+  pollTimer = window.setInterval(() => {
+    if (!active.value || Date.now() > deadline) { clearHighlight(); return }
     const el = document.querySelector(sel)
     if (!el) return
-    el.classList.add('tour-highlight')
-    highlighted = el
-    el.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  }, 120)
+    clearInterval(pollTimer!)
+    pollTimer = null
+    mark(el)
+  }, 100)
 }
 watch([() => tourStore.step, () => route.fullPath, active], applyHighlight, { flush: 'post' })
 onMounted(applyHighlight)

@@ -400,6 +400,18 @@ main::-webkit-scrollbar {
   outline-color: #3b6550;
   background: #202d25;
 }
+.tour-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #059669;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+}
+.dark .tour-chip { color: #34d399; }
 @media (prefers-reduced-motion: reduce) {
   .tour-highlight { transition: none; }
 }
