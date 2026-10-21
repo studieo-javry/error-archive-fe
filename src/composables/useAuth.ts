@@ -1,10 +1,13 @@
 import { useAuthStore } from '@/stores/authStore'
 import { authApi } from '@/services/authApi'
 import { useRouter } from 'vue-router'
+import { useTourStore } from '@/stores/tourStore'
 
 export function useAuth() {
   const store = useAuthStore()
   const router = useRouter()
+  // 사용 가이드 진행 상태는 localStorage 에 남으므로, 세션이 바뀌는 지점마다 처음 상태로 되돌린다.
+  const tourStore = useTourStore()
 
   async function startOAuthFlow(rememberMe: boolean) {
     const redirectUri = import.meta.env.VITE_GITHUB_REDIRECT_URI
@@ -28,6 +31,7 @@ export function useAuth() {
     store.userId = data.userId
     // 실제 로그인/가입이 성립하면 게스트 플래그를 반드시 해제(게스트 → 가입 전환 시 데모 배너 잔존 방지).
     store.setGuest(false)
+    tourStore.reset()
 
     await fetchUser()
     router.push(data.redirectTo || '/home')
@@ -40,6 +44,7 @@ export function useAuth() {
    */
   function startSignup() {
     if (store.isGuest) store.logout()
+    tourStore.reset()
     router.push({ name: 'login' })
   }
 
@@ -49,6 +54,7 @@ export function useAuth() {
     store.userId = data.userId
     // 실제 세션 수명(accessTokenExpiresAt)을 보존 → 데모 타이머/만료 오버레이가 사용.
     store.setGuest(true, data.accessTokenExpiresAt)
+    tourStore.reset()
 
     await fetchUser()
     // 게스트는 데모 워크스페이스의 '에러 목록'으로 바로 진입. (홈 대시보드는 '내 활동' 중심이라
@@ -67,6 +73,7 @@ export function useAuth() {
       await authApi.logout()
     } finally {
       store.logout()
+      tourStore.reset()
       router.push('/login')
     }
   }

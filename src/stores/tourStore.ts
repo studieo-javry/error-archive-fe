@@ -64,6 +64,13 @@ export const useTourStore = defineStore('tour', () => {
     flags.value = { ...NO_FLAGS }
     persist('flags', flags.value)
   }
+  /** 처음 상태로(새 게스트 세션·로그아웃·가입 전환 — 목업 restartSession 의 defaultGuide). */
+  function reset() {
+    setStatus('idle')
+    setStep(0)
+    setCase(null)
+    resetFlags()
+  }
   function setSolutionInfo(title: string | null, stepCount: number) {
     solutionTitle.value = title
     solutionStepCount.value = stepCount
@@ -74,6 +81,6 @@ export const useTourStore = defineStore('tour', () => {
 
   return {
     status, step, caseId, flags, solutionTitle, solutionStepCount, solutionRequest,
-    setStatus, setStep, setCase, setFlag, resetFlags, setSolutionInfo, requestSolution,
+    setStatus, setStep, setCase, setFlag, resetFlags, reset, setSolutionInfo, requestSolution,
   }
 })

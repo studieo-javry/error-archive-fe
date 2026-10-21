@@ -1,13 +1,35 @@
 <script setup lang="ts">
 import { watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useTour } from '@/composables/useTour'
 import { useTourStore } from '@/stores/tourStore'
+import { useDemoStore } from '@/stores/demoStore'
 import DemoIcon from '@/components/demo/DemoIcon.vue'
 
 const route = useRoute()
+const router = useRouter()
 const tourStore = useTourStore()
-const { titles, total, active, card, stepIndex, isComplete, article, next, prev, dismiss, convert, openArticle } = useTour()
+const { titles, total, active, card, stepIndex, isComplete, article, next, prev, dismiss, convert, openArticle, isCompatible, pause } = useTour()
+const demo = useDemoStore()
+
+// 목업 규칙: 가이드는 단계에 맞는 화면에서만 뜬다.
+//  - 처음 열었을 때 맞지 않는 화면이면 조용히 접는다(예: 진행 중 상태로 홈 새로고침).
+//  - 진행 중에 맞지 않는 화면으로 이동하면 접고 안내한다. (가이드 자신의 이동은 항상 맞는 화면으로 간다.)
+// 첫 내비게이션이 끝나기 전엔 route 가 비어 있어(앱이 먼저 마운트됨) 잘못 접히지 않도록 isReady 이후에 판정.
+let routerReady = false
+onMounted(async () => {
+  await router.isReady()
+  if (active.value && !isCompatible(route)) pause()
+  routerReady = true
+})
+watch(() => route.fullPath, () => {
+  // 첫 내비게이션(새로고침·직접 진입)은 위 onMounted 가 조용히 처리 — 여기선 사용자의 이동만.
+  if (!routerReady) return
+  if (active.value && !isCompatible(route)) {
+    pause()
+    demo.toast('가이드를 접었어요. 상단의 사용 가이드에서 이어볼 수 있어요.')
+  }
+})
 
 // 1단계에서 게스트가 직접 샘플 케이스를 열어도 "케이스 열기"를 한 것으로 친다(목업 navigate → OPEN_CASE).
 watch(

@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, type RouteLocationNormalizedLoaded } from 'vue-router'
 import { useTourStore } from '@/stores/tourStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/composables/useAuth'
@@ -157,6 +157,21 @@ export function useTour() {
     goList()
   }
 
+  /**
+   * 현재 화면이 가이드 단계와 맞는지(목업 guideCompatible). 1단계(케이스 열기 전)는 Library 또는 샘플 케이스,
+   * 그 뒤로는 샘플 케이스 상세에서만 가이드를 띄운다 — 홈 등 다른 화면에선 접는다.
+   */
+  function isCompatible(route: RouteLocationNormalizedLoaded): boolean {
+    const onCase = route.name === 'errorDetail' && Number(route.params.id) === tour.caseId
+    if (stepIndex.value === 0 && !tour.flags.contextOpened) return route.name === 'errorList' || onCase
+    return onCase
+  }
+
+  /** 맞지 않는 화면으로 오면 접는다(이어보기 가능). */
+  function pause() {
+    if (tour.status === 'active') tour.setStatus('paused')
+  }
+
   /** 배너·사이드바 진입점 — 접어 둔 가이드는 그 자리에서 이어보고, 처음이거나 끝냈으면 새로 시작(목업 resumeGuide). */
   function resume() {
     if (tour.status !== 'paused') { start(); return }
@@ -211,7 +226,7 @@ export function useTour() {
 
   return {
     titles, total, active, canResume, stepIndex, isComplete, card, article,
-    start, resume, next, prev, dismiss, convert, openArticle,
+    start, resume, next, prev, dismiss, convert, openArticle, isCompatible, pause,
   }
 }
 
