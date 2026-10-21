@@ -84,6 +84,14 @@ const caseId = Number(route.params.id)
 const tourStore = useTourStore()
 const onTourCase = computed(() => authStore.isGuest && tourStore.status === 'active' && tourStore.caseId === caseId)
 const showGuideEvidence = computed(() => onTourCase.value && tourStore.step >= 1)
+// 근거를 붙일 스텝 — 원인을 좁힌 마지막 조사(Investigation) 스텝. 없으면 두 번째(또는 첫) 스텝.
+const evidenceStepId = computed(() => {
+  const list = steps.value
+  const investigation = [...list].reverse().find(s => s.attemptType === 'INVESTIGATION')
+  return (investigation ?? list[1] ?? list[0])?.id ?? null
+})
+// 가이드 케이스(데모 시드 HikariCP 503 — /demo/guide 가 알려준 케이스)면 그 케이스에 맞춘 근거.
+const curatedEvidence = computed(() => authStore.guestDemoArticle?.caseId === caseId)
 // 가이드 카드 문구에 쓸 첫 솔루션 정보를 알려준다.
 watch([solutions, onTourCase], () => {
   if (!onTourCase.value) return
@@ -647,9 +655,11 @@ onUnmounted(() => {
         @toggle="toggleStepSelection"
         @update="updateStep"
         @delete="deleteStep"
-      />
-      <!-- 가이드 진행 중에만: 샘플 케이스 타임라인에서 뽑은 조사 근거 -->
-      <GuideEvidence v-if="showGuideEvidence" :steps="steps" />
+      >
+        <template #step-extra="{ step }">
+          <GuideEvidence v-if="showGuideEvidence && step.id === evidenceStepId" :step="step" :curated="curatedEvidence" />
+        </template>
+      </TimelineList>
       <!-- 게스트는 쓰기 권한이 없어 실제 폼 대신 저장되지 않는 데모 폼으로 흐름만 체험 -->
       <DemoStepForm v-if="authStore.isGuest" />
       <StepForm v-else-if="canWriteContent" @submit="addStep" />

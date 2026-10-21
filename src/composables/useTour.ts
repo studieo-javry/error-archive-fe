@@ -73,7 +73,8 @@ export function useTour() {
             : '첫 시도가 늘 답이 되지는 않아요. 타임라인 아래의 <strong>조사 근거</strong>를 펼쳐, 어떻게 원인을 좁혀 갔는지 확인해 보세요.',
           hint: '실패한 시도도 지우지 않아요. 같은 시행착오를 줄이는 기록입니다.',
           cta: f.evidenceRead ? '솔루션 확인하기' : '조사 근거 펼치기',
-          anchor: '[data-tour="evidence"]',
+          // 근거가 붙은 스텝의 내용 영역을 강조(스텝 아래 여백은 제외 — 다음 스텝과 겹치지 않게). 칩은 그 스텝 제목 옆.
+          anchor: '.step-item:has([data-tour="evidence"]) > .flex-1',
           chip: '02 · 조사 근거',
         }
       case 2: {

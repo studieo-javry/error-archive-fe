@@ -30,7 +30,9 @@ defineEmits<{ toggle: [id: number]; update: [id: number, values: StepFormValues]
       @toggle="$emit('toggle', $event)"
       @update="(id, values) => $emit('update', id, values)"
       @delete="$emit('delete', $event)"
-    />
+    >
+      <template #extra><slot name="step-extra" :step="step" /></template>
+    </TimelineStep>
     <TimelineSolution
       v-for="sol in solutions"
       :key="sol.id"
