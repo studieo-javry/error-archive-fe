@@ -242,7 +242,7 @@ function close() {
               </span>
             </div>
           </div>
-          <button class="psh-btn" @click="stage = 0">고르기</button>
+          <button class="psh-btn" :class="{ 'psh-nudge': guided }" @click="stage = 0">고르기</button>
           <button class="psh-btn primary" :disabled="busy" @click="doPublish">
             바로 발행<ChevronRightIcon class="ic" />
           </button>
@@ -424,11 +424,11 @@ function close() {
             <span v-if="errorMsg" class="err">{{ errorMsg }}</span>
             <span class="sp" />
             <!-- 다음(0~3): 라벨 없이 단계 인디케이터(완료=● 현재=◉ 예정=○) -->
-            <button v-if="stage < 4" class="psh-prog" :disabled="nextDisabled" @click="goNext" aria-label="다음 단계">
+            <button v-if="stage < 4" class="psh-prog" :class="{ 'psh-nudge': guided && !nextDisabled }" :disabled="nextDisabled" @click="goNext" aria-label="다음 단계">
               <span class="psh-dots"><i v-for="n in 5" :key="n" :class="n - 1 < stage ? 'done' : (n - 1 === stage ? 'cur' : 'up')" /></span>
             </button>
             <!-- 최종 발행(4): Launch -->
-            <button v-else class="psh-launch" :class="{ launching, launched }" :disabled="busy" @click="doPublish" aria-label="발행">
+            <button v-else class="psh-launch" :class="{ launching, launched, 'psh-nudge': guided && !launching && !launched }" :disabled="busy" @click="doPublish" aria-label="발행">
               <span class="lbl"><span class="psh-dots"><i v-for="n in 5" :key="n" :class="n === 5 ? 'cur' : 'done'" /></span></span>
               <span class="plane" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.5 11.5 21 3l-6 18-4.5-6.5L2.5 11.5Z" /></svg>
@@ -700,6 +700,17 @@ function close() {
 .psh-launch.launching .lbl { opacity: 0; transform: translateX(-6px); }
 .psh-launch.launching .plane { animation: psh-launch .55s cubic-bezier(.4, 0, .6, 1) forwards; }
 @keyframes psh-launch { 0% { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg); } 100% { opacity: 0; transform: translate(120%, -260%) rotate(18deg); } }
+
+/* 가이드 모드: 지금 눌러야 할 버튼(슬림 '고르기' → 위저드 '다음' → 미리보기 '발행')에
+   클릭 유도 펄스 — 우측 가이드 카드만으로 시트 안 다음 동작이 안 보이던 문제 보완. */
+.psh-nudge { animation: psh-nudge 1.7s ease-in-out infinite; }
+@keyframes psh-nudge {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+  45% { box-shadow: 0 0 0 5px rgba(5, 150, 105, .22); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .psh-nudge { animation: none; box-shadow: 0 0 0 3px rgba(5, 150, 105, .22); }
+}
 
 .psh-cta { font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 10px; border: 0; background: #047857; color: #fff; cursor: pointer; }
 .psh-cta:hover { background: #065f46; }
