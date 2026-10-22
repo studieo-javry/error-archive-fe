@@ -112,6 +112,21 @@ const includedAttachments = computed<{ att: ErrorCaseAttachment; src: 'body' | '
 })
 const includedAttCount = computed(() => includedAttachments.value.filter(x => !excludedAtt.value.has(x.att.markerId)).length)
 
+// 미리보기 렌더용: 특정 텍스트(본문/step)에 @attach 로 태그되고 제외되지 않은 첨부를 그 위치에 그린다.
+// BE HtmlRenderer 와 동일 — 본문 첨부는 Context 에, step 첨부는 해당 step 아래에(위치별, 교차 dedup 없음).
+const attByMarker = computed(() => new Map(props.attachments.map(a => [a.markerId, a])))
+function attsIn(text: string | null): ErrorCaseAttachment[] {
+  const seen = new Set<string>()
+  const out: ErrorCaseAttachment[] = []
+  for (const id of attachMarkersIn(text)) {
+    if (seen.has(id) || excludedAtt.value.has(id)) continue
+    const att = attByMarker.value.get(id)
+    if (att) { seen.add(id); out.push(att) }
+  }
+  return out
+}
+const bodyAtts = computed(() => attsIn(props.caseDescription))
+
 // 미태그(본문·스텝 어디에도 @attach 로 넣지 않은) 첨부 — 발행 미포함 안내용
 const untaggedCount = computed(() => {
   const referenced = new Set<string>()
@@ -136,8 +151,14 @@ function fmtSize(b: number): string {
 
 function bodyPreview(b: string | null): string {
   if (!b) return ''
-  // 마커/마크다운 잡음을 대충 걷어내고 한 줄로.
-  return b.replace(/\[\[[^\]]*\]\]/g, '').replace(/[#>*`_]/g, '').replace(/\s+/g, ' ').trim().slice(0, 140)
+  // 마커/마크다운 잡음을 대충 걷어내고 한 줄로. @attach(..)/@snippet(..) 는 아래에서 실제 자산으로 렌더하므로 텍스트에선 제거.
+  return b
+    .replace(/@(?:attach|snippet)\([^)]*\)/g, '')
+    .replace(/\[\[[^\]]*\]\]/g, '')
+    .replace(/[#>*`_]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 140)
 }
 
 async function doPublish() {
@@ -401,10 +422,23 @@ function close() {
                 <span class="pv-vis">{{ visibility }}</span>
                 <h2>{{ title }}</h2>
                 <div v-if="summary" class="pv-sum">{{ summary }}</div>
+                <!-- Context 본문에 삽입한 첨부(실제 발행 페이지와 동일 위치) -->
+                <template v-if="bodyAtts.length">
+                  <div class="pv-sec">Context</div>
+                  <div v-for="a in bodyAtts" :key="a.markerId" class="pv-att">
+                    <img v-if="a.kind === 'IMAGE' && a.url" :src="a.url" :alt="a.title || a.fileName" loading="lazy" />
+                    <a v-else class="pv-att-file" :href="a.url || a.downloadUrl" target="_blank" rel="noopener"><PaperClipIcon class="ic" />{{ a.fileName }}<span class="how">{{ attHint(a.kind).how }}</span></a>
+                  </div>
+                </template>
                 <div class="pv-sec">Timeline · {{ selSteps.size }} steps</div>
                 <div v-for="s in selectedStepList" :key="s.id" class="pv-step" :class="{ ok: s.status === 'RESOLVED' }">
                   <div class="st-h">{{ s.title }}</div>
                   <div v-if="bodyPreview(s.body)" class="st-b">{{ bodyPreview(s.body) }}</div>
+                  <!-- 이 step 본문에 삽입한 첨부 -->
+                  <div v-for="a in attsIn(s.body)" :key="a.markerId" class="pv-att">
+                    <img v-if="a.kind === 'IMAGE' && a.url" :src="a.url" :alt="a.title || a.fileName" loading="lazy" />
+                    <a v-else class="pv-att-file" :href="a.url || a.downloadUrl" target="_blank" rel="noopener"><PaperClipIcon class="ic" />{{ a.fileName }}<span class="how">{{ attHint(a.kind).how }}</span></a>
+                  </div>
                 </div>
                 <template v-if="selectedSolList.length">
                   <div class="pv-sec">Solutions</div>
@@ -641,6 +675,14 @@ function close() {
 .pv-step .st-b { font-size: 12.5px; color: var(--psh-sub); line-height: 1.55; }
 .pv-sol { background: var(--psh-accent-soft); border-radius: 11px; padding: 12px 15px; margin-bottom: 10px; }
 .pv-sol .sl-h { font-size: 13.5px; font-weight: 600; color: var(--psh-accent); }
+/* 미리보기 첨부 — 이미지는 인라인, 그 외는 📎 파일명 링크(실제 발행 페이지와 동일) */
+.pv-att { margin: 10px 0; }
+.pv-step .pv-att { margin: 8px 0 0; }
+.pv-att img { display: block; max-width: 100%; max-height: 240px; width: auto; border: 1px solid var(--psh-line); border-radius: 8px; }
+.pv-att-file { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--psh-ink-2); border: 1px solid var(--psh-line); border-radius: 9px; padding: 7px 12px; text-decoration: none; max-width: 100%; }
+.pv-att-file:hover { border-color: var(--psh-accent); color: var(--psh-accent); }
+.pv-att-file .ic { width: 14px; height: 14px; flex-shrink: 0; }
+.pv-att-file .how { font-size: 11px; color: var(--psh-faint); flex-shrink: 0; }
 
 /* done */
 .psh-done { text-align: center; padding: 22px 22px 8px; overflow-y: auto; }
