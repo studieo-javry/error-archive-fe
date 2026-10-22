@@ -57,9 +57,9 @@ export function useAuth() {
     tourStore.reset()
 
     await fetchUser()
-    // 게스트는 데모 워크스페이스의 '에러 목록'으로 바로 진입. (홈 대시보드는 '내 활동' 중심이라
-    // 갓 입장한 게스트에겐 비어 보임 — 시드 케이스가 바로 보이는 목록으로 보낸다.)
-    router.push(`/w/${data.workspaceSlug}/errors`)
+    // 게스트는 데모 워크스페이스의 '홈'으로 진입 — 홈의 게스트 환영 카드(GuestWelcomeCard)에서
+    // '가이드 시작하기'로 자연스럽게 투어로 이어지도록. (가이드 1단계가 다시 Library 로 데려간다.)
+    router.push(`/w/${data.workspaceSlug}/home`)
   }
 
   async function fetchUser() {
