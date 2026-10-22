@@ -20,10 +20,12 @@ const props = defineProps<{
   solutions: Solution[]
   attachments: ErrorCaseAttachment[]
   authorDefault: string
-  /** 게스트 가이드 미리보기 — 실제 발행(POST)은 막고(서버도 403), 발행 버튼은 가입 전환으로. 단계는 밖으로 알린다. */
+  /** 게스트 가이드 미리보기 — 실제 발행(POST)은 막고(서버도 403), 단계는 밖으로 알리고 가이드 카드가 진행시킨다. */
   guided?: boolean
+  /** 가이드 카드의 '고르기'·'다음' 신호(증가 카운터) — 바뀌면 시트를 한 단계 진행시킨다. */
+  advanceSignal?: number
 }>()
-const emit = defineEmits<{ close: []; published: [detail: PublishmentDetail]; stageChange: [stage: number]; convert: [] }>()
+const emit = defineEmits<{ close: []; published: [detail: PublishmentDetail]; stageChange: [stage: number]; guidedFinish: [] }>()
 
 // -1 = 슬림 바, 0 = Steps, 1 = Details, 2 = Files, 3 = Options, 4 = Preview, DONE = 완료
 const DONE = 5
@@ -31,6 +33,12 @@ const stage = ref(-1)
 const STAGES = ['Steps', 'Details', 'Files', 'Options', 'Preview']
 // 가이드 모드에서는 내부 단계가 바뀔 때마다 밖(가이드 카드)에 알려 내레이션을 맞춘다.
 watch(stage, (v) => { if (props.guided) emit('stageChange', v) })
+// 가이드 카드가 진행 신호를 보내면 시트를 한 단계 진행(슬림 → 고르기, 위저드 → 다음).
+watch(() => props.advanceSignal, () => {
+  if (!props.guided) return
+  if (stage.value === -1) stage.value = 0
+  else if (stage.value < 4) goNext()
+})
 
 const selSteps = ref(new Set<number>(props.steps.map(s => s.id)))
 const selSols = ref(new Set<number>(props.solutions.map(s => s.id)))
@@ -133,8 +141,9 @@ function bodyPreview(b: string | null): string {
 }
 
 async function doPublish() {
-  // 게스트 미리보기: 실제 발행 대신 가입 전환(서버도 게스트 발행을 403 으로 막는다).
-  if (props.guided) { emit('convert'); return }
+  // 게스트 미리보기: 실제 발행(POST) 대신 발행된 글 읽기(05)로 넘긴다 — 로그인으로 튕기지 않는다.
+  // (게스트는 미리 준비된 데모 발행물을 읽고, 가입은 마지막 완료 카드에서.)
+  if (props.guided) { emit('guidedFinish'); return }
   if (busy.value) return
   busy.value = true
   launching.value = true

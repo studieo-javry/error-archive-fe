@@ -17,7 +17,7 @@ import StepForm, { type StepFormValues } from '@/components/timeline/StepForm.vu
 import DemoStepForm from '@/components/demo/DemoStepForm.vue'
 import GuideEvidence from '@/components/demo/GuideEvidence.vue'
 import { useTourStore } from '@/stores/tourStore'
-import { useAuth } from '@/composables/useAuth'
+import { useTour } from '@/composables/useTour'
 import SolutionSelector from '@/components/timeline/SolutionSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
@@ -109,7 +109,7 @@ watch(activeFilter, (id) => {
 })
 
 // ── 04 발행하기: 게스트 가이드 전용 Publish 트리거 + PublishSheet 미리보기 ──
-const { startSignup } = useAuth()
+const { finishPublishToArticle } = useTour()
 // 이 케이스가 가이드의 발행하기(04) 단계일 때만 — 게스트는 소유자가 아니라 평소엔 Publish 가 안 보인다.
 const onTourPublishStep = computed(() => onTourCase.value && tourStore.step === 3)
 function openGuidedPublish() {
@@ -124,7 +124,14 @@ watch(() => tourStore.publishCloseRequest, () => { showPublishSheet.value = fals
 watch(() => tourStore.step, (s) => {
   if (showPublishSheet.value && s !== 3) { showPublishSheet.value = false; tourStore.setPublishStage(null) }
 })
-function onGuidedConvert() { startSignup() }
+// 04 단계에 들어오면(시트 열기 전) 상단 Publish 트리거로 스크롤 — 03 솔루션에서 아래로 내려와 있을 수 있어.
+watch(onTourPublishStep, async (on) => {
+  if (!on || showPublishSheet.value) return
+  await nextTick()
+  document.querySelector('[data-tour="publish"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+})
+// 시트의 '바로 발행'·최종 '발행' → 로그인으로 튕기지 말고 발행된 글 읽기(05)로 진행.
+function onGuidedFinish() { finishPublishToArticle() }
 function onSheetClose() {
   showPublishSheet.value = false
   if (onTourPublishStep.value) tourStore.setPublishStage(null)
@@ -783,9 +790,10 @@ onUnmounted(() => {
       :attachments="errorCase.attachments"
       :author-default="authStore.user?.displayName ?? ''"
       :guided="onTourPublishStep"
+      :advance-signal="tourStore.publishAdvanceRequest"
       @published="onPublished"
       @stage-change="tourStore.setPublishStage"
-      @convert="onGuidedConvert"
+      @guided-finish="onGuidedFinish"
       @close="onSheetClose"
     />
   </div>

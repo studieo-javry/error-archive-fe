@@ -47,9 +47,11 @@ export const useTourStore = defineStore('tour', () => {
   // null = 시트 닫힘, -1 = 슬림 바, 0 = Steps, 1 = Details, 2 = Files, 3 = Options, 4 = Preview.
   // 비영속 — 시트는 열려 있는 동안만 의미가 있다. 상세 페이지(시트)가 채우고, 가이드 카드가 읽어 내레이션한다.
   const publishStage = ref<number | null>(null)
-  // 가이드 카드 ↔ 상세 페이지 사이의 열기/닫기 요청 신호(solutionRequest 와 같은 방식).
+  // 가이드 카드 ↔ 상세 페이지 사이의 열기/닫기/진행 요청 신호(solutionRequest 와 같은 방식).
+  // 목업처럼 가이드 카드의 CTA 가 시트 단계를 직접 진행시킨다(사용자가 시트의 '고르기'·'다음'을 누를 필요 없이).
   const publishOpenRequest = ref(0)
   const publishCloseRequest = ref(0)
+  const publishAdvanceRequest = ref(0)
 
   function setStatus(value: TourStatus) {
     status.value = value
@@ -96,11 +98,14 @@ export const useTourStore = defineStore('tour', () => {
   function requestPublishClose() {
     publishCloseRequest.value++
   }
+  function requestPublishAdvance() {
+    publishAdvanceRequest.value++
+  }
 
   return {
     status, step, caseId, flags, solutionTitle, solutionStepCount, solutionRequest,
-    publishStage, publishOpenRequest, publishCloseRequest,
+    publishStage, publishOpenRequest, publishCloseRequest, publishAdvanceRequest,
     setStatus, setStep, setCase, setFlag, resetFlags, reset, setSolutionInfo, requestSolution,
-    setPublishStage, requestPublishOpen, requestPublishClose,
+    setPublishStage, requestPublishOpen, requestPublishClose, requestPublishAdvance,
   }
 })

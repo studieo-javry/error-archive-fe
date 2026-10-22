@@ -142,11 +142,13 @@ export function useTour() {
           }
         }
         const copy = PUBLISH_STAGE_COPY[ps] ?? PUBLISH_STAGE_COPY[-1]
+        // 카드 CTA 가 시트를 직접 진행: 슬림 → 고르기, 위저드 → 다음, 미리보기 → 발행된 글 읽기.
+        const cta = ps === -1 ? '고르기' : ps >= 4 ? '발행된 글 읽기' : '다음'
         return {
           title: copy.title,
           body: copy.body,
           hint: '게스트는 미리보기까지 볼 수 있어요. 실제 발행과 공개는 가입 후에.',
-          cta: '발행된 글 읽기',
+          cta,
           anchor: null,
           chip: '',
         }
@@ -194,6 +196,15 @@ export function useTour() {
   }
   function closeArticle() {
     articleOpen.value = false
+  }
+  /**
+   * 발행하기(04)에서 발행된 글 읽기(05)로. 시트의 '바로 발행'·최종 '발행'을 눌렀을 때도 이리 온다
+   * (게스트는 실제 발행 대신 미리 준비된 데모 발행물을 읽는다 — 로그인으로 튕기지 않는다).
+   */
+  function finishPublishToArticle() {
+    if (!article.value) { articleOpen.value = false; tour.setStep(total.value); return }
+    tour.setStep(4)
+    openArticle()
   }
 
   /**
@@ -262,10 +273,11 @@ export function useTour() {
         tour.setStep(3)
         return
       case 3:
-        // 04 발행하기: 먼저 상단 Publish 로 PublishSheet 를 띄우고(열기 요청), 열려 있으면 05 로 넘어간다.
+        // 04 발행하기: ① 시트가 닫혀 있으면 상단 Publish 로 열고 ② 미리보기 전이면 시트 단계를 한 칸 진행
+        // ③ 미리보기(4)까지 오면 발행된 글 읽기(05)로. 시트의 '고르기'·'다음'을 사용자가 누르지 않아도 카드가 끌고 간다.
         if (tour.publishStage == null) { tour.requestPublishOpen(); return }
-        tour.setStep(4)
-        openArticle()
+        if (tour.publishStage < 4) { tour.requestPublishAdvance(); return }
+        finishPublishToArticle()
         return
       default:
         // 가이드 마치기 → 완료 카드로. 리더가 열려 있으면 닫는다.
@@ -304,7 +316,7 @@ export function useTour() {
 
   return {
     titles, total, active, canResume, stepIndex, isComplete, card, article,
-    articleOpen, start, resume, next, prev, dismiss, convert, openArticle, closeArticle, isCompatible, pause,
+    articleOpen, start, resume, next, prev, dismiss, convert, openArticle, closeArticle, finishPublishToArticle, isCompatible, pause,
   }
 }
 
