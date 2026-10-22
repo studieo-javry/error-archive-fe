@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter, type RouteLocationNormalizedLoaded } from 'vue-router'
 import { useTourStore } from '@/stores/tourStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -13,7 +13,7 @@ import { demoApi } from '@/services/demoApi'
  *  01 상황 이해하기   Library 의 샘플 케이스 → 상세 Context
  *  02 시도 살펴보기   타임라인 아래 조사 근거(GuideEvidence) 펼치기
  *  03 솔루션 확인하기 솔루션 탭에서 해결안을 선택해 연결된 시도 강조
- *  04 발행된 글 읽기  샘플 케이스의 공개 아티클(새 탭) — core `GET /demo/guide` 가 응답할 때만
+ *  04 발행된 글 읽기  샘플 케이스의 공개 아티클(앱 안 리더 오버레이) — core `GET /demo/guide` 가 응답할 때만
  *  완료              가입 전환
  *
  * 각 단계는 버튼을 두 번 누르는 구조다: 먼저 그 단계의 행동(열기/펼치기/선택)을 하고, 다음 단계로 넘어간다.
@@ -31,6 +31,12 @@ export interface TourCard {
   /** 강조 영역 제목 옆 칩 문구. */
   chip: string
 }
+
+/**
+ * 발행 아티클 리더 오버레이 열림 상태(04 단계). 여러 useTour() 인스턴스가 공유하도록 모듈 레벨 ref.
+ * 오버레이는 실제 공개 페이지(`/p/{slug}`)를 iframe 으로 띄운다 — 재구현이 아니라 진짜 발행물.
+ */
+const articleOpen = ref(false)
 
 export function useTour() {
   const tour = useTourStore()
@@ -128,8 +134,12 @@ export function useTour() {
     }
   }
 
+  /** 04 단계 — 발행물을 새 탭이 아니라 앱 안 리더 오버레이로 띄운다(목업과 동일한 "화면 내" 방식). */
   function openArticle() {
-    if (article.value) window.open(article.value.publicUrl, '_blank', 'noopener')
+    if (article.value) articleOpen.value = true
+  }
+  function closeArticle() {
+    articleOpen.value = false
   }
 
   /**
@@ -195,16 +205,20 @@ export function useTour() {
       case 2:
         if (!f.solutionSelected) { tour.setFlag('solutionSelected', true); tour.requestSolution(); goCase(); return }
         tour.setStep(3)
-        // 아티클 단계: 공개 페이지(/p/*)는 SPA 밖이라 새 탭으로 열고, 가이드는 앱에서 이어간다.
+        // 04 단계: 발행물을 본문 영역의 리더 오버레이로 띄운다(우측 가이드 컬럼은 유지).
         if (article.value) openArticle()
         return
       default:
+        // 가이드 마치기 → 완료 카드로. 리더가 열려 있으면 닫는다.
+        articleOpen.value = false
         tour.setStep(total.value)
     }
   }
 
   function prev() {
     const i = stepIndex.value
+    // 04(아티클) 단계에서 뒤로 가면 리더를 닫고 솔루션 단계로.
+    if (articleOpen.value) articleOpen.value = false
     if (i === 0) {
       tour.setFlag('contextOpened', false)
       goList()
@@ -216,18 +230,20 @@ export function useTour() {
 
   /** 접기 / X — 투어를 접지만 재시작할 수 있게 둔다. */
   function dismiss() {
+    articleOpen.value = false
     tour.setStatus(isComplete.value ? 'done' : 'paused')
   }
 
   /** 완료 카드의 1차 CTA — 가입(= GitHub OAuth) 전환. */
   function convert() {
+    articleOpen.value = false
     tour.setStatus('done')
     startSignup()
   }
 
   return {
     titles, total, active, canResume, stepIndex, isComplete, card, article,
-    start, resume, next, prev, dismiss, convert, openArticle, isCompatible, pause,
+    articleOpen, start, resume, next, prev, dismiss, convert, openArticle, closeArticle, isCompatible, pause,
   }
 }
 

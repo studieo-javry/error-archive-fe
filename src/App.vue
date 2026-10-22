@@ -7,6 +7,7 @@ import AppHeader from '@/components/layout/AppHeader.vue'
 import DemoBanner from '@/components/layout/DemoBanner.vue'
 import GuestExpiryOverlay from '@/components/layout/GuestExpiryOverlay.vue'
 import TourCompanion from '@/components/layout/TourCompanion.vue'
+import GuideArticleOverlay from '@/components/layout/GuideArticleOverlay.vue'
 import DemoLayer from '@/components/demo/DemoLayer.vue'
 import NotificationToasts from '@/components/layout/NotificationToasts.vue'
 import { useAuthStore } from '@/stores/authStore'
@@ -57,6 +58,8 @@ const isChromeless = computed(() => isPublic.value || isOptionalLoggedOut.value)
           </div>
         </main>
         <TourCompanion v-if="authStore.isGuest" />
+        <!-- 발행 아티클 리더(04단계)는 본문(main) 영역에만 깔려, 우측 가이드 컬럼은 그대로 보인다. -->
+        <GuideArticleOverlay v-if="authStore.isGuest" />
       </div>
     </div>
     <NotificationToasts />
