@@ -106,7 +106,7 @@ onBeforeUnmount(clearHighlight)
           <div class="guide-complete-icon"><DemoIcon name="check" /></div>
           <h2>이제, 내 에러도<br>기록해 볼까요?</h2>
           <p>케이스에서 시작한 시도가 솔루션이 되고, 하나의 글로 이어졌어요. 내 워크스페이스에서 나만의 해결 기록을 쌓아보세요.</p>
-          <div class="complete-chips"><span>케이스</span><span>시도</span><span>솔루션</span><span v-if="article">아티클</span></div>
+          <div class="complete-chips"><span>케이스</span><span>시도</span><span>솔루션</span><span v-if="article">발행</span><span v-if="article">아티클</span></div>
           <div class="guide-actions">
             <button type="button" class="btn btn-primary" @click="convert"><DemoIcon name="arrow" />내 기록 시작하기</button>
             <button type="button" class="btn btn-quiet" @click="dismiss">계속 둘러보기</button>
@@ -141,7 +141,7 @@ onBeforeUnmount(clearHighlight)
           <div class="guide-hint"><DemoIcon name="bulb" /><span>{{ card.hint }}</span></div>
           <div class="guide-actions">
             <button type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />{{ card.cta }}</button>
-            <button v-if="stepIndex === 3 && article" type="button" class="text-btn guide-reopen" @click="openArticle"><DemoIcon name="arrow" />아티클 다시 열기</button>
+            <button v-if="stepIndex === 4 && article" type="button" class="text-btn guide-reopen" @click="openArticle"><DemoIcon name="arrow" />아티클 다시 열기</button>
           </div>
           <div class="guide-bottom">
             <button type="button" class="guide-back" @click="prev"><DemoIcon name="back" />{{ stepIndex === 0 ? '처음으로' : '이전 단계' }}</button>

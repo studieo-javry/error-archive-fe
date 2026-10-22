@@ -43,6 +43,14 @@ export const useTourStore = defineStore('tour', () => {
   // "솔루션 선택하기" 요청 신호. 상세 페이지가 감지해 첫 솔루션을 선택한다.
   const solutionRequest = ref(0)
 
+  // ── 발행하기(04) 단계: 게스트가 미리보기로 보는 PublishSheet 진행 상태 ──
+  // null = 시트 닫힘, -1 = 슬림 바, 0 = Steps, 1 = Details, 2 = Files, 3 = Options, 4 = Preview.
+  // 비영속 — 시트는 열려 있는 동안만 의미가 있다. 상세 페이지(시트)가 채우고, 가이드 카드가 읽어 내레이션한다.
+  const publishStage = ref<number | null>(null)
+  // 가이드 카드 ↔ 상세 페이지 사이의 열기/닫기 요청 신호(solutionRequest 와 같은 방식).
+  const publishOpenRequest = ref(0)
+  const publishCloseRequest = ref(0)
+
   function setStatus(value: TourStatus) {
     status.value = value
     persist('status', value)
@@ -70,6 +78,7 @@ export const useTourStore = defineStore('tour', () => {
     setStep(0)
     setCase(null)
     resetFlags()
+    publishStage.value = null
   }
   function setSolutionInfo(title: string | null, stepCount: number) {
     solutionTitle.value = title
@@ -78,9 +87,20 @@ export const useTourStore = defineStore('tour', () => {
   function requestSolution() {
     solutionRequest.value++
   }
+  function setPublishStage(value: number | null) {
+    publishStage.value = value
+  }
+  function requestPublishOpen() {
+    publishOpenRequest.value++
+  }
+  function requestPublishClose() {
+    publishCloseRequest.value++
+  }
 
   return {
     status, step, caseId, flags, solutionTitle, solutionStepCount, solutionRequest,
+    publishStage, publishOpenRequest, publishCloseRequest,
     setStatus, setStep, setCase, setFlag, resetFlags, reset, setSolutionInfo, requestSolution,
+    setPublishStage, requestPublishOpen, requestPublishClose,
   }
 })

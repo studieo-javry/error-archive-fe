@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import { publishmentApi } from '@/services/publishmentApi'
 import type { PublishmentDetail, PublishmentVisibility, PublishRequest, PublishTimeStyle } from '@/types/publish'
@@ -20,13 +20,17 @@ const props = defineProps<{
   solutions: Solution[]
   attachments: ErrorCaseAttachment[]
   authorDefault: string
+  /** 게스트 가이드 미리보기 — 실제 발행(POST)은 막고(서버도 403), 발행 버튼은 가입 전환으로. 단계는 밖으로 알린다. */
+  guided?: boolean
 }>()
-const emit = defineEmits<{ close: []; published: [detail: PublishmentDetail] }>()
+const emit = defineEmits<{ close: []; published: [detail: PublishmentDetail]; stageChange: [stage: number]; convert: [] }>()
 
 // -1 = 슬림 바, 0 = Steps, 1 = Details, 2 = Files, 3 = Options, 4 = Preview, DONE = 완료
 const DONE = 5
 const stage = ref(-1)
 const STAGES = ['Steps', 'Details', 'Files', 'Options', 'Preview']
+// 가이드 모드에서는 내부 단계가 바뀔 때마다 밖(가이드 카드)에 알려 내레이션을 맞춘다.
+watch(stage, (v) => { if (props.guided) emit('stageChange', v) })
 
 const selSteps = ref(new Set<number>(props.steps.map(s => s.id)))
 const selSols = ref(new Set<number>(props.solutions.map(s => s.id)))
@@ -129,6 +133,8 @@ function bodyPreview(b: string | null): string {
 }
 
 async function doPublish() {
+  // 게스트 미리보기: 실제 발행 대신 가입 전환(서버도 게스트 발행을 403 으로 막는다).
+  if (props.guided) { emit('convert'); return }
   if (busy.value) return
   busy.value = true
   launching.value = true
@@ -202,6 +208,9 @@ function close() {
     <div class="psh-wrap" :class="{ show: shown }">
       <div class="psh-panel">
         <div class="psh-grip" />
+
+        <!-- 게스트 가이드 미리보기 안내 -->
+        <div v-if="guided" class="psh-guided"><span class="psh-guided-dot" />게스트 미리보기 · 실제 발행과 공개는 가입 후에</div>
 
         <!-- 슬림 진입 바 -->
         <div v-if="stage === -1" class="psh-slim">
@@ -482,6 +491,10 @@ function close() {
 .psh-panel { max-width: 760px; margin: 0 auto; background: var(--psh-surface); border: 1px solid var(--psh-line); border-bottom: 0; border-radius: 20px 20px 0 0;
   box-shadow: var(--psh-shadow); display: flex; flex-direction: column; max-height: 86vh; overflow: hidden; }
 .psh-grip { width: 38px; height: 4px; border-radius: 2px; background: var(--psh-line-2); margin: 9px auto 0; flex-shrink: 0; }
+/* 게스트 가이드 미리보기 안내 바 */
+.psh-guided { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 8px 22px 0; padding: 7px 12px; border-radius: 9px;
+  background: var(--psh-accent-soft); color: var(--psh-accent); font-size: 11.5px; font-weight: 500; flex-shrink: 0; }
+.psh-guided-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
 /* 슬림 바 */
 .psh-slim { display: flex; align-items: center; gap: 14px; padding: 16px 22px; }

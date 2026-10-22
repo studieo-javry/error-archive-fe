@@ -400,6 +400,12 @@ main::-webkit-scrollbar {
   outline-color: #3b6550;
   background: #202d25;
 }
+/* 발행하기(04) 단계의 Publish 트리거: 작은 버튼이라 기본 offset(9px)이면 알약처럼 보여,
+   글자에 바짝 붙는 타이트 박스로(곡률은 다른 박스와 동일한 6px 유지). */
+.tour-highlight[data-tour="publish"] {
+  outline-offset: 3px;
+  padding: 3px 7px;
+}
 .tour-chip {
   display: inline-flex;
   align-items: center;

@@ -17,6 +17,7 @@ import StepForm, { type StepFormValues } from '@/components/timeline/StepForm.vu
 import DemoStepForm from '@/components/demo/DemoStepForm.vue'
 import GuideEvidence from '@/components/demo/GuideEvidence.vue'
 import { useTourStore } from '@/stores/tourStore'
+import { useAuth } from '@/composables/useAuth'
 import SolutionSelector from '@/components/timeline/SolutionSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
@@ -106,6 +107,28 @@ watch(() => tourStore.solutionRequest, () => {
 watch(activeFilter, (id) => {
   if (id != null && onTourCase.value && tourStore.step === 2) tourStore.setFlag('solutionSelected', true)
 })
+
+// ── 04 발행하기: 게스트 가이드 전용 Publish 트리거 + PublishSheet 미리보기 ──
+const { startSignup } = useAuth()
+// 이 케이스가 가이드의 발행하기(04) 단계일 때만 — 게스트는 소유자가 아니라 평소엔 Publish 가 안 보인다.
+const onTourPublishStep = computed(() => onTourCase.value && tourStore.step === 3)
+function openGuidedPublish() {
+  showPublishSheet.value = true
+  tourStore.setPublishStage(-1)
+}
+// 가이드 카드의 'Publish 누르기' → 시트 열기(상단 버튼 클릭과 동일).
+watch(() => tourStore.publishOpenRequest, () => { if (onTourPublishStep.value) openGuidedPublish() })
+// 가이드 카드의 '이전 단계'(시트 열려 있을 때) → 시트만 닫고 04 에 머문다.
+watch(() => tourStore.publishCloseRequest, () => { showPublishSheet.value = false; tourStore.setPublishStage(null) })
+// 단계가 04 를 벗어나면(05 로 진행 등) 시트를 닫는다.
+watch(() => tourStore.step, (s) => {
+  if (showPublishSheet.value && s !== 3) { showPublishSheet.value = false; tourStore.setPublishStage(null) }
+})
+function onGuidedConvert() { startSignup() }
+function onSheetClose() {
+  showPublishSheet.value = false
+  if (onTourPublishStep.value) tourStore.setPublishStage(null)
+}
 
 const isOwner = computed(() =>
   Boolean(errorCase.value && authStore.user && errorCase.value.ownerUserId === authStore.user.userId),
@@ -574,6 +597,22 @@ onUnmounted(() => {
           </span>
         </template>
 
+        <!-- 게스트 가이드 04 발행하기 — 이 단계에서만, 시트가 닫혀 있을 때 Publish 트리거를
+             타이트 하이라이트 박스 + '발행 시작' 칩과 함께 노출(실제 발행은 미리보기 → 가입 전환). -->
+        <span v-if="onTourPublishStep && !showPublishSheet" class="inline-flex items-center">
+          <button
+            data-tour="publish"
+            class="tour-highlight inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
+            @click="openGuidedPublish"
+          >
+            <LinkIcon class="w-3.5 h-3.5" />
+            Publish
+          </button>
+          <span class="tour-chip">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m16 8-2 6-6 2 2-6 6-2Z" /></svg>발행 시작
+          </span>
+        </span>
+
         <button
           v-if="canEditCase"
           class="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-colors"
@@ -743,8 +782,11 @@ onUnmounted(() => {
       :solutions="solutions"
       :attachments="errorCase.attachments"
       :author-default="authStore.user?.displayName ?? ''"
+      :guided="onTourPublishStep"
       @published="onPublished"
-      @close="showPublishSheet = false"
+      @stage-change="tourStore.setPublishStage"
+      @convert="onGuidedConvert"
+      @close="onSheetClose"
     />
   </div>
 </template>
