@@ -51,22 +51,26 @@ const { items: similarItems, loading: similarLoading } = useSimilarCases(
 )
 
 // 가이드 인트로 버튼 연동: '비슷한 사례 띄워보기'(예시 제목을 한 글자씩 타이핑) / '직접 입력해볼게요'(비우고 포커스).
-// 목업(기준 아티팩트)의 typeTo 와 동일하게 45ms/글자로 입력돼 추천이 실시간으로 뜨는 과정을 보여준다.
+// 45ms/글자로 입력하되, 몇 지점('NullPointer' | 'NullPointerException' | '…in Order')에서 디바운스(220ms)보다
+// 길게 멈춰 중간 검색이 뜨게 한다 — 게이지 CSS 트랜지션이 퍼센트를 이어주어 "찾는 과정 + 퍼센트 변화"가 보인다.
 const titleInput = ref<HTMLInputElement | null>(null)
 const DEMO_TITLE = 'NullPointerException in OrderService'
-let demoTypeTimer: ReturnType<typeof setInterval> | null = null
+const DEMO_PAUSE_AT = new Set([11, 20, 29]) // 멈춰서 중간 추천을 띄울 글자 인덱스
+let demoTypeTimer: ReturnType<typeof setTimeout> | null = null
 function stopDemoTyping() {
-  if (demoTypeTimer) { clearInterval(demoTypeTimer); demoTypeTimer = null }
+  if (demoTypeTimer) { clearTimeout(demoTypeTimer); demoTypeTimer = null }
 }
 watch(() => tourStore.similarDemoRequest, () => {
   if (!showSimilar.value) return
   stopDemoTyping()
   title.value = ''
   let i = 0
-  demoTypeTimer = setInterval(() => {
+  const typeNext = () => {
     title.value = DEMO_TITLE.slice(0, ++i)
-    if (i >= DEMO_TITLE.length) stopDemoTyping()
-  }, 45)
+    if (i >= DEMO_TITLE.length) { demoTypeTimer = null; return }
+    demoTypeTimer = setTimeout(typeNext, DEMO_PAUSE_AT.has(i) ? 480 : 45)
+  }
+  demoTypeTimer = setTimeout(typeNext, 45)
 })
 watch(() => tourStore.similarManualRequest, () => {
   if (!showSimilar.value) return
