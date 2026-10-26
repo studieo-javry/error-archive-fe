@@ -71,6 +71,15 @@ function detailTo(id: number) {
     <div class="flex items-center gap-2 mb-1">
       <span class="sim-live" :class="{ on: loading }" />
       <span data-tour-chip class="text-[13px] font-semibold text-zinc-800 dark:text-zinc-100">비슷한 에러</span>
+      <!-- 도입 예정 안내 — 정식 도입 전, 데모에서 테스트 중임을 호버 툴팁으로 알린다. -->
+      <span class="sim-soon" tabindex="0" role="note" aria-label="도입 예정 기능 — 아직 정식 도입 전이에요. 지금은 데모에서 미리 체험·테스트해볼 수 있어요.">
+        <svg class="sim-soon-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 10.5v5.5M12 7.6v.1" /></svg>
+        <span class="sim-soon-dot" aria-hidden="true" />
+        <span class="sim-soon-tip" role="tooltip">
+          <span class="sim-soon-tip-head"><span class="sim-soon-tip-mark" />도입 예정 기능</span>
+          <span class="sim-soon-tip-body">아직 정식 도입 전이에요. 지금은 <b>데모에서 미리 체험·테스트</b>해볼 수 있어요.</span>
+        </span>
+      </span>
       <span
         v-if="hasQuery && items.length"
         class="ml-auto text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full"
@@ -208,4 +217,30 @@ function detailTo(id: number) {
 .sim-fill { display: block; height: 100%; border-radius: 9999px; background: #fbbf24; transition: width .35s cubic-bezier(.2,.7,.3,1); }
 
 .sim-title :deep(mark), .sim-mini-title :deep(mark) { background: rgba(245,158,11,.12); color: #f59e0b; border-radius: 3px; padding: 0 1px; }
+
+/* 도입 예정 안내 인디케이터(info + 알림 점) + 호버 툴팁 */
+.sim-soon { position: relative; display: inline-flex; align-items: center; margin-left: -2px; color: #a1a1aa; cursor: help; outline: none; }
+:global(.dark .sim-soon) { color: #71717a; }
+.sim-soon-ic { width: 14px; height: 14px; display: block; transition: color .13s; }
+.sim-soon:hover, .sim-soon:focus-visible { color: #f59e0b; }
+.sim-soon-dot { position: absolute; top: -1px; right: -1px; width: 5px; height: 5px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 0 2px #fff; }
+:global(.dark .sim-soon-dot) { box-shadow: 0 0 0 2px #18181b; }
+.sim-soon-tip {
+  --tip-bg: #fff;
+  position: absolute; top: calc(100% + 9px); left: -4px;
+  width: 228px; background: var(--tip-bg); border: 1px solid #e4e4e7; border-radius: 11px;
+  padding: 11px 13px; box-shadow: 0 10px 30px rgba(0,0,0,.18); text-align: left;
+  opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none;
+  transition: opacity .16s, transform .16s, visibility .16s; z-index: 30;
+}
+:global(.dark .sim-soon-tip) { --tip-bg: #1f1f23; border-color: #3f3f46; box-shadow: 0 12px 34px rgba(0,0,0,.5); }
+.sim-soon-tip::after { content: ""; position: absolute; bottom: 100%; left: 9px; border: 6px solid transparent; border-bottom-color: var(--tip-bg); }
+.sim-soon:hover .sim-soon-tip, .sim-soon:focus-visible .sim-soon-tip { opacity: 1; visibility: visible; transform: translateY(0); }
+.sim-soon-tip-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #18181b; margin-bottom: 5px; }
+:global(.dark .sim-soon-tip-head) { color: #f4f4f5; }
+.sim-soon-tip-mark { width: 5px; height: 5px; border-radius: 50%; background: #f59e0b; flex: none; }
+.sim-soon-tip-body { display: block; font-size: 11.5px; line-height: 1.6; color: #71717a; }
+:global(.dark .sim-soon-tip-body) { color: #a1a1aa; }
+.sim-soon-tip-body b { font-weight: 600; color: #27272a; }
+:global(.dark .sim-soon-tip-body b) { color: #e4e4e7; }
 </style>
