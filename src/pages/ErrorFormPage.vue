@@ -484,7 +484,7 @@ onMounted(async () => {
     <AttachmentModal v-if="showAttachmentModal" @save="saveAttachment" @close="showAttachmentModal = false" />
     </div>
 
-    <aside v-if="showSimilar" data-tour="similar" class="lg:sticky lg:top-6">
+    <aside v-if="showSimilar" data-tour="similar" class="lg:sticky lg:top-6 lg:mt-3">
       <SimilarCasesPanel :items="similarItems" :query="title" :loading="similarLoading" :slug="teamStore.currentSlug" />
     </aside>
   </div>
