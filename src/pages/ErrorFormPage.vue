@@ -8,6 +8,7 @@ import { teamApi } from '@/services/teamApi'
 import { useTeamStore } from '@/stores/teamStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useDemoStore } from '@/stores/demoStore'
+import { useTourStore } from '@/stores/tourStore'
 import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse, ErrorCaseSnippet, ErrorCaseAttachment, MyPendingAttachment, MyPendingSnippet } from '@/types/error'
 import type { WorkspaceListItem } from '@/types/team'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
@@ -25,6 +26,7 @@ const router = useRouter()
 const teamStore = useTeamStore()
 const authStore = useAuthStore()
 const demo = useDemoStore()
+const tourStore = useTourStore()
 const isEdit = !!route.params.id
 const caseId = route.params.id ? Number(route.params.id) : undefined
 
@@ -47,6 +49,15 @@ const { items: similarItems, loading: similarLoading } = useSimilarCases(
   computed(() => teamStore.currentWorkspaceId),
   { enabled: showSimilar },
 )
+
+// 가이드 인트로 버튼 연동: '비슷한 사례 띄워보기'(데모 제목 자동 입력) / '직접 입력해볼게요'(비우고 포커스).
+const titleInput = ref<HTMLInputElement | null>(null)
+watch(() => tourStore.similarDemoRequest, () => { if (showSimilar.value) title.value = 'NullPointerException in OrderService' })
+watch(() => tourStore.similarManualRequest, () => {
+  if (!showSimilar.value) return
+  title.value = ''
+  nextTick(() => titleInput.value?.focus())
+})
 
 watch(visibility, async (val) => {
   if (val === 'WORKSPACE' && !workspaces.value.length) {
@@ -317,7 +328,7 @@ onMounted(async () => {
     <!-- 게스트는 저장하지 않으므로 필수값 검사 없이 바로 가입 안내로 -->
     <form class="space-y-10" :novalidate="authStore.isGuest" @submit.prevent="onSubmit">
       <div>
-        <input v-model="title" type="text" placeholder="Error title" class="raw-input w-full text-lg font-medium" required />
+        <input ref="titleInput" v-model="title" type="text" placeholder="Error title" class="raw-input w-full text-lg font-medium" required />
       </div>
       <div>
         <input v-model="scope" type="text" placeholder="Project (optional)" class="raw-input w-full text-sm" />

@@ -140,8 +140,16 @@ onBeforeUnmount(clearHighlight)
           <p v-html="card.body" />
           <div class="guide-hint"><DemoIcon name="bulb" /><span>{{ card.hint }}</span></div>
           <div class="guide-actions">
-            <button type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />{{ card.cta }}</button>
-            <button v-if="stepIndex === 5 && article" type="button" class="text-btn guide-reopen" @click="openArticle"><DemoIcon name="arrow" />아티클 다시 열기</button>
+            <!-- 인트로(비슷한 사례 찾기): 직접 체험용 2버튼 + 탐색으로 넘어가기 -->
+            <template v-if="stepIndex === 0">
+              <button type="button" class="btn btn-primary btn-full" @click="tourStore.requestSimilarDemo()"><DemoIcon name="arrow" />비슷한 사례 띄워보기</button>
+              <button type="button" class="btn btn-quiet btn-full" @click="tourStore.requestSimilarManual()">직접 입력해볼게요</button>
+              <button type="button" class="text-btn guide-reopen" @click="next"><DemoIcon name="arrow" />둘러보기 시작</button>
+            </template>
+            <template v-else>
+              <button type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />{{ card.cta }}</button>
+              <button v-if="stepIndex === 5 && article" type="button" class="text-btn guide-reopen" @click="openArticle"><DemoIcon name="arrow" />아티클 다시 열기</button>
+            </template>
           </div>
           <div class="guide-bottom">
             <button type="button" class="guide-back" @click="prev"><DemoIcon name="back" />{{ stepIndex === 0 ? '처음으로' : '이전 단계' }}</button>

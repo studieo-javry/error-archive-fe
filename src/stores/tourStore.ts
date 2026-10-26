@@ -52,6 +52,9 @@ export const useTourStore = defineStore('tour', () => {
   const publishOpenRequest = ref(0)
   const publishCloseRequest = ref(0)
   const publishAdvanceRequest = ref(0)
+  // 인트로(비슷한 사례) 단계 ↔ New Entry 입력칸: 데모 제목 자동 입력 / 비우고 포커스 요청 신호.
+  const similarDemoRequest = ref(0)
+  const similarManualRequest = ref(0)
 
   function setStatus(value: TourStatus) {
     status.value = value
@@ -101,11 +104,19 @@ export const useTourStore = defineStore('tour', () => {
   function requestPublishAdvance() {
     publishAdvanceRequest.value++
   }
+  function requestSimilarDemo() {
+    similarDemoRequest.value++
+  }
+  function requestSimilarManual() {
+    similarManualRequest.value++
+  }
 
   return {
     status, step, caseId, flags, solutionTitle, solutionStepCount, solutionRequest,
     publishStage, publishOpenRequest, publishCloseRequest, publishAdvanceRequest,
+    similarDemoRequest, similarManualRequest,
     setStatus, setStep, setCase, setFlag, resetFlags, reset, setSolutionInfo, requestSolution,
     setPublishStage, requestPublishOpen, requestPublishClose, requestPublishAdvance,
+    requestSimilarDemo, requestSimilarManual,
   }
 })
