@@ -22,6 +22,9 @@ import { demoApi } from '@/services/demoApi'
  */
 export const GUIDE_TITLES = ['상황 이해하기', '시도 살펴보기', '솔루션 확인하기', '발행하기', '발행된 글 읽기']
 
+/** 마지막에 항상 붙는 단계 — 내가 직접 기록할 때 비슷한 사례를 찾아주는 기능(New Entry). */
+const SIMILAR_TITLE = '비슷한 사례 찾기'
+
 /** 발행하기(03) 단계에서 PublishSheet 가 올라온 뒤, 각 내부 단계에 맞춘 가이드 문구(목업 NAR 와 동일). */
 const PUBLISH_STAGE_COPY: Record<number, { title: string; body: string }> = {
   [-1]: {
@@ -77,8 +80,11 @@ export function useTour() {
   const { startSignup } = useAuth()
 
   const article = computed(() => auth.guestDemoArticle)
-  // 아티클을 모르면 04 단계를 건너뛴다(3단계 + 완료).
-  const titles = computed(() => (article.value ? GUIDE_TITLES : GUIDE_TITLES.slice(0, 3)))
+  // 아티클을 모르면 발행 2단계를 건너뛴다(핵심 3단계). 유사 추천 단계는 항상 마지막에 덧붙인다.
+  const titles = computed(() => [
+    ...(article.value ? GUIDE_TITLES : GUIDE_TITLES.slice(0, 3)),
+    SIMILAR_TITLE,
+  ])
   const total = computed(() => titles.value.length)
 
   // 투어는 게스트 전용. status 가 active 일 때만 컴패니언/하이라이트가 보인다.
@@ -89,6 +95,17 @@ export function useTour() {
 
   const card = computed<TourCard | null>(() => {
     const f = tour.flags
+    // 마지막 단계(항상): 비슷한 사례 찾기 — New Entry 의 추천 패널을 강조.
+    if (stepIndex.value === total.value - 1) {
+      return {
+        title: '제목을 쓰는 사이, 비슷한 사례를 찾아줘요.',
+        body: '새 에러를 기록할 때 제목을 입력하면, <strong>이미 기록된 비슷한 사례</strong>를 유사도와 함께 옆에서 실시간으로 보여줘요. 같은 문제를 다시 파기 전에 확인할 수 있어요.',
+        hint: '유사도가 높고 예외 클래스까지 같으면 <strong>“중복 가능성 높음”</strong>으로 먼저 알려줘요.',
+        cta: '가이드 마치기',
+        anchor: '[data-tour="similar"]',
+        chip: '비슷한 사례',
+      }
+    }
     switch (stepIndex.value) {
       case 0:
         return {
@@ -122,7 +139,7 @@ export function useTour() {
             ? `${n > 0 ? `<strong>${n}개의 시도가 하나의 솔루션</strong>에` : '<strong>솔루션</strong>에'} 연결되어 강조됐어요. 관련 없는 시도도 타임라인에 그대로 남아 있습니다.`
             : `타임라인 위의 <strong>‘${escapeHtml(sol ?? '솔루션')}’</strong>을 선택해 보세요. 이 해결안에 연결된 시도를 함께 확인할 수 있어요.`,
           hint: '솔루션은 정답 한 줄이 아니라, 해결을 뒷받침하는 시도의 묶음입니다.',
-          cta: f.solutionSelected ? (article.value ? '발행하기' : '가이드 마치기') : '솔루션 선택하기',
+          cta: f.solutionSelected ? (article.value ? '발행하기' : '비슷한 사례 찾기') : '솔루션 선택하기',
           anchor: '[data-tour="solutions"]',
           chip: '03 · 솔루션 확인',
         }
@@ -158,7 +175,7 @@ export function useTour() {
           title: '작업 기록이 공유할 글이 됩니다.',
           body: '방금 본 케이스를 읽기 좋은 이야기로 정리한 아티클이에요. <strong>원본 케이스와 연결</strong>되어, 다른 사람도 시도와 근거를 따라갈 수 있습니다.',
           hint: '정리된 기록을 발행하면 공개 글이 되어, 다른 사람에게 단서가 됩니다.',
-          cta: '가이드 마치기',
+          cta: '비슷한 사례 찾기',
           anchor: null,
           chip: '',
         }
@@ -187,6 +204,13 @@ export function useTour() {
     const r = router.currentRoute.value
     if (id != null && !(r.name === 'errorDetail' && Number(r.params.id) === id)) {
       router.push({ name: 'errorDetail', params: { slug: teamStore.currentSlug, id } })
+    }
+  }
+
+  /** 비슷한 사례 단계 — New Entry(errorCreate) 로 이동해 추천 패널을 강조한다. */
+  function goCreate() {
+    if (router.currentRoute.value.name !== 'errorCreate') {
+      router.push({ name: 'errorCreate', params: { slug: teamStore.currentSlug } })
     }
   }
 
@@ -239,6 +263,8 @@ export function useTour() {
    */
   function isCompatible(route: RouteLocationNormalizedLoaded): boolean {
     const onCase = route.name === 'errorDetail' && Number(route.params.id) === tour.caseId
+    // 비슷한 사례(마지막)는 New Entry 화면에서만.
+    if (stepIndex.value === total.value - 1) return route.name === 'errorCreate'
     if (stepIndex.value === 0 && !tour.flags.contextOpened) return route.name === 'errorList' || onCase
     return onCase
   }
@@ -254,12 +280,20 @@ export function useTour() {
     tour.setStatus('active')
     const i = stepIndex.value
     if (i === 0 && !tour.flags.contextOpened) goList()
+    else if (i === total.value - 1) goCreate()
     else if (i <= 4) goCase()
   }
 
   /** 카드의 1차 버튼 — 그 단계의 행동을 먼저 하고, 한 번 더 누르면 다음 단계로. */
   function next() {
     const f = tour.flags
+    const last = total.value - 1
+    // 마지막(비슷한 사례) 단계 → 완료 카드로. 리더가 열려 있으면 닫는다.
+    if (stepIndex.value === last) {
+      articleOpen.value = false
+      tour.setStep(total.value)
+      return
+    }
     switch (stepIndex.value) {
       case 0:
         if (!f.contextOpened) { tour.setFlag('contextOpened', true); goCase(); return }
@@ -269,9 +303,9 @@ export function useTour() {
         tour.setStep(2); goCase(); return
       case 2:
         if (!f.solutionSelected) { tour.setFlag('solutionSelected', true); tour.requestSolution(); goCase(); return }
-        // 아티클이 있으면 04 발행하기로, 없으면 여기서 완료(setStep(total) → 완료 카드).
-        tour.setStep(3)
-        return
+        // 아티클이 있으면 04 발행하기로, 없으면 바로 '비슷한 사례'(New Entry)로.
+        if (article.value) { tour.setStep(3); return }
+        tour.setStep(3); goCreate(); return
       case 3:
         // 04 발행하기: ① 시트가 닫혀 있으면 상단 Publish 로 열고 ② 미리보기 전이면 시트 단계를 한 칸 진행
         // ③ 미리보기(4)까지 오면 발행된 글 읽기(05)로. 시트의 '고르기'·'다음'을 사용자가 누르지 않아도 카드가 끌고 간다.
@@ -279,8 +313,11 @@ export function useTour() {
         if (tour.publishStage < 4) { tour.requestPublishAdvance(); return }
         finishPublishToArticle()
         return
+      case 4:
+        // 05 발행된 글 읽기 → 비슷한 사례(New Entry).
+        articleOpen.value = false
+        tour.setStep(5); goCreate(); return
       default:
-        // 가이드 마치기 → 완료 카드로. 리더가 열려 있으면 닫는다.
         articleOpen.value = false
         tour.setStep(total.value)
     }
@@ -290,6 +327,8 @@ export function useTour() {
     const i = stepIndex.value
     // 05(아티클) 단계에서 뒤로 가면 리더를 닫고 발행하기 단계로.
     if (articleOpen.value) articleOpen.value = false
+    // 비슷한 사례(마지막) → 직전 단계(아티클/솔루션)로 돌아가며 상세로 복귀.
+    if (i === total.value - 1) { tour.setStep(i - 1); goCase(); return }
     if (i === 0) {
       tour.setFlag('contextOpened', false)
       goList()

@@ -70,7 +70,7 @@ function detailTo(id: number) {
   <section class="sim-panel">
     <div class="flex items-center gap-2 mb-1">
       <span class="sim-live" :class="{ on: loading }" />
-      <span class="text-[13px] font-semibold text-zinc-800 dark:text-zinc-100">비슷한 에러</span>
+      <span data-tour-chip class="text-[13px] font-semibold text-zinc-800 dark:text-zinc-100">비슷한 에러</span>
       <span
         v-if="hasQuery && items.length"
         class="ml-auto text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full"
