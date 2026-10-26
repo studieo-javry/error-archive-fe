@@ -82,8 +82,8 @@ export function useTour() {
   const article = computed(() => auth.guestDemoArticle)
   // 아티클을 모르면 발행 2단계를 건너뛴다(핵심 3단계). 유사 추천 단계는 항상 마지막에 덧붙인다.
   const titles = computed(() => [
-    ...(article.value ? GUIDE_TITLES : GUIDE_TITLES.slice(0, 3)),
     SIMILAR_TITLE,
+    ...(article.value ? GUIDE_TITLES : GUIDE_TITLES.slice(0, 3)),
   ])
   const total = computed(() => titles.value.length)
 
@@ -95,18 +95,19 @@ export function useTour() {
 
   const card = computed<TourCard | null>(() => {
     const f = tour.flags
-    // 마지막 단계(항상): 비슷한 사례 찾기 — New Entry 의 추천 패널을 강조.
-    if (stepIndex.value === total.value - 1) {
+    // 인트로(항상 첫 단계): 비슷한 사례 찾기 — New Entry 추천 패널을 강조하고 탐색으로 넘어간다.
+    if (stepIndex.value === 0) {
       return {
-        title: '제목을 쓰는 사이, 비슷한 사례를 찾아줘요.',
-        body: '새 에러를 기록할 때 제목을 입력하면, <strong>이미 기록된 비슷한 사례</strong>를 유사도와 함께 옆에서 실시간으로 보여줘요. 같은 문제를 다시 파기 전에 확인할 수 있어요.',
-        hint: '유사도가 높고 예외 클래스까지 같으면 <strong>“중복 가능성 높음”</strong>으로 먼저 알려줘요.',
-        cta: '가이드 마치기',
+        title: '에러를 기록할 때, 비슷한 사례부터 찾아줘요.',
+        body: '새 에러의 <strong>제목만 입력해도</strong> 이미 기록된 비슷한 사례를 유사도와 함께 옆에서 실시간으로 보여줘요. 같은 문제를 다시 파기 전에 확인할 수 있어요.',
+        hint: '유사도가 높고 예외 클래스까지 같으면 “중복 가능성 높음”으로 먼저 알려줘요. 이제 실제로 해결된 사례가 어떻게 쌓였는지 따라가볼게요.',
+        cta: '둘러보기 시작',
         anchor: '[data-tour="similar"]',
         chip: '비슷한 사례',
       }
     }
-    switch (stepIndex.value) {
+    // 탐색 단계는 인트로(0) 뒤라 stepIndex-1 로 매핑한다.
+    switch (stepIndex.value - 1) {
       case 0:
         return {
           title: '먼저, 에러가 발생한 맥락을 읽어보세요.',
@@ -116,7 +117,7 @@ export function useTour() {
           anchor: f.contextOpened
             ? '[data-tour="context"]'
             : tour.caseId != null ? `[data-case-id="${tour.caseId}"]` : '[data-case-id]',
-          chip: f.contextOpened ? '01 · 상황 이해하기' : '이 케이스로 시작',
+          chip: f.contextOpened ? '02 · 상황 이해하기' : '이 케이스로 시작',
         }
       case 1:
         return {
@@ -128,7 +129,7 @@ export function useTour() {
           cta: f.evidenceRead ? '솔루션 확인하기' : '조사 근거 펼치기',
           // 근거가 붙은 스텝의 내용 영역을 강조(스텝 아래 여백은 제외 — 다음 스텝과 겹치지 않게). 칩은 그 스텝 제목 옆.
           anchor: '.step-item:has([data-tour="evidence"]) > .flex-1',
-          chip: '02 · 조사 근거',
+          chip: '03 · 조사 근거',
         }
       case 2: {
         const sol = tour.solutionTitle
@@ -139,9 +140,9 @@ export function useTour() {
             ? `${n > 0 ? `<strong>${n}개의 시도가 하나의 솔루션</strong>에` : '<strong>솔루션</strong>에'} 연결되어 강조됐어요. 관련 없는 시도도 타임라인에 그대로 남아 있습니다.`
             : `타임라인 위의 <strong>‘${escapeHtml(sol ?? '솔루션')}’</strong>을 선택해 보세요. 이 해결안에 연결된 시도를 함께 확인할 수 있어요.`,
           hint: '솔루션은 정답 한 줄이 아니라, 해결을 뒷받침하는 시도의 묶음입니다.',
-          cta: f.solutionSelected ? (article.value ? '발행하기' : '비슷한 사례 찾기') : '솔루션 선택하기',
+          cta: f.solutionSelected ? (article.value ? '발행하기' : '가이드 마치기') : '솔루션 선택하기',
           anchor: '[data-tour="solutions"]',
-          chip: '03 · 솔루션 확인',
+          chip: '04 · 솔루션 확인',
         }
       }
       case 3: {
@@ -175,7 +176,7 @@ export function useTour() {
           title: '작업 기록이 공유할 글이 됩니다.',
           body: '방금 본 케이스를 읽기 좋은 이야기로 정리한 아티클이에요. <strong>원본 케이스와 연결</strong>되어, 다른 사람도 시도와 근거를 따라갈 수 있습니다.',
           hint: '정리된 기록을 발행하면 공개 글이 되어, 다른 사람에게 단서가 됩니다.',
-          cta: '비슷한 사례 찾기',
+          cta: '가이드 마치기',
           anchor: null,
           chip: '',
         }
@@ -227,7 +228,7 @@ export function useTour() {
    */
   function finishPublishToArticle() {
     if (!article.value) { articleOpen.value = false; tour.setStep(total.value); return }
-    tour.setStep(4)
+    tour.setStep(5) // 아티클 단계 (인트로가 0이라 +1)
     openArticle()
   }
 
@@ -254,7 +255,7 @@ export function useTour() {
     tour.resetFlags()
     tour.setStep(0)
     tour.setStatus('active')
-    goList()
+    goCreate() // 인트로(비슷한 사례)는 New Entry
   }
 
   /**
@@ -263,9 +264,10 @@ export function useTour() {
    */
   function isCompatible(route: RouteLocationNormalizedLoaded): boolean {
     const onCase = route.name === 'errorDetail' && Number(route.params.id) === tour.caseId
-    // 비슷한 사례(마지막)는 New Entry 화면에서만.
-    if (stepIndex.value === total.value - 1) return route.name === 'errorCreate'
-    if (stepIndex.value === 0 && !tour.flags.contextOpened) return route.name === 'errorList' || onCase
+    // 인트로(비슷한 사례)는 New Entry 화면에서만.
+    if (stepIndex.value === 0) return route.name === 'errorCreate'
+    // 상황 이해(케이스 열기 전)는 Library 또는 샘플 케이스.
+    if (stepIndex.value === 1 && !tour.flags.contextOpened) return route.name === 'errorList' || onCase
     return onCase
   }
 
@@ -279,45 +281,40 @@ export function useTour() {
     if (tour.status !== 'paused') { start(); return }
     tour.setStatus('active')
     const i = stepIndex.value
-    if (i === 0 && !tour.flags.contextOpened) goList()
-    else if (i === total.value - 1) goCreate()
-    else if (i <= 4) goCase()
+    if (i === 0) goCreate()
+    else if (i === 1 && !tour.flags.contextOpened) goList()
+    else goCase()
   }
 
   /** 카드의 1차 버튼 — 그 단계의 행동을 먼저 하고, 한 번 더 누르면 다음 단계로. */
   function next() {
     const f = tour.flags
-    const last = total.value - 1
-    // 마지막(비슷한 사례) 단계 → 완료 카드로. 리더가 열려 있으면 닫는다.
-    if (stepIndex.value === last) {
-      articleOpen.value = false
-      tour.setStep(total.value)
+    // 00 인트로(비슷한 사례) → 탐색 시작(상황 이해). 케이스 열기 전이라 Library 로.
+    if (stepIndex.value === 0) {
+      tour.setStep(1)
+      goList()
       return
     }
-    switch (stepIndex.value) {
-      case 0:
+    switch (stepIndex.value - 1) {
+      case 0: // 상황 이해하기
         if (!f.contextOpened) { tour.setFlag('contextOpened', true); goCase(); return }
-        tour.setStep(1); goCase(); return
-      case 1:
-        if (!f.evidenceRead) { tour.setFlag('evidenceRead', true); goCase(); return }
         tour.setStep(2); goCase(); return
-      case 2:
+      case 1: // 시도 살펴보기
+        if (!f.evidenceRead) { tour.setFlag('evidenceRead', true); goCase(); return }
+        tour.setStep(3); goCase(); return
+      case 2: // 솔루션 확인하기
         if (!f.solutionSelected) { tour.setFlag('solutionSelected', true); tour.requestSolution(); goCase(); return }
-        // 아티클이 있으면 04 발행하기로, 없으면 바로 '비슷한 사례'(New Entry)로.
-        if (article.value) { tour.setStep(3); return }
-        tour.setStep(3); goCreate(); return
-      case 3:
-        // 04 발행하기: ① 시트가 닫혀 있으면 상단 Publish 로 열고 ② 미리보기 전이면 시트 단계를 한 칸 진행
-        // ③ 미리보기(4)까지 오면 발행된 글 읽기(05)로. 시트의 '고르기'·'다음'을 사용자가 누르지 않아도 카드가 끌고 간다.
+        // 아티클이 있으면 발행하기로, 없으면 여기서 완료.
+        if (article.value) { tour.setStep(4); return }
+        tour.setStep(total.value); return
+      case 3: // 발행하기
+        // ① 시트가 닫혀 있으면 상단 Publish 로 열고 ② 미리보기 전이면 시트 단계를 한 칸 진행
+        // ③ 미리보기(4)까지 오면 발행된 글 읽기로.
         if (tour.publishStage == null) { tour.requestPublishOpen(); return }
         if (tour.publishStage < 4) { tour.requestPublishAdvance(); return }
         finishPublishToArticle()
         return
-      case 4:
-        // 05 발행된 글 읽기 → 비슷한 사례(New Entry).
-        articleOpen.value = false
-        tour.setStep(5); goCreate(); return
-      default:
+      default: // 발행된 글 읽기 → 완료
         articleOpen.value = false
         tour.setStep(total.value)
     }
@@ -325,19 +322,16 @@ export function useTour() {
 
   function prev() {
     const i = stepIndex.value
-    // 05(아티클) 단계에서 뒤로 가면 리더를 닫고 발행하기 단계로.
+    // 아티클 리더가 열려 있으면 닫는다.
     if (articleOpen.value) articleOpen.value = false
-    // 비슷한 사례(마지막) → 직전 단계(아티클/솔루션)로 돌아가며 상세로 복귀.
-    if (i === total.value - 1) { tour.setStep(i - 1); goCase(); return }
-    if (i === 0) {
-      tour.setFlag('contextOpened', false)
-      goList()
-      return
-    }
-    // 04 발행하기에서 시트가 열려 있으면, 먼저 시트만 닫고 그 단계에 머문다.
-    if (i === 3 && tour.publishStage != null) { tour.requestPublishClose(); return }
+    // 인트로(0): 더 뒤가 없음 — New Entry 에 머문다.
+    if (i === 0) { goCreate(); return }
+    // 상황 이해(1) → 인트로(비슷한 사례)로.
+    if (i === 1) { tour.setFlag('contextOpened', false); tour.setStep(0); goCreate(); return }
+    // 발행하기(4)에서 시트가 열려 있으면 시트만 닫고 그 단계에 머문다.
+    if (i === 4 && tour.publishStage != null) { tour.requestPublishClose(); return }
     tour.setStep(i - 1)
-    if (i - 1 <= 3) goCase()
+    goCase()
   }
 
   /** 접기 / X — 투어를 접지만 재시작할 수 있게 둔다. */

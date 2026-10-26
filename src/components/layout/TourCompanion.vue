@@ -35,7 +35,7 @@ watch(() => route.fullPath, () => {
 watch(
   () => route.fullPath,
   () => {
-    if (active.value && stepIndex.value === 0 && route.name === 'errorDetail' && Number(route.params.id) === tourStore.caseId) {
+    if (active.value && stepIndex.value === 1 && route.name === 'errorDetail' && Number(route.params.id) === tourStore.caseId) {
       tourStore.setFlag('contextOpened', true)
     }
   },
@@ -141,7 +141,7 @@ onBeforeUnmount(clearHighlight)
           <div class="guide-hint"><DemoIcon name="bulb" /><span>{{ card.hint }}</span></div>
           <div class="guide-actions">
             <button type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />{{ card.cta }}</button>
-            <button v-if="stepIndex === 4 && article" type="button" class="text-btn guide-reopen" @click="openArticle"><DemoIcon name="arrow" />아티클 다시 열기</button>
+            <button v-if="stepIndex === 5 && article" type="button" class="text-btn guide-reopen" @click="openArticle"><DemoIcon name="arrow" />아티클 다시 열기</button>
           </div>
           <div class="guide-bottom">
             <button type="button" class="guide-back" @click="prev"><DemoIcon name="back" />{{ stepIndex === 0 ? '처음으로' : '이전 단계' }}</button>

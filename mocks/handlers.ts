@@ -707,6 +707,19 @@ export const handlers = [
     return HttpResponse.json({ caseId: 4, articleSlug: 'demo-hikaricp-503' })
   }),
 
+  // 유사 에러 추천(오프라인 데모) — 제목 입력 시 비슷한 사례 2~3건(상단 1건은 중복 가능성 높음).
+  http.get('/api/v1/error-cases/similar', ({ request }) => {
+    const q = new URL(request.url).searchParams.get('q') ?? ''
+    if (q.trim().length < 2) return HttpResponse.json({ items: [] })
+    return HttpResponse.json({
+      items: [
+        { id: 1, ownerUserId: 1, title: 'NullPointerException in OrderService.calculateTotal', status: 'RESOLVED', visibility: 'WORKSPACE', workspaceId: 1, tags: ['kotlin', 'npe'], descriptionPreview: '쿠폰이 null 인 주문에서 금액 합산 시 NPE. Elvis 로 기본값 처리 + 회귀 테스트.', score: 0.93, matchedTerms: ['nullpointerexception', 'orderservice'], likelyDuplicate: true },
+        { id: 6, ownerUserId: 3, title: '주문 금액 합산 중 NullPointerException 재발 — 배송비 null', status: 'RESOLVED', visibility: 'WORKSPACE', workspaceId: 1, tags: ['kotlin', 'npe'], descriptionPreview: '배송비 없는 디지털 상품 주문에서 재발. 합산 입력 전체를 nullable 로 정리.', score: 0.71, matchedTerms: ['nullpointerexception'], likelyDuplicate: false },
+        { id: 3, ownerUserId: 4, title: 'HikariCP 커넥션 풀 고갈로 간헐적 503', status: 'IN_PROGRESS', visibility: 'WORKSPACE', workspaceId: 1, tags: ['hikaricp', '503'], descriptionPreview: '피크 트래픽에 pool(10) 고갈 → getConnection 타임아웃.', score: 0.38, matchedTerms: [], likelyDuplicate: false },
+      ],
+    })
+  }),
+
   http.get('/api/v1/workspaces', () => {
     return HttpResponse.json(mockWorkspaces)
   }),

@@ -84,7 +84,8 @@ const caseId = Number(route.params.id)
 // ── 게스트 사용 가이드 연동(2단계 조사 근거 · 3단계 솔루션 선택) ──
 const tourStore = useTourStore()
 const onTourCase = computed(() => authStore.isGuest && tourStore.status === 'active' && tourStore.caseId === caseId)
-const showGuideEvidence = computed(() => onTourCase.value && tourStore.step >= 1)
+// 인트로 '비슷한 사례'(step 0)가 앞에 붙어 단계가 +1 이동: 시도(조사 근거)=step 2 이후 노출.
+const showGuideEvidence = computed(() => onTourCase.value && tourStore.step >= 2)
 // 근거를 붙일 스텝 — 원인을 좁힌 마지막 조사(Investigation) 스텝. 없으면 두 번째(또는 첫) 스텝.
 const evidenceStepId = computed(() => {
   const list = steps.value
@@ -103,15 +104,16 @@ watch([solutions, onTourCase], () => {
 watch(() => tourStore.solutionRequest, () => {
   if (onTourCase.value && solutions.value.length) activeFilter.value = solutions.value[0].id
 })
-// 게스트가 직접 솔루션 탭을 눌러도 3단계 행동을 한 것으로 친다.
+// 게스트가 직접 솔루션 탭을 눌러도 솔루션 단계 행동을 한 것으로 친다(인트로 +1 → step 3).
 watch(activeFilter, (id) => {
-  if (id != null && onTourCase.value && tourStore.step === 2) tourStore.setFlag('solutionSelected', true)
+  if (id != null && onTourCase.value && tourStore.step === 3) tourStore.setFlag('solutionSelected', true)
 })
 
 // ── 04 발행하기: 게스트 가이드 전용 Publish 트리거 + PublishSheet 미리보기 ──
 const { finishPublishToArticle } = useTour()
-// 이 케이스가 가이드의 발행하기(04) 단계일 때만 — 게스트는 소유자가 아니라 평소엔 Publish 가 안 보인다.
-const onTourPublishStep = computed(() => onTourCase.value && tourStore.step === 3)
+// 이 케이스가 가이드의 발행하기 단계일 때만 — 게스트는 소유자가 아니라 평소엔 Publish 가 안 보인다.
+// (인트로 '비슷한 사례'가 step 0 으로 앞에 붙어 발행 단계 인덱스가 3→4 로 이동.)
+const onTourPublishStep = computed(() => onTourCase.value && tourStore.step === 4)
 function openGuidedPublish() {
   showPublishSheet.value = true
   tourStore.setPublishStage(-1)
