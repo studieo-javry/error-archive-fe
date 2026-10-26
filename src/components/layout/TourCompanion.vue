@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTour } from '@/composables/useTour'
 import { useTourStore } from '@/stores/tourStore'
@@ -12,11 +12,19 @@ const tourStore = useTourStore()
 const { titles, total, active, card, stepIndex, isComplete, article, next, prev, dismiss, convert, openArticle, isCompatible, pause } = useTour()
 const demo = useDemoStore()
 
-// 인트로(비슷한 사례) 체험 여부 — 띄워보기/직접입력을 한 번 해보면 주 버튼이 '둘러보기 시작'으로 바뀐다.
-const introTried = ref(false)
-function onIntroDemo() { tourStore.requestSimilarDemo(); introTried.value = true }
-function onIntroManual() { tourStore.requestSimilarManual(); introTried.value = true }
-watch(stepIndex, (v) => { if (v !== 0) introTried.value = false })
+// 인트로(비슷한 사례): '비슷한 사례 띄워보기' = 예시 제목을 채워 추천 결과를 보여준 뒤 자연스럽게 다음 단계로,
+// '직접 입력해볼게요' = 제목을 비우고 포커스해 직접 입력하게 둔다(그 자리에 머묾).
+let introAdvanceTimer: ReturnType<typeof setTimeout> | null = null
+function onIntroDemo() {
+  tourStore.requestSimilarDemo()
+  if (introAdvanceTimer) clearTimeout(introAdvanceTimer)
+  introAdvanceTimer = setTimeout(() => { if (stepIndex.value === 0) next() }, 1500)
+}
+function onIntroManual() {
+  if (introAdvanceTimer) { clearTimeout(introAdvanceTimer); introAdvanceTimer = null }
+  tourStore.requestSimilarManual()
+}
+onBeforeUnmount(() => { if (introAdvanceTimer) clearTimeout(introAdvanceTimer) })
 
 // 목업 규칙: 가이드는 단계에 맞는 화면에서만 뜬다.
 //  - 처음 열었을 때 맞지 않는 화면이면 조용히 접는다(예: 진행 중 상태로 홈 새로고침).
@@ -146,10 +154,9 @@ onBeforeUnmount(clearHighlight)
           <p v-html="card.body" />
           <div class="guide-hint"><DemoIcon name="bulb" /><span>{{ card.hint }}</span></div>
           <div class="guide-actions">
-            <!-- 인트로(비슷한 사례 찾기): 체험(띄워보기/직접입력) 후 주 버튼이 '둘러보기 시작'으로 전환 -->
+            <!-- 인트로(비슷한 사례 찾기): 띄워보기(예시 채워 결과 표시→다음 단계) + 직접 입력해볼게요(제목 비우고 포커스) -->
             <template v-if="stepIndex === 0">
-              <button v-if="!introTried" type="button" class="btn btn-primary btn-full" @click="onIntroDemo"><DemoIcon name="arrow" />비슷한 사례 띄워보기</button>
-              <button v-else type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />둘러보기 시작</button>
+              <button type="button" class="btn btn-primary btn-full" @click="onIntroDemo"><DemoIcon name="arrow" />비슷한 사례 띄워보기</button>
               <button type="button" class="btn btn-quiet btn-full" @click="onIntroManual">직접 입력해볼게요</button>
             </template>
             <template v-else>
