@@ -293,7 +293,7 @@ onMounted(async () => {
 <template>
   <div :class="showSimilar ? 'mx-auto max-w-[1080px] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_392px] gap-11 items-start' : 'max-w-2xl mx-auto'">
     <div class="min-w-0">
-    <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100 mb-10">
+    <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100" :class="authStore.isGuest ? 'mb-6' : 'mb-10'">
       {{ isEdit ? 'Edit Error' : 'New Entry' }}
     </h1>
 
