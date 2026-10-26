@@ -9,7 +9,7 @@ import { useTeamStore } from '@/stores/teamStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useDemoStore } from '@/stores/demoStore'
 import { useTourStore } from '@/stores/tourStore'
-import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse, ErrorCaseSnippet, ErrorCaseAttachment, MyPendingAttachment, MyPendingSnippet } from '@/types/error'
+import type { Visibility, SnippetCreateRequest, SnippetCreateResponse, AttachmentUploadResponse, ErrorCaseSnippet, ErrorCaseAttachment, MyPendingAttachment, MyPendingSnippet, SimilarCaseItem } from '@/types/error'
 import type { WorkspaceListItem } from '@/types/team'
 import BodyRenderer from '@/components/common/BodyRenderer.vue'
 import SnippetModal from '@/components/snippet/SnippetModal.vue'
@@ -50,34 +50,63 @@ const { items: similarItems, loading: similarLoading } = useSimilarCases(
   { enabled: showSimilar },
 )
 
-// 가이드 인트로 버튼 연동: '비슷한 사례 띄워보기'(예시 제목을 한 글자씩 타이핑) / '직접 입력해볼게요'(비우고 포커스).
-// 45ms/글자로 입력하되, 몇 지점('NullPointer' | 'NullPointerException' | '…in Order')에서 디바운스(220ms)보다
-// 길게 멈춰 중간 검색이 뜨게 한다 — 게이지 CSS 트랜지션이 퍼센트를 이어주어 "찾는 과정 + 퍼센트 변화"가 보인다.
+// 가이드 인트로 '비슷한 사례 띄워보기': 예시 제목을 끊김 없이 45ms/글자로 타이핑하면서,
+// 데모 동안엔 매 글자 추천을 '클라이언트에서' 즉시 계산해(demoPreview) 패널을 부드럽게 채운다
+// — 서버 디바운스 호출 없이 PJWW 목업처럼 퍼센트가 흐르고 러너업이 하나씩 늘어난다.
+// 사용자가 '직접' 입력하면(@input) demoPreview 를 비워 실제 서버 검색(useSimilarCases) 결과로 넘어간다.
 const titleInput = ref<HTMLInputElement | null>(null)
 const DEMO_TITLE = 'NullPointerException in OrderService'
-const DEMO_PAUSE_AT = new Set([11, 20, 29]) // 멈춰서 중간 추천을 띄울 글자 인덱스
-let demoTypeTimer: ReturnType<typeof setTimeout> | null = null
+const demoPreview = ref<SimilarCaseItem[] | null>(null)
+const demoTyping = ref(false)
+// 패널은 데모 중엔 클라 프리뷰를, 그 외엔 실제 서버 결과를 쓴다.
+const panelItems = computed<SimilarCaseItem[]>(() => demoPreview.value ?? similarItems.value)
+const panelLoading = computed(() => demoTyping.value || similarLoading.value)
+
+// 데모 시연용 고정 사례(오프라인 목/실 BE 와 동일) — 입력 진행도에 따라 점수·노출을 계산.
+const DEMO_DATA = [
+  { id: 1, ownerUserId: 1, title: 'NullPointerException in OrderService.calculateTotal', status: 'RESOLVED', visibility: 'WORKSPACE', workspaceId: 1, tags: ['kotlin', 'npe'], descriptionPreview: '쿠폰이 null 인 주문에서 금액 합산 시 NPE. Elvis 로 기본값 처리 + 회귀 테스트.', matchedTerms: ['nullpointerexception', 'orderservice'], finalScore: 0.93, appearAt: 0 },
+  { id: 6, ownerUserId: 3, title: '주문 금액 합산 중 NullPointerException 재발 — 배송비 null', status: 'RESOLVED', visibility: 'WORKSPACE', workspaceId: 1, tags: ['kotlin', 'npe'], descriptionPreview: '배송비 없는 디지털 상품 주문에서 재발. 합산 입력 전체를 nullable 로 정리.', matchedTerms: ['nullpointerexception'], finalScore: 0.71, appearAt: 0.45 },
+  { id: 3, ownerUserId: 4, title: 'HikariCP 커넥션 풀 고갈로 간헐적 503', status: 'IN_PROGRESS', visibility: 'WORKSPACE', workspaceId: 1, tags: ['hikaricp', '503'], descriptionPreview: '피크 트래픽에 pool(10) 고갈 → getConnection 타임아웃.', matchedTerms: [], finalScore: 0.38, appearAt: 0.72 },
+]
+function demoItemsFor(prog: number): SimilarCaseItem[] {
+  return DEMO_DATA.filter((d) => prog >= d.appearAt).map((d) => {
+    const score = Math.round(Math.max(0.2, d.finalScore * (0.5 + 0.5 * prog)) * 100) / 100
+    const { finalScore: _f, appearAt: _a, ...rest } = d
+    return { ...rest, score, likelyDuplicate: d.id === 1 && score >= 0.85 } as SimilarCaseItem
+  })
+}
+
+let demoTypeTimer: ReturnType<typeof setInterval> | null = null
 function stopDemoTyping() {
-  if (demoTypeTimer) { clearTimeout(demoTypeTimer); demoTypeTimer = null }
+  if (demoTypeTimer) { clearInterval(demoTypeTimer); demoTypeTimer = null }
+  demoTyping.value = false
 }
 watch(() => tourStore.similarDemoRequest, () => {
   if (!showSimilar.value) return
   stopDemoTyping()
   title.value = ''
+  demoPreview.value = []
+  demoTyping.value = true
   let i = 0
-  const typeNext = () => {
+  demoTypeTimer = setInterval(() => {
     title.value = DEMO_TITLE.slice(0, ++i)
-    if (i >= DEMO_TITLE.length) { demoTypeTimer = null; return }
-    demoTypeTimer = setTimeout(typeNext, DEMO_PAUSE_AT.has(i) ? 480 : 45)
-  }
-  demoTypeTimer = setTimeout(typeNext, 45)
+    const prog = i / DEMO_TITLE.length
+    demoPreview.value = title.value.trim().length >= 2 ? demoItemsFor(prog) : []
+    if (i >= DEMO_TITLE.length) stopDemoTyping()
+  }, 45)
 })
 watch(() => tourStore.similarManualRequest, () => {
   if (!showSimilar.value) return
   stopDemoTyping()
+  demoPreview.value = null
   title.value = ''
   nextTick(() => titleInput.value?.focus())
 })
+// 사용자가 직접 입력하면 데모 프리뷰를 끄고 실제 검색으로. (데모의 programmatic 입력은 @input 을 발생시키지 않음)
+function onTitleInput() {
+  stopDemoTyping()
+  demoPreview.value = null
+}
 onBeforeUnmount(stopDemoTyping)
 
 watch(visibility, async (val) => {
@@ -349,7 +378,7 @@ onMounted(async () => {
     <!-- 게스트는 저장하지 않으므로 필수값 검사 없이 바로 가입 안내로 -->
     <form class="space-y-10" :novalidate="authStore.isGuest" @submit.prevent="onSubmit">
       <div>
-        <input ref="titleInput" v-model="title" type="text" placeholder="Error title" class="raw-input w-full text-lg font-medium" required />
+        <input ref="titleInput" v-model="title" @input="onTitleInput" type="text" placeholder="Error title" class="raw-input w-full text-lg font-medium" required />
       </div>
       <div>
         <input v-model="scope" type="text" placeholder="Project (optional)" class="raw-input w-full text-sm" />
@@ -506,7 +535,7 @@ onMounted(async () => {
     </div>
 
     <aside v-if="showSimilar" data-tour="similar" class="lg:sticky lg:top-6 lg:mt-3">
-      <SimilarCasesPanel :items="similarItems" :query="title" :loading="similarLoading" :slug="teamStore.currentSlug" />
+      <SimilarCasesPanel :items="panelItems" :query="title" :loading="panelLoading" :slug="teamStore.currentSlug" />
     </aside>
   </div>
 </template>
