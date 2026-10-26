@@ -123,19 +123,19 @@ function detailTo(id: number) {
           <span class="inline-flex items-center gap-1.5 text-[10.5px] font-medium" :class="statusClass(top!.status)">
             <span class="w-1.5 h-1.5 rounded-full" :style="dotStyle(top!.status)" />{{ statusLabel(top!.status) }}
           </span>
-          <span class="text-[10.5px] text-zinc-400">#{{ top!.id }}</span>
+          <span class="text-[10.5px] text-zinc-400 dark:text-zinc-600">#{{ top!.id }}</span>
           <span class="ml-auto text-[12px] font-semibold text-emerald-600 dark:text-emerald-400">이 케이스 열기 →</span>
         </div>
       </RouterLink>
 
       <!-- 러너업 -->
       <div v-if="runners.length" class="mt-2.5">
-        <div class="text-[10.5px] font-semibold text-zinc-400 dark:text-zinc-500 mx-0.5 mb-1.5 tracking-wide">그 외 비슷한 사례 {{ items.length - 1 }}건</div>
+        <div class="text-[10.5px] font-semibold text-zinc-400 dark:text-zinc-600 mx-0.5 mb-1.5 tracking-wide">그 외 비슷한 사례 {{ items.length - 1 }}건</div>
         <RouterLink v-for="r in runners" :key="r.id" :to="detailTo(r.id)" class="sim-mini">
           <div class="min-w-0 flex-1">
             <!-- eslint-disable-next-line vue/no-v-html -- esc() 로 이스케이프 후 <mark> 만 삽입 -->
             <div class="sim-mini-title" v-html="highlight(r.title, r.matchedTerms)" />
-            <div class="text-[10px] text-zinc-400 mt-0.5">#{{ r.id }}</div>
+            <div class="text-[10px] text-zinc-400 dark:text-zinc-600 mt-0.5">#{{ r.id }}</div>
           </div>
           <span class="flex items-center gap-1.5 flex-none">
             <span class="sim-bar"><span class="sim-fill" :style="{ width: pct(r) + '%' }" /></span>
@@ -161,7 +161,7 @@ function detailTo(id: number) {
   border: 1px dashed #e4e4e7; border-radius: 14px; padding: 26px 18px; text-align: center;
   color: #a1a1aa; font-size: 12.5px; line-height: 1.6;
 }
-:global(.dark) .sim-empty { border-color: #3f3f46; color: #52525b; }
+:global(.dark .sim-empty) { border-color: #3f3f46; color: #52525b; }
 .sim-empty-big { font-size: 22px; display: block; margin-bottom: 8px; opacity: .8; }
 
 .sim-hero {
@@ -170,40 +170,41 @@ function detailTo(id: number) {
   box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
   animation: sim-rise .28s cubic-bezier(.2,.7,.3,1) both; transition: border-color .18s;
 }
-:global(.dark) .sim-hero { background: #1b1b1f; border-color: #3f3f46; box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4); }
+:global(.dark .sim-hero) { background: #1b1b1f; border-color: #3f3f46; box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4); }
 .sim-hero:hover { border-color: color-mix(in srgb, #10b981 45%, #e4e4e7); }
 .sim-hero.warn { border-color: color-mix(in srgb, #f59e0b 55%, #e4e4e7); background: color-mix(in srgb, #f59e0b 6%, #fff); }
-:global(.dark) .sim-hero.warn { background: color-mix(in srgb, #f59e0b 8%, #1b1b1f); }
+:global(.dark .sim-hero.warn) { background: color-mix(in srgb, #f59e0b 8%, #1b1b1f); }
 @keyframes sim-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 .sim-gauge { position: relative; width: 92px; height: 92px; flex: none; }
 .sim-gauge svg { transform: rotate(-90deg); display: block; }
 .sim-gauge .g-track { stroke: #ececed; }
-:global(.dark) .sim-gauge .g-track { stroke: #2a2a2e; }
+:global(.dark .sim-gauge .g-track) { stroke: #2a2a2e; }
 .sim-gauge .g-fill { stroke-linecap: round; transition: stroke-dashoffset .5s cubic-bezier(.2,.7,.3,1), stroke .3s; }
 .sim-gauge .g-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .sim-gauge .g-pct { font-size: 23px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1; color: #18181b; }
-:global(.dark) .sim-gauge .g-pct { color: #f4f4f5; }
+:global(.dark .sim-gauge .g-pct) { color: #f4f4f5; }
 .sim-gauge .g-cap { font-size: 9px; color: #a1a1aa; margin-top: 3px; letter-spacing: .04em; }
+:global(.dark .sim-gauge .g-cap) { color: #52525b; }
 
 .sim-band { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; margin-bottom: 7px; }
 .sim-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: .02em; color: #059669; margin-bottom: 3px; }
-:global(.dark) .sim-eyebrow { color: #34d399; }
+:global(.dark .sim-eyebrow) { color: #34d399; }
 .sim-title { margin: 0 0 5px; font-size: 14.5px; font-weight: 600; line-height: 1.32; color: #18181b; }
-:global(.dark) .sim-title { color: #f4f4f5; }
+:global(.dark .sim-title) { color: #f4f4f5; }
 .sim-prev { margin: 0; font-size: 12px; font-weight: 300; color: #71717a; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-:global(.dark) .sim-prev { color: #a1a1aa; }
+:global(.dark .sim-prev) { color: #a1a1aa; }
 .sim-foot { display: flex; align-items: center; gap: 10px; margin-top: 13px; padding-top: 12px; border-top: 1px solid #e4e4e7; }
-:global(.dark) .sim-foot { border-color: #3f3f46; }
+:global(.dark .sim-foot) { border-color: #3f3f46; }
 
 .sim-mini { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; padding: 8px 10px; border: 1px solid #e4e4e7; border-radius: 11px; background: #fff; margin-bottom: 6px; transition: border-color .15s, background .15s; }
-:global(.dark) .sim-mini { background: #1b1b1f; border-color: #3f3f46; }
+:global(.dark .sim-mini) { background: #1b1b1f; border-color: #3f3f46; }
 .sim-mini:hover { border-color: color-mix(in srgb, #10b981 40%, #e4e4e7); background: #f4f4f5; }
-:global(.dark) .sim-mini:hover { background: rgba(39,39,42,.5); }
+:global(.dark .sim-mini:hover) { background: rgba(39,39,42,.5); }
 .sim-mini-title { font-size: 12.5px; font-weight: 500; line-height: 1.3; color: #27272a; display: -webkit-box; -webkit-line-clamp: 1; line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-:global(.dark) .sim-mini-title { color: #e4e4e7; }
+:global(.dark .sim-mini-title) { color: #e4e4e7; }
 .sim-bar { width: 44px; height: 4px; border-radius: 9999px; background: #ececed; overflow: hidden; display: inline-block; }
-:global(.dark) .sim-bar { background: #2a2a2e; }
+:global(.dark .sim-bar) { background: #2a2a2e; }
 .sim-fill { display: block; height: 100%; border-radius: 9999px; background: #fbbf24; transition: width .35s cubic-bezier(.2,.7,.3,1); }
 
 .sim-title :deep(mark), .sim-mini-title :deep(mark) { background: rgba(245,158,11,.12); color: #f59e0b; border-radius: 3px; padding: 0 1px; }
