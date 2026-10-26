@@ -76,7 +76,7 @@ function detailTo(id: number) {
         class="ml-auto text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full"
       >{{ items.length }}건</span>
     </div>
-    <p class="text-[11.5px] text-zinc-400 dark:text-zinc-500 mb-3 min-h-[15px]">
+    <p class="text-[11.5px] text-zinc-400 dark:text-zinc-600 mb-3 min-h-[15px]">
       <template v-if="!hasQuery">제목을 입력하면 기존 사례를 실시간으로 찾아줘요.</template>
       <template v-else-if="topWarn">⚠️ <b class="text-amber-500">중복 가능성이 높아요</b> — 먼저 확인!</template>
       <template v-else-if="items.length">이미 기록된 비슷한 사례예요.</template>
@@ -145,7 +145,7 @@ function detailTo(id: number) {
       </div>
     </template>
 
-    <p class="mt-3.5 text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed">
+    <p class="mt-3.5 text-[11px] text-zinc-400 dark:text-zinc-600 leading-relaxed">
       "중복 가능성 높음"은 유사도 85%↑ 이면서 예외 클래스가 같을 때만 떠요.
     </p>
   </section>
@@ -161,7 +161,7 @@ function detailTo(id: number) {
   border: 1px dashed #e4e4e7; border-radius: 14px; padding: 26px 18px; text-align: center;
   color: #a1a1aa; font-size: 12.5px; line-height: 1.6;
 }
-:global(.dark) .sim-empty { border-color: #3f3f46; }
+:global(.dark) .sim-empty { border-color: #3f3f46; color: #52525b; }
 .sim-empty-big { font-size: 22px; display: block; margin-bottom: 8px; opacity: .8; }
 
 .sim-hero {
