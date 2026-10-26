@@ -85,7 +85,7 @@ function detailTo(id: number) {
     <!-- 비어있음 -->
     <div v-if="!hasQuery" class="sim-empty">
       <span class="sim-empty-big">⌕</span>
-      예: <b>NullPointerException</b>, <b>503 HikariCP</b> …<br>입력을 시작해 보세요.
+      예: <b>NullPointerException in OrderService</b>, <b>503 HikariCP</b> …<br>입력을 시작해 보세요.
     </div>
     <div v-else-if="!items.length" class="sim-empty">
       <span class="sim-empty-big">✎</span>
