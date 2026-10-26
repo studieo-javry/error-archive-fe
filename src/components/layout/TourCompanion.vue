@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTour } from '@/composables/useTour'
 import { useTourStore } from '@/stores/tourStore'
@@ -12,23 +12,13 @@ const tourStore = useTourStore()
 const { titles, total, active, card, stepIndex, isComplete, article, next, prev, dismiss, convert, openArticle, isCompatible, pause } = useTour()
 const demo = useDemoStore()
 
-// 인트로(비슷한 사례): 두 버튼 모두 체험 후 둘러보기(다음 단계)로 넘어간다.
-//  - '비슷한 사례 띄워보기' = 예시 제목을 한 글자씩 타이핑(ErrorFormPage)해 추천 결과를 보여준 뒤 넘어감(타이핑 ~1.6s + 확인).
-//  - '직접 입력해볼게요' = 제목을 비우고 잠깐 직접 입력해본 뒤 넘어감.
-let introAdvanceTimer: ReturnType<typeof setTimeout> | null = null
-function advanceIntroAfter(ms: number) {
-  if (introAdvanceTimer) clearTimeout(introAdvanceTimer)
-  introAdvanceTimer = setTimeout(() => { if (stepIndex.value === 0) next() }, ms)
-}
-function onIntroDemo() {
-  tourStore.requestSimilarDemo()
-  advanceIntroAfter(2400)
-}
-function onIntroManual() {
-  tourStore.requestSimilarManual()
-  advanceIntroAfter(1200)
-}
-onBeforeUnmount(() => { if (introAdvanceTimer) clearTimeout(introAdvanceTimer) })
+// 인트로(비슷한 사례): 두 버튼을 눌러 체험하면 주 버튼이 '둘러보기 시작'으로 바뀐다(자동 전환 X — 사용자가 직접 눌러야 넘어감).
+//  - '비슷한 사례 띄워보기' = 예시 제목을 한 글자씩 타이핑(ErrorFormPage)해 추천 결과를 보여준다.
+//  - '직접 입력해볼게요' = 제목을 비우고 포커스해 직접 입력·테스트하게 둔다.
+const introTried = ref(false)
+function onIntroDemo() { tourStore.requestSimilarDemo(); introTried.value = true }
+function onIntroManual() { tourStore.requestSimilarManual(); introTried.value = true }
+watch(stepIndex, (v) => { if (v !== 0) introTried.value = false })
 
 // 목업 규칙: 가이드는 단계에 맞는 화면에서만 뜬다.
 //  - 처음 열었을 때 맞지 않는 화면이면 조용히 접는다(예: 진행 중 상태로 홈 새로고침).
@@ -158,9 +148,10 @@ onBeforeUnmount(clearHighlight)
           <p v-html="card.body" />
           <div class="guide-hint"><DemoIcon name="bulb" /><span>{{ card.hint }}</span></div>
           <div class="guide-actions">
-            <!-- 인트로(비슷한 사례 찾기): 띄워보기(예시 채워 결과 표시→다음 단계) + 직접 입력해볼게요(제목 비우고 포커스) -->
+            <!-- 인트로(비슷한 사례 찾기): 띄워보기·직접입력을 누르면 주 버튼이 '둘러보기 시작'으로 바뀐다(자동 전환 X) -->
             <template v-if="stepIndex === 0">
-              <button type="button" class="btn btn-primary btn-full" @click="onIntroDemo"><DemoIcon name="arrow" />비슷한 사례 띄워보기</button>
+              <button v-if="!introTried" type="button" class="btn btn-primary btn-full" @click="onIntroDemo"><DemoIcon name="arrow" />비슷한 사례 띄워보기</button>
+              <button v-else type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />둘러보기 시작</button>
               <button type="button" class="btn btn-quiet btn-full" @click="onIntroManual">직접 입력해볼게요</button>
             </template>
             <template v-else>
