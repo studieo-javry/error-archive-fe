@@ -97,6 +97,25 @@ export interface ErrorCaseSummary {
   }
 }
 
+// 유사 에러 추천 — 제목 입력 중 비슷한 기존 사례(워크스페이스/본인 스코프).
+export interface SimilarCaseItem {
+  id: number
+  ownerUserId: number
+  title: string
+  status: string
+  visibility: string
+  workspaceId: number | null
+  tags: string[]
+  descriptionPreview: string | null
+  score: number // 0~1
+  matchedTerms: string[]
+  likelyDuplicate: boolean // 서버 판정: score≥0.85 AND 예외 클래스 동일
+}
+
+export interface SimilarCaseListResponse {
+  items: SimilarCaseItem[]
+}
+
 export interface ErrorCaseCreateRequest {
   title: string
   project?: string | null

@@ -16,6 +16,8 @@ import SnippetCard from '@/components/snippet/SnippetCard.vue'
 import AttachmentModal from '@/components/attachment/AttachmentModal.vue'
 import AttachmentCard from '@/components/attachment/AttachmentCard.vue'
 import DemoNotice from '@/components/demo/DemoNotice.vue'
+import SimilarCasesPanel from '@/components/error/SimilarCasesPanel.vue'
+import { useSimilarCases } from '@/composables/useSimilarCases'
 import { CodeBracketIcon, PaperClipIcon, ClockIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
@@ -35,6 +37,16 @@ const tags = ref<string[]>([])
 const tagInput = ref('')
 const workspaces = ref<WorkspaceListItem[]>([])
 const workspaceId = ref<number | null>(null)
+
+// 유사 에러 추천 — 제목 입력 중 비슷한 기존 사례를 옆에 실시간 노출.
+// 지금은 데모(게스트) 전용 트라이얼로만 노출(정식 도입 시 게이트 확대). 신규 작성 시만.
+// 데모 게스트는 데모 워크스페이스 멤버라, 현재 WS 스코프로 시드 사례가 검색된다.
+const showSimilar = computed(() => authStore.isGuest && !isEdit)
+const { items: similarItems, loading: similarLoading } = useSimilarCases(
+  title,
+  computed(() => teamStore.currentWorkspaceId),
+  { enabled: showSimilar },
+)
 
 watch(visibility, async (val) => {
   if (val === 'WORKSPACE' && !workspaces.value.length) {
@@ -268,7 +280,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto">
+  <div :class="showSimilar ? 'mx-auto max-w-5xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-10 items-start' : 'max-w-2xl mx-auto'">
+    <div class="min-w-0">
     <h1 class="text-2xl font-light serif-title text-zinc-800 dark:text-zinc-100 mb-10">
       {{ isEdit ? 'Edit Error' : 'New Entry' }}
     </h1>
@@ -458,6 +471,11 @@ onMounted(async () => {
 
     <SnippetModal v-if="showSnippetModal" @save="saveSnippet" @close="showSnippetModal = false" />
     <AttachmentModal v-if="showAttachmentModal" @save="saveAttachment" @close="showAttachmentModal = false" />
+    </div>
+
+    <aside v-if="showSimilar" class="lg:sticky lg:top-6">
+      <SimilarCasesPanel :items="similarItems" :query="title" :loading="similarLoading" :slug="teamStore.currentSlug" />
+    </aside>
   </div>
 </template>
 

@@ -7,6 +7,7 @@ import type {
   ErrorCaseCreateResponse,
   ErrorCaseUpdateRequest,
   MeTooResponse,
+  SimilarCaseListResponse,
 } from '@/types/error'
 
 export const errorApi = {
@@ -46,6 +47,12 @@ export const errorApi = {
     size?: number
   }) {
     return apiClient.get<CursorPaginatedResponse<ErrorCaseSummary>>('/error-cases/search', { params })
+  },
+
+  // 유사 에러 추천 — 제목 입력 중 실시간. workspaceId 지정 시 그 WS 멤버 스코프, 미지정 시 본인 케이스.
+  // 보조 기능이라 호출부에서 조용히 실패 처리(AbortController 로 직전 요청 취소).
+  similar(params: { q: string; workspaceId?: number; limit?: number }, signal?: AbortSignal) {
+    return apiClient.get<SimilarCaseListResponse>('/error-cases/similar', { params, signal })
   },
 
   // "나도 겪었어요"(me-too) 토글 — 본인 케이스는 403(멱등). 응답에 최신 count/taggedByMe/userIds.
