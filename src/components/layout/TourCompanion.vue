@@ -12,17 +12,21 @@ const tourStore = useTourStore()
 const { titles, total, active, card, stepIndex, isComplete, article, next, prev, dismiss, convert, openArticle, isCompatible, pause } = useTour()
 const demo = useDemoStore()
 
-// 인트로(비슷한 사례): '비슷한 사례 띄워보기' = 예시 제목을 채워 추천 결과를 보여준 뒤 자연스럽게 다음 단계로,
-// '직접 입력해볼게요' = 제목을 비우고 포커스해 직접 입력하게 둔다(그 자리에 머묾).
+// 인트로(비슷한 사례): 두 버튼 모두 체험 후 둘러보기(다음 단계)로 넘어간다.
+//  - '비슷한 사례 띄워보기' = 예시 제목을 한 글자씩 타이핑(ErrorFormPage)해 추천 결과를 보여준 뒤 넘어감(타이핑 ~1.6s + 확인).
+//  - '직접 입력해볼게요' = 제목을 비우고 잠깐 직접 입력해본 뒤 넘어감.
 let introAdvanceTimer: ReturnType<typeof setTimeout> | null = null
+function advanceIntroAfter(ms: number) {
+  if (introAdvanceTimer) clearTimeout(introAdvanceTimer)
+  introAdvanceTimer = setTimeout(() => { if (stepIndex.value === 0) next() }, ms)
+}
 function onIntroDemo() {
   tourStore.requestSimilarDemo()
-  if (introAdvanceTimer) clearTimeout(introAdvanceTimer)
-  introAdvanceTimer = setTimeout(() => { if (stepIndex.value === 0) next() }, 1500)
+  advanceIntroAfter(2400)
 }
 function onIntroManual() {
-  if (introAdvanceTimer) { clearTimeout(introAdvanceTimer); introAdvanceTimer = null }
   tourStore.requestSimilarManual()
+  advanceIntroAfter(1200)
 }
 onBeforeUnmount(() => { if (introAdvanceTimer) clearTimeout(introAdvanceTimer) })
 

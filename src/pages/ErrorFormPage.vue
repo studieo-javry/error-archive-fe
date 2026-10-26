@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { errorApi } from '@/services/errorApi'
 import { snippetApi } from '@/services/snippetApi'
@@ -50,14 +50,31 @@ const { items: similarItems, loading: similarLoading } = useSimilarCases(
   { enabled: showSimilar },
 )
 
-// 가이드 인트로 버튼 연동: '비슷한 사례 띄워보기'(데모 제목 자동 입력) / '직접 입력해볼게요'(비우고 포커스).
+// 가이드 인트로 버튼 연동: '비슷한 사례 띄워보기'(예시 제목을 한 글자씩 타이핑) / '직접 입력해볼게요'(비우고 포커스).
+// 목업(기준 아티팩트)의 typeTo 와 동일하게 45ms/글자로 입력돼 추천이 실시간으로 뜨는 과정을 보여준다.
 const titleInput = ref<HTMLInputElement | null>(null)
-watch(() => tourStore.similarDemoRequest, () => { if (showSimilar.value) title.value = 'NullPointerException in OrderService' })
+const DEMO_TITLE = 'NullPointerException in OrderService'
+let demoTypeTimer: ReturnType<typeof setInterval> | null = null
+function stopDemoTyping() {
+  if (demoTypeTimer) { clearInterval(demoTypeTimer); demoTypeTimer = null }
+}
+watch(() => tourStore.similarDemoRequest, () => {
+  if (!showSimilar.value) return
+  stopDemoTyping()
+  title.value = ''
+  let i = 0
+  demoTypeTimer = setInterval(() => {
+    title.value = DEMO_TITLE.slice(0, ++i)
+    if (i >= DEMO_TITLE.length) stopDemoTyping()
+  }, 45)
+})
 watch(() => tourStore.similarManualRequest, () => {
   if (!showSimilar.value) return
+  stopDemoTyping()
   title.value = ''
   nextTick(() => titleInput.value?.focus())
 })
+onBeforeUnmount(stopDemoTyping)
 
 watch(visibility, async (val) => {
   if (val === 'WORKSPACE' && !workspaces.value.length) {
