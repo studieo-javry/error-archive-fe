@@ -11,7 +11,7 @@ const routes = [
   // Workspace-scoped routes — the workspace slug is carried in the URL (/w/:slug/...).
   { path: '/w/:slug/home', name: 'home', component: () => import('@/pages/HomePage.vue') },
   { path: '/w/:slug/errors', name: 'errorList', component: () => import('@/pages/ErrorListPage.vue') },
-  { path: '/w/:slug/errors/new', name: 'errorCreate', component: () => import('@/pages/ErrorFormPage.vue') },
+  { path: '/w/:slug/errors/new', name: 'errorCreate', component: () => import('@/pages/ErrorFormPage.vue'), meta: { wideLayout: true } },
   { path: '/w/:slug/errors/:id', name: 'errorDetail', component: () => import('@/pages/ErrorDetailPage.vue') },
   { path: '/w/:slug/errors/:id/edit', name: 'errorEdit', component: () => import('@/pages/ErrorFormPage.vue') },
   { path: '/w/:slug/search', name: 'search', component: () => import('@/pages/SearchPage.vue') },
