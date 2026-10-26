@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTour } from '@/composables/useTour'
 import { useTourStore } from '@/stores/tourStore'
@@ -11,6 +11,12 @@ const router = useRouter()
 const tourStore = useTourStore()
 const { titles, total, active, card, stepIndex, isComplete, article, next, prev, dismiss, convert, openArticle, isCompatible, pause } = useTour()
 const demo = useDemoStore()
+
+// 인트로(비슷한 사례) 체험 여부 — 띄워보기/직접입력을 한 번 해보면 주 버튼이 '둘러보기 시작'으로 바뀐다.
+const introTried = ref(false)
+function onIntroDemo() { tourStore.requestSimilarDemo(); introTried.value = true }
+function onIntroManual() { tourStore.requestSimilarManual(); introTried.value = true }
+watch(stepIndex, (v) => { if (v !== 0) introTried.value = false })
 
 // 목업 규칙: 가이드는 단계에 맞는 화면에서만 뜬다.
 //  - 처음 열었을 때 맞지 않는 화면이면 조용히 접는다(예: 진행 중 상태로 홈 새로고침).
@@ -140,11 +146,11 @@ onBeforeUnmount(clearHighlight)
           <p v-html="card.body" />
           <div class="guide-hint"><DemoIcon name="bulb" /><span>{{ card.hint }}</span></div>
           <div class="guide-actions">
-            <!-- 인트로(비슷한 사례 찾기): 직접 체험용 2버튼 + 탐색으로 넘어가기 -->
+            <!-- 인트로(비슷한 사례 찾기): 체험(띄워보기/직접입력) 후 주 버튼이 '둘러보기 시작'으로 전환 -->
             <template v-if="stepIndex === 0">
-              <button type="button" class="btn btn-primary btn-full" @click="tourStore.requestSimilarDemo()"><DemoIcon name="arrow" />비슷한 사례 띄워보기</button>
-              <button type="button" class="btn btn-quiet btn-full" @click="tourStore.requestSimilarManual()">직접 입력해볼게요</button>
-              <button type="button" class="text-btn guide-reopen" @click="next"><DemoIcon name="arrow" />둘러보기 시작</button>
+              <button v-if="!introTried" type="button" class="btn btn-primary btn-full" @click="onIntroDemo"><DemoIcon name="arrow" />비슷한 사례 띄워보기</button>
+              <button v-else type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />둘러보기 시작</button>
+              <button type="button" class="btn btn-quiet btn-full" @click="onIntroManual">직접 입력해볼게요</button>
             </template>
             <template v-else>
               <button type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />{{ card.cta }}</button>
