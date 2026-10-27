@@ -139,6 +139,27 @@ export interface ErrorCaseCreateResponse {
   snippetMarkerIds: string[]
   attachmentMarkerIds: string[]
   createdAt: string
+  severity?: number | null
+}
+
+// ── AI 초안 제안 (POST /error-cases/draft-suggestion) ──
+export interface DraftSuggestionRequest {
+  paste: string
+  workspaceTags?: string[]
+}
+export interface DraftSuggestionSeverity {
+  name: string // "S1".."S4"
+  code: number // 1..4 (create 요청의 severity 로 그대로 전달)
+  label: string // "Outage" | "Degraded" | "Minor" | "Info"
+}
+export interface DraftSuggestionResponse {
+  title: string
+  exceptionClass: string | null
+  summary: string | null
+  tags: string[]
+  severity: DraftSuggestionSeverity | null
+  /** true = LLM 미사용/실패 → 정규식 기반 폴백(요약·심각도·태그가 비어 있을 수 있음). */
+  degraded: boolean
 }
 
 export interface ErrorCaseUpdateRequest {
