@@ -9,9 +9,11 @@ export interface TourFlags {
   contextOpened: boolean
   evidenceRead: boolean
   solutionSelected: boolean
+  /** AI 단계: 샘플 AI 제안을 띄워봤는지(목업 tourState.aiTried). */
+  aiTried: boolean
 }
 
-const NO_FLAGS: TourFlags = { contextOpened: false, evidenceRead: false, solutionSelected: false }
+const NO_FLAGS: TourFlags = { contextOpened: false, evidenceRead: false, solutionSelected: false, aiTried: false }
 
 // 게스트 가이드 투어 진행 상태. 새로고침에도 이어지도록 localStorage 에 보존.
 const NS = 'tour.'
@@ -55,6 +57,9 @@ export const useTourStore = defineStore('tour', () => {
   // 인트로(비슷한 사례) 단계 ↔ New Entry 입력칸: 데모 제목 자동 입력 / 비우고 포커스 요청 신호.
   const similarDemoRequest = ref(0)
   const similarManualRequest = ref(0)
+  // AI 단계 ↔ New Entry: 샘플 AI 제안 띄우기 / 로그인 안내(게이트) 요청 신호.
+  const aiDemoRequest = ref(0)
+  const aiGateRequest = ref(0)
 
   function setStatus(value: TourStatus) {
     status.value = value
@@ -110,13 +115,19 @@ export const useTourStore = defineStore('tour', () => {
   function requestSimilarManual() {
     similarManualRequest.value++
   }
+  function requestAiDemo() {
+    aiDemoRequest.value++
+  }
+  function requestAiGate() {
+    aiGateRequest.value++
+  }
 
   return {
     status, step, caseId, flags, solutionTitle, solutionStepCount, solutionRequest,
     publishStage, publishOpenRequest, publishCloseRequest, publishAdvanceRequest,
-    similarDemoRequest, similarManualRequest,
+    similarDemoRequest, similarManualRequest, aiDemoRequest, aiGateRequest,
     setStatus, setStep, setCase, setFlag, resetFlags, reset, setSolutionInfo, requestSolution,
     setPublishStage, requestPublishOpen, requestPublishClose, requestPublishAdvance,
-    requestSimilarDemo, requestSimilarManual,
+    requestSimilarDemo, requestSimilarManual, requestAiDemo, requestAiGate,
   }
 })
