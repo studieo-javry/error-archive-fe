@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import type { MyProfile } from '@/types/user'
 import type { ErrorCaseSummary } from '@/types/error'
+import type { GithubInstallation } from '@/types/githubIntegration'
 
 // Synthesize ~1 year of activity-grass data in the insight-api ActivityGrassResponse shape.
 function buildGrass() {
@@ -256,6 +257,19 @@ const mockWorkspaces = [
   { workspaceId: 2, name: 'Backend Team', role: 'WRITE', createdByUserId: 2, slug: 'backend-team' },
 ]
 let nextWorkspaceId = 3
+
+// core-api GitHub 연동(P0) — 설치 목록. 목업(error-archive-github-p0-mockup.html)의 예시 데이터.
+const mockGithubInstallations: GithubInstallation[] = [
+  {
+    installationId: 82401917, accountLogin: 'studieo-javry', accountType: 'Organization', workspaceId: 1, installedByUserId: 1, status: 'ACTIVE',
+    repositories: [
+      { repoId: 101, fullName: 'studieo-javry/error-archive', isPrivate: false },
+      { repoId: 102, fullName: 'studieo-javry/error-archive-fe', isPrivate: false },
+      { repoId: 103, fullName: 'studieo-javry/error-archive-infra', isPrivate: true },
+    ],
+    connectedAt: '2026-10-28T10:00:00',
+  },
+]
 
 // publish-api 발행물 — Library > Published. 배지가 실제로 뜨는 조합을 섞어둔다
 // (정상 / source changed / Unlisted / Archived / source deleted).
@@ -839,6 +853,30 @@ export const handlers = [
       shareUrl: '/report/share-abc123',
       createdAt: new Date().toISOString(),
     })
+  }),
+
+  // ── GitHub 연동(P0) ──
+  http.get('/api/v1/integrations/github/installations', () => HttpResponse.json(mockGithubInstallations)),
+
+  // 실제로는 GitHub 설치 화면 URL. 오프라인에선 GitHub 를 건너뛰고 Setup URL(콜백)로 바로 돌아온다.
+  http.get('/api/v1/integrations/github/install-url', ({ request }) => {
+    const workspaceId = new URL(request.url).searchParams.get('workspaceId')
+    const params = new URLSearchParams({ installation_id: '82401918', setup_action: 'install', code: 'mock-code', state: `mock-${workspaceId ?? 'personal'}` })
+    return HttpResponse.json({ url: `/settings/integrations/github/callback?${params}` })
+  }),
+
+  http.post('/api/v1/integrations/github/installations', async ({ request }) => {
+    const body = await request.json() as { installationId: number; state: string }
+    const workspaceId = body.state.startsWith('mock-') && body.state !== 'mock-personal' ? Number(body.state.slice(5)) : null
+    const installation: GithubInstallation = {
+      installationId: body.installationId, accountLogin: 'javry', accountType: 'User', workspaceId, installedByUserId: 1, status: 'ACTIVE',
+      repositories: [{ repoId: 201, fullName: 'javry/playground', isPrivate: false }],
+      connectedAt: new Date().toISOString().slice(0, 19),
+    }
+    const i = mockGithubInstallations.findIndex(x => x.installationId === installation.installationId)
+    if (i >= 0) mockGithubInstallations[i] = installation
+    else mockGithubInstallations.push(installation)
+    return HttpResponse.json(installation)
   }),
 
   http.get('/api/v1/reports/:shareToken', () => {

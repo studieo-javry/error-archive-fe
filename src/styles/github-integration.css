@@ -1,0 +1,194 @@
+/* GitHub 연동(P0) — error-archive-github-p0-mockup.html 의 <style> 을 값 그대로 옮김.
+ * 앱 전역과 충돌하지 않도록 모든 선택자를 .gh-int 아래로 스코프하고, 키프레임 이름만 gh- 접두.
+ * 목업의 앱 셸(rail/header/settings-nav)·데모 바·GitHub 화면 시뮬레이션 전용 규칙은 제외(실제 화면 아님). */
+.gh-int{font-family:var(--sans);font-size:14px;color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+.gh-int{color-scheme:light;--bg:#f7f7f5;--surface:#fff;--ink:#18181b;--muted:#71717a;--soft:#a1a1aa;--line:#e4e4e7;--line-strong:#d4d4d8;--hover:#f4f4f5;--green:#059669;--green-hover:#047857;--green-bg:#ecfdf5;--green-line:#a7f3d0;--amber:#a16207;--amber-bg:#fffbeb;--amber-line:#fde68a;--red:#be123c;--red-bg:#fff1f2;--red-line:#fecdd3;--shadow:0 1px 3px #18181b04;--sans:Inter,'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif}
+.dark .gh-int{color-scheme:dark;--bg:#18181b;--surface:#202023;--ink:#f4f4f5;--muted:#a1a1aa;--soft:#777780;--line:#323238;--line-strong:#45454d;--hover:#2a2a30;--green:#34d399;--green-hover:#6ee7b7;--green-bg:#052e25;--green-line:#14513f;--amber:#fbbf24;--amber-bg:#302719;--amber-line:#63491b;--red:#fda4af;--red-bg:#361e25;--red-line:#63313e;--shadow:none}
+.gh-int h1,.gh-int h2,.gh-int h3,.gh-int p{margin:0}
+.gh-int button,.gh-int input,.gh-int select{font:inherit;color:inherit}
+.gh-int button{cursor:pointer;background:none;border:0;padding:0}
+.gh-int button:disabled{cursor:not-allowed;opacity:.45}
+.gh-int button,.gh-int a,.gh-int input,.gh-int select{-webkit-tap-highlight-color:transparent}
+.gh-int button:focus-visible,.gh-int a:focus-visible{outline:2px solid #10b981;outline-offset:4px}
+.gh-int a{color:inherit}
+.gh-int input,.gh-int select{outline:none}
+.gh-int input:focus,.gh-int select:focus{border-color:#10b981!important;box-shadow:0 0 0 3px #10b98114}
+.gh-int input::placeholder{color:var(--soft)}
+.gh-int input[type=checkbox],.gh-int input[type=radio]{accent-color:#059669;width:16px;height:16px;flex:none}
+.gh-int svg.icon{width:20px;height:20px;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;fill:none;flex-shrink:0;vertical-align:middle}
+.gh-int .icon.sm{width:16px;height:16px}
+.gh-int .icon.lg{width:24px;height:24px}
+.gh-int .icon.github{fill:currentColor;stroke:none}
+.gh-int [hidden]{display:none!important}
+.gh-int .row{display:flex;align-items:center;gap:10px}
+.gh-int .between{justify-content:space-between}
+.gh-int .grow{flex:1;min-width:0}
+.gh-int .muted{color:var(--muted)}
+.gh-int .small{font-size:12px}
+.gh-int .tiny{font-size:11px}
+.gh-int .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.gh-int .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.gh-int .pill{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);padding:2px 7px;border-radius:5px;font-size:10px;font-weight:500;color:var(--muted);white-space:nowrap;line-height:1.6}
+.gh-int .pill.green{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
+.gh-int .pill.amber{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}
+.gh-int .dot{width:5px;height:5px;background:currentColor;border-radius:50%}
+.gh-int .button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);border-radius:10px;padding:8px 13px;font-size:12px;font-weight:500;white-space:nowrap;min-height:36px;transition:background .15s,border-color .15s}
+.gh-int .button:hover{background:var(--hover)}
+.gh-int .button.primary{background:#059669;color:#fff;border-color:#059669;box-shadow:0 1px 2px #065f4622}
+.gh-int .button.primary:hover{background:#047857;border-color:#047857}
+.gh-int .button.danger{color:var(--red);border-color:var(--red-line)}
+.gh-int .button.ghost{border-color:transparent;background:transparent}
+.gh-int .text-button{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--green)}
+.gh-int .text-button:hover{text-decoration:underline}
+.gh-int .icon-button{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;color:var(--muted)}
+.gh-int .icon-button:hover{background:var(--hover);color:var(--ink)}
+.gh-int .eyebrow{font-size:10px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted)}
+.gh-int .page-heading{margin-bottom:30px}
+.gh-int .page-heading h1{font-size:24px;line-height:1.4;letter-spacing:-.65px;font-weight:700;margin-bottom:8px}
+.gh-int .page-heading p{font-size:13px;color:var(--muted);line-height:1.8}
+.gh-int .page-heading .heading-end{align-self:flex-start;margin-top:4px}
+.gh-int .integration-overview{border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);padding:22px 24px;margin-bottom:28px}
+.gh-int .service-icon{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface);flex:none}
+.gh-int .service-icon .icon{width:26px;height:26px}
+.gh-int .service-name{font-size:17px;letter-spacing:-.3px;font-weight:600}
+.gh-int .service-desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.7}
+.gh-int .integration-overview .button{margin-left:10px}
+.gh-int .overview-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);margin-top:20px;padding-top:14px;font-size:11px;color:var(--muted)}
+.gh-int .overview-foot .icon{width:14px;height:14px}
+.gh-int .section-heading{margin-bottom:15px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.gh-int .section-heading h2{font-size:13px;font-weight:600}
+.gh-int .section-heading h2 span{margin-left:6px;color:var(--soft);font-weight:400}
+.gh-int .filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.gh-int .filter-tab{display:flex;align-items:center;gap:6px;border:1px solid transparent;border-radius:7px;padding:5px 9px;font-size:11px;color:var(--muted);min-height:30px}
+.gh-int .filter-tab:hover{background:var(--hover)}
+.gh-int .filter-tab.active{background:var(--surface);border-color:var(--line);box-shadow:var(--shadow);color:var(--ink);font-weight:500}
+.gh-int .filter-tab span{font-size:10px;color:var(--soft)}
+.gh-int .installation{border:1px solid var(--line);background:var(--surface);border-radius:13px;margin-bottom:16px;box-shadow:var(--shadow);overflow:hidden}
+.gh-int .installation-head{padding:21px 22px 18px}
+.gh-int .account-icon{height:36px;width:36px;flex:none;border-radius:9px;background:var(--hover);color:var(--muted);display:grid;place-items:center}
+.gh-int .account-name{font-size:14px;font-weight:600;letter-spacing:-.2px}
+.gh-int .account-type{font-size:10px;color:var(--soft);margin-top:2px}
+.gh-int .install-meta{display:flex;align-items:center;gap:12px;margin-top:17px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+.gh-int .install-meta .icon{width:14px;height:14px}
+.gh-int .meta-divider{height:10px;width:1px;background:var(--line)}
+.gh-int .repository-area{border-top:1px solid var(--line)}
+.gh-int .repository-head{padding:17px 22px 13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.gh-int .repository-head h3{font-size:12px;font-weight:600;flex:1}
+.gh-int .repository-head h3 span{font-size:11px;font-weight:400;color:var(--soft);margin-left:5px}
+.gh-int .search-wrap{display:flex;align-items:center;position:relative;width:205px}
+.gh-int .search-wrap .icon{position:absolute;left:10px;width:14px;height:14px;color:var(--soft)}
+.gh-int .search-wrap input{font-size:11px;padding:7px 10px 7px 31px;border:1px solid var(--line);border-radius:7px;background:var(--surface);width:100%;height:31px}
+.gh-int .repo-row{display:flex;align-items:center;gap:12px;padding:14px 22px;transition:background .15s}
+.gh-int .repo-row:hover{background:color-mix(in srgb,var(--hover) 70%,transparent)}
+.gh-int .repo-row+.repo-row{border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.gh-int .repo-row>.icon{color:var(--soft);width:17px;height:17px}
+.gh-int .repo-info{display:flex;align-items:center;gap:9px;flex:1;min-width:0;flex-wrap:wrap}
+.gh-int .repo-name{font-size:12px;font-weight:500;overflow-wrap:anywhere;letter-spacing:-.2px;text-decoration:none}
+.gh-int .repo-name:hover{color:var(--green);text-decoration:underline}
+.gh-int .repo-owner{font-weight:400;color:var(--muted)}
+.gh-int .repo-row .pill{font-size:9px;padding:1px 6px}
+.gh-int .repo-row>.icon-button{width:23px;height:23px}
+.gh-int .repository-footer{border-top:1px solid var(--line);padding:13px 22px;background:color-mix(in srgb,var(--bg) 55%,var(--surface));display:flex;align-items:center;justify-content:space-between;gap:14px;color:var(--muted);font-size:10px}
+.gh-int .repository-footer .icon{width:13px;height:13px}
+.gh-int .note{display:flex;align-items:flex-start;gap:9px;font-size:11px;line-height:1.8;color:var(--muted);margin-top:20px}
+.gh-int .note .icon{width:15px;height:15px;margin-top:3px;color:var(--soft)}
+.gh-int .notice{display:flex;gap:10px;padding:12px 16px;font-size:11px;line-height:1.8;border:1px solid var(--line);border-radius:9px;background:var(--hover);color:var(--muted);margin-bottom:17px}
+.gh-int .notice .icon{width:16px;height:16px;margin-top:2px}
+.gh-int .notice.amber{color:var(--amber);background:var(--amber-bg);border-color:var(--amber-line)}
+.gh-int .notice.green{color:var(--green);background:var(--green-bg);border-color:var(--green-line)}
+.gh-int .notice.red{color:var(--red);background:var(--red-bg);border-color:var(--red-line)}
+.gh-int .installation .notice{border-radius:0;border-width:1px 0 0;margin:0;padding:12px 22px}
+.gh-int .empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:46px 20px 42px;background:var(--surface);border:1px dashed var(--line-strong);border-radius:13px}
+.gh-int .empty-graphic{display:flex;align-items:center;gap:9px;margin-bottom:22px;color:var(--soft)}
+.gh-int .empty-graphic .graphic-icon{display:grid;place-items:center;width:42px;height:42px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.gh-int .empty-graphic .ea{font:400 24px Fraunces,Georgia,serif;color:#10b981}
+.gh-int .empty-graphic .connector{width:30px;border-top:1px dashed var(--line-strong)}
+.gh-int .empty h3{font-size:15px;font-weight:600;margin-bottom:9px;letter-spacing:-.3px}
+.gh-int .empty p{font-size:12px;line-height:1.9;color:var(--muted);max-width:390px;margin-bottom:20px}
+.gh-int .repo-empty{padding:30px 22px;text-align:center;font-size:12px;color:var(--muted)}
+.gh-int .repo-empty .icon{display:block;margin:0 auto 9px;color:var(--soft)}
+.gh-int .repo-empty p{font-size:11px;margin-top:5px}
+.gh-int .future-note{border-top:1px solid var(--line);padding-top:18px;margin-top:26px;display:flex;gap:12px;align-items:flex-start}
+.gh-int .future-note p{font-size:11px;color:var(--muted);line-height:1.9}
+.gh-int .future-note .pill{margin-top:2px}
+.gh-int .loading-list{padding:20px 22px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.gh-int .skeleton{height:14px;background:var(--hover);border-radius:5px;margin:9px 0;animation:gh-pulse 1s infinite}
+.gh-int .skeleton.short{width:55%}
+@keyframes gh-pulse{50%{opacity:.4}}
+.gh-int .toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);padding:11px 18px;background:var(--ink);color:var(--surface);font-size:12px;border-radius:10px;box-shadow:0 6px 28px #0002;display:flex;align-items:center;gap:10px;z-index:60;max-width:calc(100% - 32px);width:max-content}
+.gh-int .toast .icon{color:#34d399;width:17px;height:17px}
+.gh-int .toast[hidden]{display:none}
+.gh-int dialog{padding:0;border:1px solid var(--line);border-radius:17px;background:var(--surface);color:var(--ink);box-shadow:0 24px 90px #0003;max-height:calc(100dvh - 42px);width:min(520px,calc(100vw - 32px));max-width:none;overflow:auto}
+.gh-int dialog.wide{width:min(640px,calc(100vw - 32px))}
+.gh-int dialog::backdrop{background:#18181b55;backdrop-filter:blur(3px)}
+.gh-int .modal-top{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--line)}
+.gh-int .modal-top .row{gap:8px}
+.gh-int .modal-top .icon{width:17px;height:17px}
+.gh-int .modal-top strong{font-size:12px;font-weight:500}
+.gh-int .modal-inner{padding:24px 28px}
+.gh-int .modal-inner h2{font-size:22px;line-height:1.45;letter-spacing:-.7px;margin:6px 0 10px}
+.gh-int .modal-intro{color:var(--muted);font-size:12px;line-height:1.9}
+.gh-int .modal-actions{padding:17px 28px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;background:color-mix(in srgb,var(--bg) 60%,var(--surface))}
+.gh-int .modal-actions .button{min-height:38px}
+.gh-int .steps{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--soft);margin-bottom:24px}
+.gh-int .steps .icon{width:12px;height:12px}
+.gh-int .steps .current{color:var(--green);font-weight:500}
+.gh-int .step-num{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--hover);margin-right:4px;font-size:9px}
+.gh-int .current .step-num{background:var(--green-bg)}
+.gh-int .scope-option{display:flex;align-items:center;gap:12px;border:1px solid var(--line);padding:16px;border-radius:11px;margin-top:11px;cursor:pointer;transition:border .15s,background .15s}
+.gh-int .scope-option:has(input:checked){border-color:var(--green);background:var(--green-bg)}
+.gh-int .scope-option:has(input:disabled){opacity:.5;cursor:not-allowed}
+.gh-int .scope-option>.icon{width:22px;height:22px;color:var(--muted)}
+.gh-int .scope-option strong{font-size:13px;font-weight:500;display:block}
+.gh-int .scope-option p{font-size:10px;color:var(--muted);margin-top:3px}
+.gh-int .scope-option input{margin-left:auto}
+.gh-int .scope-hint{font-size:11px;color:var(--muted);line-height:1.8;margin:18px 0 0}
+.gh-int .status-view{text-align:center;padding:36px 30px 28px}
+.gh-int .status-view h2{font-size:22px;letter-spacing:-.7px;margin:18px 0 9px}
+.gh-int .status-view>p{font-size:12px;line-height:1.9;color:var(--muted)}
+.gh-int .status-symbol{display:grid;place-items:center;width:56px;height:56px;margin:0 auto;border-radius:17px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-line)}
+.gh-int .status-symbol.error{background:var(--red-bg);color:var(--red);border-color:var(--red-line)}
+.gh-int .status-symbol.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-line)}
+.gh-int .status-symbol .icon{width:27px;height:27px}
+.gh-int .spinner{display:inline-block;height:23px;width:23px;border:2px solid var(--green-line);border-top-color:var(--green);border-radius:50%;animation:gh-spin .8s linear infinite}
+@keyframes gh-spin{to{transform:rotate(360deg)}}
+.gh-int .checklist{margin:24px auto 0;padding:18px;border:1px solid var(--line);border-radius:10px;text-align:left;font-size:11px;display:grid;gap:10px;max-width:360px}
+.gh-int .checklist .row{gap:9px}
+.gh-int .checklist .icon{height:15px;width:15px;color:var(--green)}
+.gh-int .checklist .muted .icon{color:var(--soft)}
+.gh-int .success-detail{display:grid;grid-template-columns:1fr auto;gap:10px;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:17px 18px;margin:24px 0 0;font-size:11px}
+.gh-int .success-detail dt{color:var(--muted)}
+.gh-int .success-detail dd{margin:0;font-weight:500;text-align:right}
+@media(min-width:1500px){.gh-int .integration-overview{margin-bottom:32px}}
+@media(max-width:900px){.gh-int .service-desc{max-width:245px}.gh-int .integration-overview{padding:20px}.gh-int .integration-overview>.row{display:grid;grid-template-columns:46px minmax(0,1fr);align-items:start}.gh-int .integration-overview>.row>.button{grid-column:2;justify-self:start;margin:4px 0 0}}
+@media(max-width:700px){.gh-int .page-heading{margin-bottom:24px}.gh-int .page-heading h1{font-size:23px}.gh-int .page-heading p{font-size:12px}.gh-int .heading-end .pill{font-size:9px}.gh-int .integration-overview{padding:18px;margin-bottom:24px}.gh-int .service-icon{width:38px;height:38px;border-radius:10px}.gh-int .service-icon .icon{width:23px;height:23px}.gh-int .service-name{font-size:16px}.gh-int .service-desc{font-size:11px;max-width:none}.gh-int .integration-overview>.row{gap:11px;grid-template-columns:38px minmax(0,1fr)}.gh-int .integration-overview>.row>.button{margin:2px 0 0;font-size:11px}.gh-int .page-heading .heading-end{display:none}.gh-int .overview-foot{align-items:flex-start;font-size:10px;line-height:1.8;gap:14px}.gh-int .overview-foot .row{align-items:flex-start;gap:6px}.gh-int .overview-foot .icon{margin-top:3px}.gh-int .overview-foot .text-button{font-size:10px;white-space:nowrap}.gh-int .installation-head{padding:18px 17px 15px}.gh-int .account-name{font-size:13px}.gh-int .account-type{font-size:9px}.gh-int .installation-head>.row{gap:9px}.gh-int .installation-head .pill{font-size:9px}.gh-int .install-meta{gap:8px;font-size:10px}.gh-int .install-meta .date{width:100%}.gh-int .install-meta .meta-divider{display:none}.gh-int .repository-head{padding:16px 17px 12px;gap:11px}.gh-int .search-wrap{width:100%}.gh-int .repository-head h3{font-size:11px}.gh-int .repo-row{padding:13px 17px;gap:9px}.gh-int .repo-name{font-size:11px}.gh-int .repo-info{gap:5px}.gh-int .repo-owner{display:none}.gh-int .repository-footer{padding:12px 17px;align-items:flex-start;flex-wrap:wrap;font-size:9px}.gh-int .repository-footer .text-button{font-size:10px}.gh-int .note{font-size:10px}.gh-int .filter-tab{font-size:10px;padding:5px 7px}.gh-int .future-note p{font-size:10px}.gh-int .empty{padding:32px 16px}.gh-int .empty h3{font-size:13px}.gh-int .empty p{font-size:11px}.gh-int .notice{font-size:10px}.gh-int .status-view{padding:30px 24px 24px}.gh-int .status-view h2{font-size:20px}.gh-int .modal-inner{padding:23px}.gh-int .modal-actions{padding:16px 23px}.gh-int .modal-top{padding:12px 18px}.gh-int .modal-top strong{font-size:11px}.gh-int .steps{font-size:9px;gap:4px}.gh-int .modal-inner h2{font-size:20px}.gh-int .modal-intro{font-size:11px}.gh-int .scope-option{padding:13px}.gh-int .scope-option strong{font-size:12px}.gh-int .scope-option p{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.gh-int *::before,.gh-int *::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* FE 환경 보정 — 목업은 브라우저 기본 스타일 위에서 그려졌다. Tailwind preflight 가 지운 기본값만 되돌린다(새 값 없음).
+ * dialog 가운데 정렬(margin:auto), 아이콘 인라인 배치(svg 기본 display), 제목 기본 굵기(h1~h3 bold). */
+.gh-int dialog{margin:auto}
+.gh-int svg.icon{display:inline}
+.gh-int h1,.gh-int h2,.gh-int h3{font-weight:bold}
+
+
+/* GitHub P0 iteration: workspace-independent scope selection + resilient list loading */
+.gh-int .scope-option{margin-top:10px}
+.gh-int .scope-option.scope-unavailable{opacity:.55;cursor:not-allowed}
+.gh-int .gh-no-workspace{margin-top:12px;padding:14px 16px;border:1px dashed var(--line,#e4e4e7);border-radius:10px;color:var(--muted,#71717a);font-size:12px;line-height:1.8}
+.gh-int .filter-tabs{flex-wrap:wrap}
+.gh-list-error{border:1px solid var(--amber-line,#fde68a);background:var(--amber-bg,#fffbeb);color:var(--ink,#18181b);border-radius:12px}
+.gh-list-error-inline{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;margin:0 0 15px}
+.gh-list-error-inline>svg{width:19px;height:19px;flex:none;color:var(--amber,#a16207);margin-top:1px}
+.gh-list-error-inline strong{display:block;font-size:12px;font-weight:600;line-height:1.5}
+.gh-list-error-inline p{font-size:11px;color:var(--muted,#71717a);line-height:1.8;margin-top:3px}
+.gh-list-error-inline small{font-size:10px;display:block;color:var(--muted,#71717a);margin-top:7px}
+.gh-list-error-inline .button{align-self:center;margin-left:auto;flex:none}
+.gh-list-error-full{display:flex;flex-direction:column;align-items:center;text-align:center;padding:44px 20px 40px;background:var(--surface,#fff);border-style:dashed}
+.gh-list-error-symbol{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--amber-bg,#fffbeb);border:1px solid var(--amber-line,#fde68a);color:var(--amber,#a16207);margin-bottom:17px}
+.gh-list-error-symbol>svg{width:25px;height:25px}
+.gh-list-error-full h3{font-size:16px;font-weight:600;letter-spacing:-.3px}
+.gh-list-error-full p{max-width:410px;font-size:12px;line-height:1.8;color:var(--muted,#71717a);margin-top:10px}
+.gh-list-error-full .gh-list-error-desc{font-size:11px;margin-top:5px}
+.gh-list-error-full .button{margin-top:22px}
+html.dark .gh-list-error{background:#302719;border-color:#63491b}
+@media(max-width:600px){.gh-list-error-inline{flex-wrap:wrap;padding:15px}.gh-list-error-inline .button{width:100%;margin:3px 0 0}.gh-list-error-full{padding:35px 18px}}

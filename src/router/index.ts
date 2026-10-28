@@ -26,6 +26,9 @@ const routes = [
   { path: '/me/publications', name: 'myPublications', component: () => import('@/pages/MyPublicationsPage.vue') },
   { path: '/profile/:id?', name: 'profile', component: () => import('@/pages/ProfilePage.vue') },
   { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true } },
+  { path: '/settings/integrations', name: 'settingsIntegrations', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true } },
+  // GitHub App Setup URL — 설치 후 GitHub 가 installation_id·code·state 를 붙여 돌려보낸다(로그인 필요: 비로그인은 login?redirect 로 갔다 복귀).
+  { path: '/settings/integrations/github/callback', name: 'githubCallback', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true } },
   { path: '/report/:shareToken', name: 'report', component: () => import('@/pages/ReportPage.vue'), meta: { public: true } },
 
   // Workspace invitation accept — the email/link target is `${INVITE_BASE}/{token}`. Requires
