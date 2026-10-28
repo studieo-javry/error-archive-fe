@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { authApi } from '@/services/authApi'
 import { notificationApi } from '@/services/notificationApi'
 import { teamApi } from '@/services/teamApi'
@@ -7,6 +8,9 @@ import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/composables/useAuth'
 import { useTheme } from '@/composables/useTheme'
 import { formatAbsolute } from '@/utils/timeAgo'
+import GithubIntegrationSection from '@/components/integration/GithubIntegrationSection.vue'
+import GhIcon from '@/components/integration/GhIcon.vue'
+import '@/styles/github-integration.css'
 import type { NotificationSettings } from '@/types/notification'
 import type { WorkspaceListItem } from '@/types/team'
 import type { Connection, Session } from '@/types/user'
@@ -15,7 +19,20 @@ const authStore = useAuthStore()
 const { logout } = useAuth()
 const { themeMode, setMode } = useTheme()
 
-const activeTab = ref('profile')
+const route = useRoute()
+const router = useRouter()
+
+// /settings/integrations(및 GitHub 설치 콜백)로 들어오면 Integrations 탭으로 연다.
+const INTEGRATION_ROUTES = ['settingsIntegrations', 'githubCallback']
+const activeTab = ref(INTEGRATION_ROUTES.includes(String(route.name)) ? 'integrations' : 'profile')
+watch(() => route.name, (name) => {
+  if (INTEGRATION_ROUTES.includes(String(name))) activeTab.value = 'integrations'
+})
+// 탭과 주소를 맞춘다 — Integrations 는 /settings/integrations 로 공유·새로고침 가능.
+watch(activeTab, (tab) => {
+  if (tab === 'integrations' && route.name === 'settings') router.replace({ name: 'settingsIntegrations' })
+  if (tab !== 'integrations' && INTEGRATION_ROUTES.includes(String(route.name))) router.replace({ name: 'settings' })
+})
 const toast = ref({ show: false, msg: '' })
 
 function showToast(msg: string) {
@@ -230,6 +247,7 @@ async function restoreAccount() {
         <h3 class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3 px-2">App</h3>
         <div class="space-y-1">
           <button v-for="tab in [{id:'preferences',l:'Preferences'},{id:'notifications',l:'Notifications'},{id:'workspace',l:'Workspace'}]" :key="tab.id" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors" :class="activeTab === tab.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100'" @click="activeTab = tab.id">{{ tab.l }}</button>
+          <button class="w-full text-left flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors" :class="activeTab === 'integrations' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100'" :aria-current="activeTab === 'integrations' ? 'page' : undefined" @click="activeTab = 'integrations'">Integrations<GhIcon name="link" class="w-3.5 h-3.5 shrink-0 fill-none stroke-current [stroke-width:1.6] [stroke-linecap:round] [stroke-linejoin:round]" /></button>
         </div>
       </div>
       <div class="mb-8">
@@ -456,6 +474,11 @@ async function restoreAccount() {
           </div>
         </section>
 
+        <!-- ═══ INTEGRATIONS ═══ -->
+        <section v-if="activeTab === 'integrations'">
+          <GithubIntegrationSection @open-connections="activeTab = 'connections'" />
+        </section>
+
         <!-- ═══ SESSIONS ═══ -->
         <section v-if="activeTab === 'sessions'">
           <div class="flex justify-between items-end mb-6">
@@ -519,6 +542,11 @@ async function restoreAccount() {
                 </div>
               </div>
               <button class="text-sm font-medium text-zinc-400" disabled>Connect</button>
+            </div>
+
+            <div class="gh-int">
+              <div class="notice"><GhIcon name="info" /><div>이 연결은 Error Archive 로그인에 사용됩니다.<br>GitHub 저장소의 접근 권한은 Integrations에서 설정하세요.</div></div>
+              <button class="text-button" @click="activeTab = 'integrations'">GitHub 저장소 연동으로 이동 <GhIcon name="arrow" class="sm" /></button>
             </div>
           </div>
         </section>
