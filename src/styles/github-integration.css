@@ -169,6 +169,9 @@
 .gh-int dialog{margin:auto}
 .gh-int svg.icon{display:inline}
 .gh-int h1,.gh-int h2,.gh-int h3{font-weight:bold}
+/* 대화상자를 열 때 접근성용으로 제목(h2, tabindex=-1)에 코드로 포커스를 준다. GitHub 설치 후 돌아와 클릭 없이 열리면
+ * 브라우저가 :focus-visible 기본 테두리를 그려 목업에 없던 박스가 보인다. 코드 포커스 제목만 테두리를 끈다(버튼·링크는 유지). */
+.gh-int dialog [tabindex="-1"]:focus{outline:none}
 
 
 /* GitHub P0 iteration: workspace-independent scope selection + resilient list loading */
