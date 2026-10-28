@@ -28,7 +28,8 @@ const { startSignup } = useAuth()
 // 빌드 타임 플래그 — BE 기능이 꺼진 환경에선 "준비 중". 조회 404 로 추측하지 않는다.
 const featureOff = import.meta.env.VITE_GITHUB_INTEGRATION_ENABLED !== 'true'
 
-type Scope = 'all' | 'personal' | 'team'
+// 'all' | 'personal' | 'team'(워크스페이스 전체) | `ws:${workspaceId}`(개별 워크스페이스)
+type Scope = string
 type ErrorKind = 'expired' | 'forbidden' | 'conflict' | 'unavailable'
 type DialogView = 'connect' | 'progress' | 'success' | 'error' | 'about' | null
 
@@ -36,14 +37,18 @@ const installs = ref<GithubInstallation[]>([])
 const scope = ref<Scope>('all')
 const query = ref<Record<number, string>>({})
 const refreshing = ref(false)
+// 한 번이라도 목록을 받았는지 — "목록이 비었다"와 "목록을 못 가져왔다"를 구분한다.
+const loaded = ref(false)
+const listError = ref('')
+const lastSync = ref('')
 
-// ── 권한 · 범위 ──
+// ── 권한 · 범위 ── Settings 는 워크스페이스에 종속되지 않으므로 헤더의 현재 워크스페이스와 무관하게, 내가 속한 워크스페이스 전체 기준.
 const isGuest = computed(() => authStore.isGuest)
-const currentWorkspace = computed(() => teamStore.currentWorkspace)
-const isAdmin = computed(() => currentWorkspace.value?.role === 'ADMIN')
-const isMember = computed(() => !isGuest.value && !!currentWorkspace.value && !isAdmin.value)
-const context = computed<'team' | 'personal'>(() => (currentWorkspace.value ? 'team' : 'personal'))
-const teamLabel = computed(() => currentWorkspace.value?.name ?? 'Workspace')
+const workspaces = computed(() => teamStore.workspaces)
+const isAdminOfAny = computed(() => workspaces.value.some(w => w.role === 'ADMIN'))
+const isMember = computed(() => !isGuest.value && workspaces.value.length > 0 && !isAdminOfAny.value)
+const isAdminOf = (workspaceId: number) => workspaces.value.some(w => w.workspaceId === workspaceId && w.role === 'ADMIN')
+const wsScopeId = (value: string) => (value.startsWith('ws:') ? Number(value.slice(3)) : null)
 
 function workspaceRole(workspaceId: number) {
   return teamStore.workspaces.find(w => w.workspaceId === workspaceId)?.role
@@ -53,7 +58,7 @@ function allowedManage(inst: GithubInstallation) {
 }
 function scopeLabel(inst: GithubInstallation) {
   if (inst.workspaceId === null) return 'Personal'
-  return teamStore.workspaces.find(w => w.workspaceId === inst.workspaceId)?.name ?? 'Workspace'
+  return teamStore.workspaces.find(w => w.workspaceId === inst.workspaceId)?.name ?? `워크스페이스 #${inst.workspaceId}`
 }
 function manageUrl(inst: GithubInstallation) {
   const login = encodeURIComponent(inst.accountLogin)
@@ -76,10 +81,21 @@ function connectedDate(at: string) {
 const filterTabs = computed(() => [
   { value: 'all' as const, label: '전체', count: installs.value.length },
   { value: 'personal' as const, label: 'Personal', count: installs.value.filter(x => x.workspaceId === null).length },
-  { value: 'team' as const, label: teamLabel.value, count: installs.value.filter(x => x.workspaceId !== null).length },
+  { value: 'team' as const, label: '워크스페이스 전체', count: installs.value.filter(x => x.workspaceId !== null).length },
+  ...workspaces.value.map(w => ({
+    value: `ws:${w.workspaceId}`,
+    label: w.name,
+    count: installs.value.filter(x => x.workspaceId === w.workspaceId).length,
+  })),
 ])
 const visibleInstalls = computed(() =>
-  installs.value.filter(x => scope.value === 'all' || (scope.value === 'personal' ? x.workspaceId === null : x.workspaceId !== null)),
+  installs.value.filter(x => {
+    if (scope.value === 'all') return true
+    if (scope.value === 'personal') return x.workspaceId === null
+    if (scope.value === 'team') return x.workspaceId !== null
+    const id = wsScopeId(scope.value)
+    return id !== null && x.workspaceId === id
+  }),
 )
 function visibleRepos(inst: GithubInstallation) {
   const q = (query.value[inst.installationId] || '').toLowerCase().trim()
@@ -89,15 +105,26 @@ function visibleRepos(inst: GithubInstallation) {
 async function loadInstallations() {
   const { data } = await githubIntegrationApi.listInstallations()
   installs.value = data
+  loaded.value = true
+  listError.value = ''
+  lastSync.value = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
 }
 
-async function refreshList(withToast: boolean) {
-  if (refreshing.value) return
+/** 성공하면 true. 실패하면 listError 를 채우고(이전 목록은 유지) false. */
+async function refreshList(withToast: boolean): Promise<boolean> {
+  if (refreshing.value) return false
   refreshing.value = true
   try {
     await loadInstallations()
     if (withToast) toast('연결 목록을 새로 불러왔어요.')
-  } catch { /* 이전 목록 유지 */ } finally {
+    return true
+  } catch (e) {
+    const status = isAxiosError(e) ? e.response?.status : undefined
+    listError.value = status === 401 || status === 403
+      ? '세션이나 접근 권한을 확인할 수 없어요. 다시 로그인한 후 시도해 주세요.'
+      : '서버에 연결하지 못했어요. 네트워크 상태를 확인한 후 다시 시도해 주세요.'
+    return false
+  } finally {
     refreshing.value = false
   }
 }
@@ -149,12 +176,17 @@ function onDialogClick(event: MouseEvent) {
 }
 
 // ── ① 연결 범위 ──
-const draftScope = ref<'personal' | 'team'>('personal')
+// 'personal' | `ws:${workspaceId}`
+const draftScope = ref('personal')
 const starting = ref(false)
 
 function startConnect(keep = false) {
   if (isGuest.value || featureOff) return
-  if (!keep) draftScope.value = !isAdmin.value ? 'personal' : scope.value === 'all' ? context.value : scope.value
+  // 기본은 Personal — 잘못된 팀에 연결하는 실수를 줄인다. 관리자인 워크스페이스를 필터로 보고 있을 때만 그 워크스페이스.
+  if (!keep) {
+    const id = wsScopeId(scope.value)
+    draftScope.value = id !== null && isAdminOf(id) ? scope.value : 'personal'
+  }
   showDialog('connect')
 }
 
@@ -162,8 +194,13 @@ function startConnect(keep = false) {
 async function continueToGithub() {
   if (starting.value) return
   starting.value = true
+  const workspaceId = wsScopeId(draftScope.value)
+  if (workspaceId !== null && !isAdminOf(workspaceId)) {
+    starting.value = false
+    toast('워크스페이스 관리자 권한을 확인해 주세요.')
+    return
+  }
   try {
-    const workspaceId = draftScope.value === 'team' ? (currentWorkspace.value?.workspaceId ?? null) : null
     const { data } = await githubIntegrationApi.getInstallUrl(workspaceId)
     window.location.assign(data.url)
   } catch (e) {
@@ -212,8 +249,8 @@ async function handleCallback() {
   // GitHub 설정에서 저장소만 바꾸고 돌아온 경우 — 우리가 시작한 연결이 아니므로 POST 하지 않는다.
   if (setupAction === 'update' && !state) {
     await router.replace({ name: 'settingsIntegrations' })
-    await refreshList(false)
-    toast('GitHub에서 변경한 저장소 목록을 확인했어요.')
+    const ok = await refreshList(false)
+    if (ok) toast('GitHub에서 변경한 저장소 목록을 확인했어요.')
     return
   }
   if (!installationId || !code || !state) return callbackError('expired')
@@ -232,7 +269,7 @@ async function handleCallback() {
     installs.value = existing
       ? installs.value.map(x => (x.installationId === data.installationId ? data : x))
       : [...installs.value, data]
-    scope.value = data.workspaceId === null ? 'personal' : 'team'
+    scope.value = data.workspaceId === null ? 'personal' : `ws:${data.workspaceId}`
     query.value = {}
     result.value = { inst: data, moved }
     showDialog('success')
@@ -300,15 +337,15 @@ onMounted(async () => {
 
       <div v-if="isMember" class="notice">
         <GhIcon name="info" />
-        <div>팀의 연결은 확인할 수 있어요. 워크스페이스 연결은 관리자만 설정할 수 있으며, 개인 연결은 직접 추가할 수 있습니다.</div>
+        <div>참여 중인 워크스페이스의 연결은 확인할 수 있지만, 새 팀 연동은 관리자만 설정할 수 있어요. Personal 연결은 직접 추가할 수 있습니다.</div>
       </div>
 
       <div class="section-heading">
-        <h2>연결된 계정 <span>{{ installs.length }}</span></h2>
+        <h2>연결된 계정 <span>{{ loaded ? installs.length : '—' }}</span></h2>
         <button class="text-button" :disabled="refreshing" @click="refreshList(true)"><GhIcon name="refresh" class="sm" />목록 새로고침</button>
       </div>
 
-      <div class="filter-tabs" role="group" aria-label="연결 범위 필터">
+      <div class="filter-tabs" role="group" aria-label="연결 범위 필터" :hidden="!loaded">
         <button
           v-for="tab in filterTabs"
           :key="tab.value"
@@ -319,18 +356,38 @@ onMounted(async () => {
         >{{ tab.label }}<span>{{ tab.count }}</span></button>
       </div>
 
+      <!-- 정상 조회 후 재조회 실패 — 이전 목록은 그대로 두고 안내 -->
+      <div v-if="listError && loaded" class="gh-list-error gh-list-error-inline" role="alert">
+        <GhIcon name="alert" />
+        <div class="grow">
+          <strong>최신 목록을 확인하지 못했어요</strong>
+          <p>{{ listError }}</p>
+          <small>{{ '마지막 정상 조회: ' + lastSync + ' · 아래는 이전 조회 결과입니다.' }}</small>
+        </div>
+        <button class="button" :disabled="refreshing" @click="refreshList(true)">다시 시도</button>
+      </div>
+
       <div>
-        <div v-if="refreshing" class="loading-list" role="status" aria-label="연결 목록을 불러오는 중">
+        <div v-if="refreshing && !loaded" class="loading-list" role="status" aria-label="연결 목록을 불러오는 중">
           <div class="skeleton short" /><div class="skeleton" /><div class="skeleton" />
+        </div>
+
+        <!-- 최초 조회 실패 — "첫 연결"(목록 0개)과 구분 -->
+        <div v-else-if="listError && !loaded" class="gh-list-error gh-list-error-full" role="alert">
+          <div class="gh-list-error-symbol"><GhIcon name="alert" /></div>
+          <h3>연결 목록을 불러오지 못했어요</h3>
+          <p>{{ listError }}</p>
+          <p class="gh-list-error-desc">연결된 계정의 유무를 확인하지 못했습니다. 지금은 첫 연결 상태로 판단할 수 없어요.</p>
+          <button class="button primary" :disabled="refreshing" @click="refreshList(true)"><GhIcon name="refresh" class="sm" />다시 시도</button>
         </div>
 
         <div v-else-if="!visibleInstalls.length" class="empty">
           <div class="empty-graphic">
             <span class="graphic-icon"><GhIcon name="github" /></span><span class="connector" /><span class="graphic-icon ea">E</span>
           </div>
-          <h3>{{ scope === 'all' ? '첫 번째 GitHub 계정을 연결해 보세요' : scope === 'team' ? '팀에 연결된 GitHub 계정이 없어요' : '개인 공간에 연결된 계정이 없어요' }}</h3>
+          <h3>{{ scope === 'all' ? '첫 번째 GitHub 계정을 연결해 보세요' : scope === 'team' ? '워크스페이스에 연결된 GitHub 계정이 없어요' : scope.startsWith('ws:') ? '선택한 워크스페이스에 연결된 계정이 없어요' : '개인 공간에 연결된 계정이 없어요' }}</h3>
           <p>GitHub에서 계정과 저장소를 선택하면<br>이곳에서 연결 상태와 저장소 목록을 확인할 수 있어요.</p>
-          <span v-if="scope === 'team' && isMember" class="pill">워크스페이스 관리자에게 연결을 요청해 주세요</span>
+          <span v-if="(scope === 'team' || scope.startsWith('ws:')) && isMember" class="pill">워크스페이스 관리자에게 연결을 요청해 주세요</span>
           <button v-else class="button" @click="startConnect()"><GhIcon name="github" class="sm" />GitHub 연결하기</button>
         </div>
 
@@ -425,16 +482,19 @@ onMounted(async () => {
               <div class="grow"><strong>Personal</strong><p>나만 사용하는 개인 공간에 연결합니다.</p></div>
               <input v-model="draftScope" type="radio" name="gh-scope" value="personal">
             </label>
-            <label v-if="currentWorkspace" class="scope-option">
-              <GhIcon name="users" />
-              <div class="grow">
-                <strong>{{ currentWorkspace.name }} <span class="pill">{{ isAdmin ? 'Admin' : 'Member' }}</span></strong>
-                <p>{{ isAdmin ? '워크스페이스 멤버와 연결 목록을 함께 확인합니다.' : '워크스페이스 관리자만 연결할 수 있습니다.' }}</p>
-              </div>
-              <input v-model="draftScope" type="radio" name="gh-scope" value="team" :disabled="!isAdmin">
-            </label>
+            <template v-if="workspaces.length">
+              <label v-for="w in workspaces" :key="w.workspaceId" class="scope-option" :class="{ 'scope-unavailable': w.role !== 'ADMIN' }">
+                <GhIcon name="users" />
+                <div class="grow">
+                  <strong>{{ w.name }} <span class="pill">{{ w.role === 'ADMIN' ? 'Admin' : 'Member' }}</span></strong>
+                  <p>{{ w.role === 'ADMIN' ? '이 워크스페이스에 저장소를 연결하고 멤버와 목록을 공유합니다.' : '이 워크스페이스의 관리자만 새 연동을 추가할 수 있습니다.' }}</p>
+                </div>
+                <input v-model="draftScope" type="radio" name="gh-scope" :value="`ws:${w.workspaceId}`" :disabled="w.role !== 'ADMIN'">
+              </label>
+            </template>
+            <div v-else class="gh-no-workspace">연결 가능한 워크스페이스가 없습니다. Personal을 선택하거나 워크스페이스 관리자에게 문의해 주세요.</div>
           </div>
-          <p class="scope-hint"><GhIcon name="info" class="sm" /> 다음 단계에서 GitHub 계정과 저장소를 선택합니다.<br>GitHub의 설치 권한도 함께 필요합니다.</p>
+          <p class="scope-hint"><GhIcon name="info" class="sm" /> 현재 상단에서 선택한 공간과 무관하게 연결 대상을 지정합니다.<br>GitHub 계정 및 저장소 선택은 다음 GitHub 화면에서 진행됩니다.</p>
         </div>
         <div class="modal-actions">
           <button class="button ghost" @click="closeDialog">취소</button>

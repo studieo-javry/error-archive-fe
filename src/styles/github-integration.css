@@ -169,3 +169,26 @@
 .gh-int dialog{margin:auto}
 .gh-int svg.icon{display:inline}
 .gh-int h1,.gh-int h2,.gh-int h3{font-weight:bold}
+
+
+/* GitHub P0 iteration: workspace-independent scope selection + resilient list loading */
+.gh-int .scope-option{margin-top:10px}
+.gh-int .scope-option.scope-unavailable{opacity:.55;cursor:not-allowed}
+.gh-int .gh-no-workspace{margin-top:12px;padding:14px 16px;border:1px dashed var(--line,#e4e4e7);border-radius:10px;color:var(--muted,#71717a);font-size:12px;line-height:1.8}
+.gh-int .filter-tabs{flex-wrap:wrap}
+.gh-list-error{border:1px solid var(--amber-line,#fde68a);background:var(--amber-bg,#fffbeb);color:var(--ink,#18181b);border-radius:12px}
+.gh-list-error-inline{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;margin:0 0 15px}
+.gh-list-error-inline>svg{width:19px;height:19px;flex:none;color:var(--amber,#a16207);margin-top:1px}
+.gh-list-error-inline strong{display:block;font-size:12px;font-weight:600;line-height:1.5}
+.gh-list-error-inline p{font-size:11px;color:var(--muted,#71717a);line-height:1.8;margin-top:3px}
+.gh-list-error-inline small{font-size:10px;display:block;color:var(--muted,#71717a);margin-top:7px}
+.gh-list-error-inline .button{align-self:center;margin-left:auto;flex:none}
+.gh-list-error-full{display:flex;flex-direction:column;align-items:center;text-align:center;padding:44px 20px 40px;background:var(--surface,#fff);border-style:dashed}
+.gh-list-error-symbol{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--amber-bg,#fffbeb);border:1px solid var(--amber-line,#fde68a);color:var(--amber,#a16207);margin-bottom:17px}
+.gh-list-error-symbol>svg{width:25px;height:25px}
+.gh-list-error-full h3{font-size:16px;font-weight:600;letter-spacing:-.3px}
+.gh-list-error-full p{max-width:410px;font-size:12px;line-height:1.8;color:var(--muted,#71717a);margin-top:10px}
+.gh-list-error-full .gh-list-error-desc{font-size:11px;margin-top:5px}
+.gh-list-error-full .button{margin-top:22px}
+html.dark .gh-list-error{background:#302719;border-color:#63491b}
+@media(max-width:600px){.gh-list-error-inline{flex-wrap:wrap;padding:15px}.gh-list-error-inline .button{width:100%;margin:3px 0 0}.gh-list-error-full{padding:35px 18px}}
