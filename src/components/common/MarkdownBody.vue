@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import hljs from 'highlight.js'
+import { TASK_LINE } from '@/utils/markdownTasks'
+import '@/styles/markdown-task-list.css'
 
-const props = defineProps<{ content: string }>()
+const props = defineProps<{
+  content: string
+  /**
+   * 주면 작업 목록 체크박스를 누를 수 있다 — index 번째 항목을 checked 로 저장하는 함수.
+   * 없으면 체크박스는 보기 전용(disabled).
+   */
+  onToggleTask?: (index: number, checked: boolean) => Promise<unknown>
+}>()
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -42,13 +51,16 @@ const rendered = computed(() => {
   // italic — 볼드와 동일 정책.
   html = html.replace(/\*((?:(?!\n\n)[\s\S])+?)\*/g, '<em>$1</em>')
 
-  // 블록 레벨: 제목(#/##/###) · 목록(-, 1.) · 문단 · 코드블록 센티넬. 라인 단위로 그룹핑한다.
+  // 블록 레벨: 제목(#/##/###) · 목록(-, 1.) · 작업 목록(- [ ]) · 문단 · 코드블록 센티넬. 라인 단위로 그룹핑한다.
   const out: string[] = []
   let para: string[] = []
-  let list: { type: 'ul' | 'ol'; items: string[] } | null = null
+  let list: { type: 'ul' | 'ol' | 'task'; items: string[] } | null = null
+  let taskIndex = 0
   const flushPara = () => { if (para.length) { out.push(`<p>${para.join('<br/>')}</p>`); para = [] } }
   const flushList = () => {
-    if (list) { out.push(`<${list.type}>${list.items.map(i => `<li>${i}</li>`).join('')}</${list.type}>`); list = null }
+    if (list?.type === 'task') out.push(`<div class="md-tasks"><div class="gh-task-section-step"><div class="gh-task-lines">${list.items.join('')}</div></div></div>`)
+    else if (list) out.push(`<${list.type}>${list.items.map(i => `<li>${i}</li>`).join('')}</${list.type}>`)
+    list = null
   }
   const flush = () => { flushPara(); flushList() }
 
@@ -60,6 +72,15 @@ const rendered = computed(() => {
     // 제목
     const h = line.match(/^(#{1,3})\s+(.+)$/)
     if (h) { flush(); const lvl = h[1].length; out.push(`<h${lvl}>${h[2]}</h${lvl}>`); continue }
+    // 작업 목록 (- [ ] / - [x]) — 마크업은 목업 체크리스트(gh-task-*) 그대로
+    const task = line.match(TASK_LINE)
+    if (task) {
+      flushPara()
+      if (list?.type !== 'task') { flushList(); list = { type: 'task', items: [] } }
+      const checked = task[1] !== ' '
+      list.items.push(`<div class="gh-task-line"><input class="gh-task-box" type="checkbox" data-task="${taskIndex++}" aria-label="작업 완료 여부"${checked ? ' checked' : ''}${props.onToggleTask ? '' : ' disabled'}><div class="gh-task-words"><span>${task[2]}</span></div></div>`)
+      continue
+    }
     // 순서 없는 목록 (- )
     const ul = line.match(/^-\s+(.+)$/)
     if (ul) { flushPara(); if (list?.type !== 'ul') { flushList(); list = { type: 'ul', items: [] } } list.items.push(ul[1]); continue }
@@ -74,8 +95,24 @@ const rendered = computed(() => {
 
   return html.replace(SENTINEL, (_m, i: string) => blocks[Number(i)] ?? '')
 })
+
+// 체크박스 클릭 → 저장. 저장 중엔 다른 클릭을 받지 않고(앞 저장 결과를 덮어쓰지 않게), 실패하면 되돌린다.
+const saving = ref(false)
+async function onChange(e: Event) {
+  const box = e.target as HTMLInputElement
+  if (!box.matches('input[data-task]') || !props.onToggleTask) return
+  if (saving.value) { box.checked = !box.checked; return }
+  saving.value = true
+  try {
+    await props.onToggleTask(Number(box.dataset.task), box.checked)
+  } catch {
+    box.checked = !box.checked
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <template>
-  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-2 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic [&_h1]:text-[15px] [&_h1]:font-bold [&_h1]:text-zinc-800 dark:[&_h1]:text-zinc-100 [&_h1]:mt-6 [&_h1]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-zinc-800 dark:[&_h2]:text-zinc-100 [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-zinc-700 dark:[&_h3]:text-zinc-200 [&_h3]:mt-5 [&_h3]:mb-2 [&>h1:first-child]:mt-0 [&>h2:first-child]:mt-0 [&>h3:first-child]:mt-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-0.5" v-html="rendered" />
+  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-2 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic [&_h1]:text-[15px] [&_h1]:font-bold [&_h1]:text-zinc-800 dark:[&_h1]:text-zinc-100 [&_h1]:mt-6 [&_h1]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-zinc-800 dark:[&_h2]:text-zinc-100 [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-zinc-700 dark:[&_h3]:text-zinc-200 [&_h3]:mt-5 [&_h3]:mb-2 [&>h1:first-child]:mt-0 [&>h2:first-child]:mt-0 [&>h3:first-child]:mt-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-0.5" @change="onChange" v-html="rendered" />
 </template>

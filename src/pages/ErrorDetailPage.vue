@@ -354,6 +354,19 @@ async function updateStep(stepId: number, v: StepFormValues) {
   if (errorCase.value) errorCase.value.status = res.data.caseStatus
 }
 
+// 본문 작업 목록 체크 — 바뀐 본문만 저장한다(나머지 필드는 지금 값 그대로).
+function saveStepBody(stepId: number, body: string) {
+  const s = steps.value.find(x => x.id === stepId)
+  if (!s) return Promise.resolve()
+  return updateStep(stepId, { title: s.title, status: s.status, attemptType: s.attemptType, body, insight: s.insight ?? '' })
+}
+
+// Case 본문(Context) 작업 목록 체크 — description 만 보낸다(첨부·스니펫 목록은 안 보내면 서버가 유지).
+async function saveDescription(description: string) {
+  await errorApi.update(caseId, { description })
+  if (errorCase.value) errorCase.value.description = description
+}
+
 async function deleteStep(stepId: number) {
   await stepApi.delete(caseId, stepId)
   steps.value = steps.value.filter(s => s.id !== stepId)
@@ -671,6 +684,7 @@ onUnmounted(() => {
           :content="errorCase.description"
           :snippets="errorCase.snippets"
           :attachments="errorCase.attachments"
+          :on-save-content="canEditCase ? saveDescription : undefined"
         />
       </div>
 
@@ -740,6 +754,7 @@ onUnmounted(() => {
         :selected-ids="selectedStepIds"
         :highlighted-ids="highlightedStepIds"
         :viewer-user-id="authStore.user?.userId ?? null"
+        :save-step-body="saveStepBody"
         @toggle="toggleStepSelection"
         @update="updateStep"
         @delete="deleteStep"

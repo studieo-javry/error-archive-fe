@@ -17,6 +17,8 @@ defineProps<{
   viewerUserId?: number | null
   /** 주면 steps 대신 이 순서로 그린다(Step 과 GitHub 이력을 시간순으로 섞은 목록). */
   entries?: TimelineEntry[]
+  /** Step 본문 작업 목록 체크 저장 */
+  saveStepBody?: (stepId: number, body: string) => Promise<unknown>
 }>()
 defineEmits<{ toggle: [id: number]; update: [id: number, values: StepFormValues]; delete: [id: number] }>()
 </script>
@@ -33,6 +35,7 @@ defineEmits<{ toggle: [id: number]; update: [id: number, values: StepFormValues]
           :selected="selectedIds?.has(entry.step.id)"
           :dimmed="highlightedIds != null && !highlightedIds.has(entry.step.id)"
           :can-modify="viewerUserId != null && entry.step.authorUserId === viewerUserId"
+          :on-save-body="saveStepBody"
           @toggle="$emit('toggle', $event)"
           @update="(id, values) => $emit('update', id, values)"
           @delete="$emit('delete', $event)"
@@ -54,6 +57,7 @@ defineEmits<{ toggle: [id: number]; update: [id: number, values: StepFormValues]
         :selected="selectedIds?.has(step.id)"
         :dimmed="highlightedIds != null && !highlightedIds.has(step.id)"
         :can-modify="viewerUserId != null && step.authorUserId === viewerUserId"
+        :on-save-body="saveStepBody"
         @toggle="$emit('toggle', $event)"
         @update="(id, values) => $emit('update', id, values)"
         @delete="$emit('delete', $event)"
