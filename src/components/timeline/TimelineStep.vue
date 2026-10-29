@@ -81,6 +81,8 @@ function ledClass(status: string) {
             <span class="font-medium">Insight:</span> {{ step.insight }}
           </p>
         </div>
+        <!-- Insight 아래 부가 블록(예: GitHub 근거 배지) -->
+        <slot name="evidence" />
         <div class="flex items-center gap-2 mt-2 text-xs text-zinc-400 dark:text-zinc-500">
           <span>{{ { RESOLVED: 'Resolved', IN_PROGRESS: 'In Progress', FAILED: 'Failed' }[step.status] || step.status }}</span>
           <span>&middot;</span>

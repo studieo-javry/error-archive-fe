@@ -20,6 +20,8 @@ defineProps<{ solution: Solution }>()
           </svg>
         </div>
         <p class="text-xs text-zinc-400">{{ solution.stepIds.length }} steps included</p>
+        <!-- 포함 Step 의 부가 정보(예: GitHub 근거 집계) -->
+        <slot name="extra" />
       </div>
     </div>
   </div>

@@ -30,6 +30,16 @@ import PublishSheet from '@/components/publish/PublishSheet.vue'
 import { publishmentApi } from '@/services/publishmentApi'
 import type { PublishmentDetail } from '@/types/publish'
 import type { QuoteInfo } from '@/components/comment/CommentForm.vue'
+import GithubEvidenceSection from '@/components/github-evidence/GithubEvidenceSection.vue'
+import GhTimelineTools from '@/components/github-evidence/GhTimelineTools.vue'
+import GhHistoryMore from '@/components/github-evidence/GhHistoryMore.vue'
+import GhHistoryRow from '@/components/github-evidence/GhHistoryRow.vue'
+import GhActivityGroup from '@/components/github-evidence/GhActivityGroup.vue'
+import GhStepEvidence from '@/components/github-evidence/GhStepEvidence.vue'
+import GhSolutionEvidence from '@/components/github-evidence/GhSolutionEvidence.vue'
+import GhModalHost from '@/components/github-evidence/GhModalHost.vue'
+import { provideCaseGithub, type GhTimelineEntry } from '@/composables/useCaseGithub'
+import '@/styles/github-evidence.css'
 import { StarIcon as StarOutlineIcon, HandRaisedIcon as HandOutlineIcon, LinkIcon } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon, HandRaisedIcon as HandSolidIcon } from '@heroicons/vue/24/solid'
 
@@ -156,6 +166,22 @@ const canWriteContent = computed(() => {
   return role === 'ADMIN' || role === 'WRITE'
 })
 
+// ── GitHub 근거(P1-a·b·c) — 근거 목록·GitHub 이력·Step/Solution 근거가 같은 상태를 쓴다 ──
+const workspaceRole = computed(() => {
+  const wsId = errorCase.value?.workspaceId
+  return wsId == null ? null : (teamStore.workspaces.find(w => w.workspaceId === wsId)?.role ?? null)
+})
+const gh = provideCaseGithub(caseId, { caseRef: errorCase, steps, isOwner, canWriteContent, workspaceRole })
+const ghSpaceName = computed(() => {
+  const wsId = errorCase.value?.workspaceId
+  return wsId == null ? 'Personal' : (teamStore.workspaces.find(w => w.workspaceId === wsId)?.name ?? '')
+})
+const ghTimeline = computed(() => gh.entries({ selection: selectionMode.value }))
+const ghAllGroups = computed(() => ghTimeline.value.list.some(x => x.type === 'activity'))
+const asGhEntry = (e: unknown) => e as GhTimelineEntry
+// Solution 탭을 고르면 GitHub 이력 탭에서 모든 기록으로 돌아온다.
+watch(activeFilter, () => { if (gh.ui.filter === 'github') gh.ui.filter = 'all' })
+
 // Editing/deleting the case itself is owner-only in core-api (UpdateErrorCaseUseCase /
 // DeleteErrorCaseUseCase check ownerUserId), so don't offer it to anyone else.
 const canEditCase = isOwner
@@ -187,6 +213,7 @@ async function loadData() {
     loading.value = false
   }
   loadPublishState()
+  void gh.load()
 }
 
 // 소유자 케이스의 발행 여부 조회. 404 = 미발행. 비소유자는 아예 호출하지 않는다.
@@ -336,6 +363,8 @@ async function deleteStep(stepId: number) {
   if (activeFilter.value != null && !solutions.value.some(sol => sol.id === activeFilter.value)) {
     activeFilter.value = null
   }
+  // Step 을 지우면 그 Step 의 GitHub 근거 꼬리표도 정리된다 — 근거를 다시 받는다.
+  void gh.load()
 }
 
 async function confirmResolve() {
@@ -657,6 +686,8 @@ onUnmounted(() => {
       />
     </div>
 
+    <GithubEvidenceSection v-if="gh.ready.value" />
+
     <section class="mb-12" data-tour="timeline">
       <div class="flex items-center justify-between mb-6 border-b border-zinc-200 dark:border-zinc-800/50 pb-4 pt-8">
         <h3 class="font-bold text-zinc-800 dark:text-zinc-200">Resolution Timeline</h3>
@@ -693,9 +724,18 @@ onUnmounted(() => {
         </button>
       </div>
 
+      <GhTimelineTools
+        :selection="selectionMode"
+        :all-groups="ghAllGroups"
+        :step-count="steps.length"
+        :shown-count="ghTimeline.list.length"
+      />
+
+      <GhHistoryMore v-if="gh.ui.filter === 'github' && ghTimeline.hiddenOlder" :remaining="ghTimeline.hiddenOlder" />
       <TimelineList
         :steps="steps"
-        :solutions="activeSolution ? [activeSolution] : []"
+        :entries="ghTimeline.list"
+        :solutions="activeSolution && gh.ui.filter !== 'github' ? [activeSolution] : []"
         :selection-mode="selectionMode"
         :selected-ids="selectedStepIds"
         :highlighted-ids="highlightedStepIds"
@@ -707,10 +747,26 @@ onUnmounted(() => {
         <template #step-extra="{ step }">
           <GuideEvidence v-if="showGuideEvidence && step.id === evidenceStepId" :step="step" :curated="curatedEvidence" />
         </template>
+        <template #step-evidence="{ step }">
+          <GhStepEvidence v-if="gh.ready.value" :step-id="step.id" :selection-mode="selectionMode" />
+        </template>
+        <template #entry="{ entry, last }">
+          <GhHistoryRow v-if="asGhEntry(entry).type === 'event'" :event="(asGhEntry(entry) as Extract<GhTimelineEntry, { type: 'event' }>).event" :last="last" />
+          <GhActivityGroup v-else-if="asGhEntry(entry).type === 'activity'" :events="(asGhEntry(entry) as Extract<GhTimelineEntry, { type: 'activity' }>).events" :group-key="(asGhEntry(entry) as Extract<GhTimelineEntry, { type: 'activity' }>).key" :last="last" />
+          <GhHistoryMore v-else-if="asGhEntry(entry).type === 'more'" :remaining="gh.remainingOlder.value" />
+        </template>
+        <template #empty>
+          <div class="gh-ev"><p class="text-xs muted" style="padding:8px 0 28px">표시할 GitHub 이력이 없습니다.</p></div>
+        </template>
+        <template #solution-extra="{ solution }">
+          <GhSolutionEvidence v-if="gh.ready.value" :step-ids="solution.stepIds" />
+        </template>
       </TimelineList>
-      <!-- 게스트는 쓰기 권한이 없어 실제 폼 대신 저장되지 않는 데모 폼으로 흐름만 체험 -->
-      <DemoStepForm v-if="authStore.isGuest" />
-      <StepForm v-else-if="canWriteContent" @submit="addStep" />
+      <template v-if="gh.ui.filter !== 'github'">
+        <!-- 게스트는 쓰기 권한이 없어 실제 폼 대신 저장되지 않는 데모 폼으로 흐름만 체험 -->
+        <DemoStepForm v-if="authStore.isGuest" />
+        <StepForm v-else-if="canWriteContent" @submit="addStep" />
+      </template>
     </section>
 
     <section id="comment-section" class="mb-8">
@@ -742,6 +798,8 @@ onUnmounted(() => {
         />
       </div>
     </section>
+
+    <GhModalHost :steps="steps" :space-name="ghSpaceName" />
 
     <Teleport to="body">
       <QuotePopup
