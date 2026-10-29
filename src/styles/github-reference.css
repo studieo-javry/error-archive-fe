@@ -1,0 +1,217 @@
+/*
+ * 본문 GitHub 참조 — error_archive_github_hash_search_comparison.html 목업의 규칙을 값 그대로 옮김.
+ *  1) `.gh-ref`  : `#` 자동완성 목록(.ref-suggest, B · Issue / PR 검색) + 클릭 미리보기(.github-preview-dialog).
+ *                  목업 :root 변수·기본 요소 규칙까지 이 아래로 가둬(:where 로 목업과 같은 우선순위) 기존 FE 화면에 새지 않게 했다.
+ *  2) `.md-ghref`: 읽기 화면 본문 링크(.gh-task-link) — 목업 Context 본문(.gh-prose-example) 문맥의 규칙만.
+ *                  문단 자체의 글자 크기·줄 간격(.gh-prose-example {…})은 가져오지 않고 기존 본문 글꼴을 따른다.
+ */
+:where(.gh-ref) {
+  font: 16px/1.5 var(--font-sans);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+:where(.gh-ref) {color-scheme:light;--bg:#f7f7f5;--surface:#fff;--ink:#18181b;--strong:#27272a;--body:#52525b;--muted:#71717a;--soft:#a1a1aa;--line:#e4e4e7;--line-soft:#e4e4e780;--hover:#f4f4f5;--trace:#f4f4f5;--green:#059669;--green-text:#047857;--green-bg:#ecfdf5;--green-line:#a7f3d0;--blue:#2563eb;--blue-bg:#eff6ff;--red:#f43f5e;--red-text:#be123c;--red-bg:#fff1f2;--amber:#a16207;--amber-bg:#fffbeb;--violet:#7c3aed;--font-sans:Inter,'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;--font-serif:Fraunces,'Nanum Myeongjo','Noto Serif KR',serif;--toolbar:64px}
+.dark :where(.gh-ref) {color-scheme:dark;--bg:#18181b;--surface:#27272a;--ink:#f4f4f5;--strong:#e4e4e7;--body:#c7c7cd;--muted:#a1a1aa;--soft:#71717a;--line:#27272a;--line-soft:#27272a80;--hover:#27272a;--trace:#18181b80;--green:#34d399;--green-text:#34d399;--green-bg:#064e3b4d;--green-line:#10b98133;--blue:#60a5fa;--blue-bg:#1e3a8a4d;--red:#fda4af;--red-text:#fb7185;--red-bg:#8813374d;--amber:#fcd34d;--amber-bg:#78350f33;--violet:#c4b5fd}
+:where(.gh-ref) * {box-sizing:border-box}
+:where(.gh-ref) h1,
+:where(.gh-ref) h2,
+:where(.gh-ref) h3,
+:where(.gh-ref) h4,
+:where(.gh-ref) p,
+:where(.gh-ref) pre {margin:0}
+:where(.gh-ref) button,
+:where(.gh-ref) input,
+:where(.gh-ref) select,
+:where(.gh-ref) textarea {font:inherit;color:inherit}
+:where(.gh-ref) button {background:none;border:0;padding:0;cursor:pointer}
+:where(.gh-ref) button:disabled {opacity:.45;cursor:not-allowed}
+:where(.gh-ref) a {color:inherit;text-decoration:none}
+:where(.gh-ref) a:hover {text-decoration:underline}
+:where(.gh-ref) button:focus-visible,
+:where(.gh-ref) a:focus-visible,
+:where(.gh-ref) input:focus-visible,
+:where(.gh-ref) select:focus-visible,
+:where(.gh-ref) textarea:focus-visible,
+:where(.gh-ref) summary:focus-visible {outline:2px solid #10b981;outline-offset:4px}
+:where(.gh-ref) [hidden] {display:none!important}
+:where(.gh-ref) .svg {width:20px;height:20px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+:where(.gh-ref) .svg.sm {width:16px;height:16px}
+:where(.gh-ref) .svg.xs {width:14px;height:14px}
+:where(.gh-ref) .svg.github {fill:currentColor;stroke:none}
+:where(.gh-ref) .green {color:var(--green)}
+:where(.gh-ref) .badge {display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:9999px;font-size:12px;line-height:16px;font-weight:500;background:var(--hover);color:var(--body)}
+:where(.gh-ref) .badge.green {background:var(--green-bg);color:var(--green-text)}
+:where(.gh-ref) dialog {padding:24px;border:0;border-radius:16px;background:var(--surface);color:var(--ink);width:min(448px,calc(100vw - 32px));max-height:calc(100dvh - 64px);overflow-y:auto;box-shadow:0 20px 25px -5px #0000001a,0 8px 10px -6px #0000001a;margin:auto}
+:where(.gh-ref) dialog::backdrop {background:#0006}
+@media(max-width:760px) {
+  :where(.gh-ref) {--toolbar:104px}
+}
+@media(prefers-reduced-motion:reduce) {
+  :where(.gh-ref) *,
+:where(.gh-ref) *::before,
+:where(.gh-ref) *::after {animation:none!important;scroll-behavior:auto!important;transition:none!important}
+}
+:where(.gh-ref) .ref-suggest.search-results {width:min(440px,calc(100% - 26px));max-height:355px;overflow:auto}
+:where(.gh-ref) .ref-suggest-result {display:flex;align-items:flex-start;gap:10px;padding:9px 9px;text-align:left;width:100%;border-radius:7px;min-width:0;color:var(--body)}
+:where(.gh-ref) .ref-suggest-result:hover,
+:where(.gh-ref) .ref-suggest-result[aria-selected='true'] {background:var(--hover)}
+:where(.gh-ref) .ref-result-kind {display:flex;align-items:center;justify-content:center;width:24px;height:24px;flex:none;margin-top:1px;border-radius:7px;background:var(--hover)}
+:where(.gh-ref) .ref-result-kind.issue {color:var(--green-text)}
+:where(.gh-ref) .ref-result-kind.pr {color:var(--gh-accent-pr)}
+:where(.gh-ref) .ref-suggest-result .result-body {display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+:where(.gh-ref) .ref-suggest-result .result-name {font-size:11px;font-weight:600;color:var(--strong);line-height:1.5;overflow-wrap:anywhere}
+:where(.gh-ref) .ref-suggest-result .result-meta {display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:10px;color:var(--soft);line-height:1.5}
+:where(.gh-ref) .ref-suggest-result .result-badge {font-size:9px;line-height:1.4;border-radius:20px;padding:2px 6px;background:var(--hover);border:1px solid var(--line)}
+:where(.gh-ref) .ref-suggest-result .result-select {align-self:center;flex:none;color:var(--soft)}
+:where(.gh-ref) .ref-suggest-empty {font-size:11px;color:var(--muted);line-height:1.7;padding:11px}
+:where(.gh-ref) .ref-suggest .ref-count {font-size:10px;color:var(--soft);margin-left:auto}
+@media(max-width:600px) {
+  :where(.gh-ref) .ref-suggest.search-results {width:calc(100% - 16px)}
+}
+:where(.gh-ref) .ref-suggest {position:absolute;left:13px;top:calc(100% - 1px);width:min(344px,calc(100% - 26px));background:var(--bg);border:1px solid var(--line);box-shadow:0 14px 36px #15151518;border-radius:0 0 10px 10px;z-index:55;overflow:hidden;padding:5px}
+:where(.gh-ref) .ref-suggest-head {padding:7px 9px 6px;color:var(--soft);font-size:10px;display:flex;align-items:center;gap:5px}
+:where(.gh-ref) .ref-suggest-foot {border-top:1px solid var(--line-soft);font-size:10px;color:var(--soft);padding:7px 9px 4px}
+:where(.gh-ref) .ref-suggest.above {top:auto;bottom:calc(100% - 1px);border-radius:10px 10px 0 0}
+@media(max-width:600px) {
+  :where(.gh-ref) .ref-suggest {left:8px;width:calc(100% - 16px)}
+}
+@media(max-width:760px) {
+  :where(.gh-ref) {--toolbar:128px}
+}
+@media(max-width:480px) {
+  :where(.gh-ref) {--toolbar:146px}
+}
+:where(.gh-ref) {
+  --gh-accent-issue:#059669;
+  --gh-accent-pr:#7660aa;
+  --gh-accent-pr-border:#dad3e8;
+  --gh-accent-issue-border:#beded0;
+  --gh-accent-passed:#059669;
+  --gh-accent-failed:#e11d48;
+  --gh-accent-wait:#a16207;
+}
+.dark :where(.gh-ref) {
+  --gh-accent-issue:#34d399;
+  --gh-accent-pr:#b6a4e1;
+  --gh-accent-pr-border:#4c425e;
+  --gh-accent-issue-border:#2e5348;
+  --gh-accent-passed:#34d399;
+  --gh-accent-failed:#fda4af;
+  --gh-accent-wait:#fbbf24;
+}
+:where(.gh-ref) .github-preview-dialog {position:fixed;inset:0;margin:auto;width:min(480px,calc(100vw - 32px));max-height:min(540px,calc(100dvh - 48px));padding:0;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--strong);box-shadow:0 28px 90px #09090b3d,0 6px 18px #09090b15;overflow:auto}
+:where(.gh-ref) .github-preview-dialog::backdrop {background:rgba(9,12,20,.50);backdrop-filter:blur(2px)}
+:where(.gh-ref) .github-preview-dialog .gpm-top {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line-soft)}
+:where(.gh-ref) .github-preview-dialog .gpm-eyebrow {display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--muted)}
+:where(.gh-ref) .github-preview-dialog .gpm-eyebrow .svg {width:16px;height:16px}
+:where(.gh-ref) .github-preview-dialog .gpm-close {display:inline-flex;align-items:center;justify-content:center;border-radius:8px;color:var(--muted);width:29px;height:29px;flex:none}
+:where(.gh-ref) .github-preview-dialog .gpm-close:hover {background:var(--hover);color:var(--strong)}
+:where(.gh-ref) .github-preview-dialog .gpm-content {padding:22px 24px 20px}
+:where(.gh-ref) .github-preview-dialog .gpm-context {display:flex;align-items:center;gap:6px;flex-wrap:wrap;font:11px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);margin-bottom:13px}
+:where(.gh-ref) .github-preview-dialog .gpm-separator {color:var(--soft)}
+:where(.gh-ref) .github-preview-dialog .gpm-title-line {display:flex;align-items:flex-start;gap:12px}
+:where(.gh-ref) .github-preview-dialog .gpm-symbol {display:grid;place-items:center;flex:none;width:29px;height:29px;margin-top:1px;color:#a383f1;border-radius:8px;background:rgba(163,131,241,.1)}
+:where(.gh-ref) .github-preview-dialog .gpm-symbol.issue {color:#238636;background:rgba(35,134,54,.10)}
+:where(.gh-ref) .github-preview-dialog .gpm-symbol .svg {width:17px;height:17px}
+:where(.gh-ref) .github-preview-dialog .gpm-title-line h3 {font-size:17px;font-weight:600;color:var(--strong);line-height:1.55;letter-spacing:-.015em;overflow-wrap:anywhere;margin:0;flex:1;min-width:0}
+:where(.gh-ref) .github-preview-dialog .gpm-meta {display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 0 41px;font-size:11px}
+:where(.gh-ref) .github-preview-dialog .gpm-meta .badge {font-size:10px;line-height:15px;padding:3px 9px}
+:where(.gh-ref) .github-preview-dialog .gpm-connected {display:inline-flex;gap:5px;align-items:center;color:var(--green-text)}
+:where(.gh-ref) .github-preview-dialog .gpm-unlinked {color:var(--soft)}
+:where(.gh-ref) .github-preview-dialog .gpm-footer {padding:16px 20px 18px;border-top:1px solid var(--line-soft);background:color-mix(in srgb,var(--surface) 85%,var(--hover))}
+:where(.gh-ref) .github-preview-dialog .gpm-main-actions {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+:where(.gh-ref) .github-preview-dialog .gpm-btn {display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:0;padding:11px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:12px;font-weight:550;line-height:17px;color:var(--body);white-space:nowrap}
+:where(.gh-ref) .github-preview-dialog .gpm-btn:hover:not(:disabled) {border-color:var(--green-line);color:var(--green-text);background:var(--green-bg)}
+:where(.gh-ref) .github-preview-dialog .gpm-btn.github {background:var(--strong);color:var(--surface);border-color:transparent}
+:where(.gh-ref) .github-preview-dialog .gpm-btn.github:hover {background:var(--ink);color:var(--bg);border-color:transparent}
+:where(.gh-ref) .github-preview-dialog .gpm-btn:disabled {opacity:.44;background:var(--hover);color:var(--muted);cursor:not-allowed}
+:where(.gh-ref) .github-preview-dialog .gpm-connect {display:flex;align-items:center;justify-content:center;gap:5px;width:100%;margin-top:12px;color:var(--green-text);font-size:11px;font-weight:600;padding:4px}
+:where(.gh-ref) .github-preview-dialog .gpm-connect:hover {text-decoration:underline}
+@media(max-width:480px) {
+  :where(.gh-ref) .github-preview-dialog {width:calc(100vw - 28px)}
+  :where(.gh-ref) .github-preview-dialog .gpm-content {padding:20px 18px}
+  :where(.gh-ref) .github-preview-dialog .gpm-footer {padding:14px 16px 17px}
+  :where(.gh-ref) .github-preview-dialog .gpm-btn {font-size:11px;padding:10px 7px;gap:4px}
+  :where(.gh-ref) .github-preview-dialog .gpm-title-line h3 {font-size:15px}
+}
+:where(.gh-ref) .github-preview-dialog {
+  width:min(350px,calc(100vw - 28px));
+  max-height:calc(100dvh - 36px);
+  border-radius:12px;
+  box-shadow:0 18px 52px #09090b38,0 3px 12px #09090b13;
+}
+:where(.gh-ref) .github-preview-dialog .gpm-top {padding:9px 14px;gap:8px}
+:where(.gh-ref) .github-preview-dialog .gpm-eyebrow {font-size:11px;gap:6px}
+:where(.gh-ref) .github-preview-dialog .gpm-eyebrow .svg {width:14px;height:14px}
+:where(.gh-ref) .github-preview-dialog .gpm-close {width:25px;height:25px;border-radius:6px}
+:where(.gh-ref) .github-preview-dialog .gpm-close .svg {width:14px;height:14px}
+:where(.gh-ref) .github-preview-dialog .gpm-content {padding:15px 16px 13px}
+:where(.gh-ref) .github-preview-dialog .gpm-context {font-size:10px;line-height:15px;gap:5px;margin-bottom:8px}
+:where(.gh-ref) .github-preview-dialog .gpm-title-line {gap:9px;align-items:center}
+:where(.gh-ref) .github-preview-dialog .gpm-symbol {width:25px;height:25px;border-radius:6px;margin-top:0}
+:where(.gh-ref) .github-preview-dialog .gpm-symbol .svg {width:15px;height:15px}
+:where(.gh-ref) .github-preview-dialog .gpm-title-line h3 {font-size:14px;line-height:1.45;letter-spacing:-.012em;font-weight:600}
+:where(.gh-ref) .github-preview-dialog .gpm-meta {margin:9px 0 0 34px;gap:6px;font-size:10px}
+:where(.gh-ref) .github-preview-dialog .gpm-meta .badge {font-size:10px;line-height:15px;padding:2px 8px}
+:where(.gh-ref) .github-preview-dialog .gpm-footer {padding:11px 14px 12px}
+:where(.gh-ref) .github-preview-dialog .gpm-main-actions {gap:7px}
+:where(.gh-ref) .github-preview-dialog .gpm-btn {font-size:10.5px;line-height:16px;gap:4px;min-height:34px;padding:8px 5px;border-radius:7px;font-weight:550}
+:where(.gh-ref) .github-preview-dialog .gpm-btn .svg {width:12px;height:12px}
+:where(.gh-ref) .github-preview-dialog .gpm-connect {margin-top:7px;font-size:10.5px;padding:3px}
+:where(.gh-ref) .github-preview-dialog .gpm-connect .svg {width:12px;height:12px}
+@media(max-width:480px) {
+  :where(.gh-ref) .github-preview-dialog {width:min(350px,calc(100vw - 24px));border-radius:12px}
+  :where(.gh-ref) .github-preview-dialog .gpm-content {padding:14px 15px 12px}
+  :where(.gh-ref) .github-preview-dialog .gpm-footer {padding:10px 13px 11px}
+  :where(.gh-ref) .github-preview-dialog .gpm-title-line h3 {font-size:13.5px}
+  :where(.gh-ref) .github-preview-dialog .gpm-btn {font-size:10px;padding:8px 4px;gap:3px;min-height:33px}
+}
+:where(.gh-ref) {
+  --gh-task-border:#8c959f;
+  --gh-task-empty:#ffffff;
+  --gh-task-filled:#0969da;
+  --gh-task-tick:#ffffff;
+}
+.dark :where(.gh-ref) {
+  --gh-task-border:#858585;
+  --gh-task-empty:#3b3b3b;
+  --gh-task-filled:#a2c8fa;
+  --gh-task-tick:#0d1116;
+}
+
+/* ── 2) 본문 링크 ── */
+:where(.md-ghref) button:where(.gh-task-link) {font:inherit;color:inherit}
+:where(.md-ghref) button:where(.gh-task-link) {background:none;border:0;padding:0;cursor:pointer}
+:where(.md-ghref) button:where(.gh-task-link):focus-visible {outline:2px solid #10b981;outline-offset:4px}
+:where(.md-ghref .gh-task-link) .svg {width:20px;height:20px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+:where(.md-ghref .gh-task-link) .svg.sm {width:16px;height:16px}
+:where(.md-ghref .gh-task-link) .svg.github {fill:currentColor;stroke:none}
+:where(.md-ghref) .gh-task-link {font-size:inherit;font-weight:600;color:#0969da;text-decoration:underline;text-underline-offset:2px;text-decoration-color:currentColor;line-height:inherit}
+:where(.md-ghref) .gh-task-link .svg {color:#8250df;width:16px;height:16px;vertical-align:-3px;margin-right:4px;stroke-width:1.9}
+:where(.md-ghref) .gh-task-link.issue .svg {color:#1a7f37}
+.dark :where(.md-ghref) .gh-task-link {color:#58a6ff}
+.dark :where(.md-ghref) .gh-task-link .svg {color:#bc8cff}
+.dark :where(.md-ghref) .gh-task-link.issue .svg {color:#3fb950}
+@media(max-width:520px) {
+  :where(.md-ghref) .gh-task-link .svg {width:15px;height:15px}
+}
+:where(.md-ghref) .gh-task-link {display:inline;white-space:normal;text-align:left;color:#3587e8;font-size:inherit;font-weight:600;line-height:inherit;text-decoration:underline;text-decoration-color:#3587e8;overflow-wrap:anywhere}
+.dark :where(.md-ghref) .gh-task-link {color:#58a6ff;text-decoration-color:#58a6ff}
+:where(.md-ghref) .gh-task-link:hover {color:#1c65c7}
+:where(.md-ghref) .gh-task-link .svg {width:16px;height:16px;color:#a371f7;vertical-align:-3px;margin-right:4px}
+:where(.md-ghref) .gh-task-link.issue .svg {color:#30a46c}
+@media(max-width:520px) {
+  :where(.md-ghref) .gh-task-link .svg {width:14px;height:14px}
+}
+.md-ghref .gh-task-link .svg {color:#a383f1;width:17px;height:17px;vertical-align:-3px;margin-right:5px;stroke-width:2}
+:where(.md-ghref) .gh-task-link.issue .svg,
+.md-ghref .gh-task-link.issue .svg {color:#3fb950}
+:where(.md-ghref) .gh-task-link .gh-task-no,
+:where(.md-ghref) .gh-task-link .gh-task-link-text {color:inherit!important;font-size:inherit;font-weight:inherit;text-decoration:inherit;white-space:normal}
+:where(.md-ghref) .gh-task-link .gh-task-no {margin-left:3px}
+:where(.md-ghref) .gh-task-link .gh-task-tail {white-space:nowrap;color:inherit;text-decoration:inherit}
+.md-ghref .gh-task-link {color:#5694f1!important;font-weight:600;text-decoration:underline;text-decoration-color:#5694f1;text-underline-offset:2px}
+:where(.md-ghref) .gh-task-link,
+.md-ghref .gh-task-link {text-decoration:none!important}
+:where(.md-ghref) .gh-task-link .gh-task-link-text,
+.md-ghref .gh-task-link .gh-task-link-text {color:inherit!important; text-decoration-line:underline!important; text-decoration-color:currentColor!important; text-decoration-thickness:1px!important; text-underline-offset:2px; text-decoration-skip-ink:none; white-space:normal; overflow-wrap:normal; word-break:normal;}

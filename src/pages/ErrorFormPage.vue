@@ -20,6 +20,9 @@ import DemoNotice from '@/components/demo/DemoNotice.vue'
 import SimilarCasesPanel from '@/components/error/SimilarCasesPanel.vue'
 import { useSimilarCases } from '@/composables/useSimilarCases'
 import { CodeBracketIcon, PaperClipIcon, ClockIcon } from '@heroicons/vue/24/outline'
+import GhRefSuggest from '@/components/github-reference/GhRefSuggest.vue'
+import GhRefPreviewDialog from '@/components/github-reference/GhRefPreviewDialog.vue'
+import { githubRefsEnabled, provideGithubRefs } from '@/composables/useGithubRefs'
 
 const route = useRoute()
 const router = useRouter()
@@ -135,6 +138,16 @@ const showSnippetModal = ref(false)
 const showAttachmentModal = ref(false)
 
 const descriptionRef = ref<HTMLTextAreaElement | null>(null)
+
+// 본문 `#` 자동완성·미리보기의 GitHub 참조. 공간 = Case 가 속할 곳 — 수정은 원래 공간(바꿀 수 없음),
+// 생성은 Workspace 공개일 때 고른 워크스페이스, 그 외는 개인.
+const originalWorkspaceId = ref<number | null>(null)
+const ghRefs = githubRefsEnabled
+  ? provideGithubRefs({
+      caseId: caseId ?? null,
+      workspaceId: computed(() => (isEdit ? originalWorkspaceId.value : visibility.value === 'WORKSPACE' ? workspaceId.value : null)),
+    })
+  : null
 const previewMode = ref(false)
 
 // Adapt the form's in-progress markers to the shapes BodyRenderer expects.
@@ -194,6 +207,7 @@ async function loadError() {
   description.value = data.description ?? ''
   visibility.value = data.visibility as Visibility
   tags.value = data.tags ?? []
+  originalWorkspaceId.value = data.workspaceId ?? null
   if (data.workspaceId) {
     workspaceId.value = data.workspaceId
     const wsRes = await teamApi.listWorkspaces()
@@ -431,7 +445,10 @@ onMounted(async () => {
             </button>
           </div>
         </div>
-        <textarea v-show="!previewMode" ref="descriptionRef" v-model="description" placeholder="Description — additional context" rows="5" class="raw-textarea w-full" />
+        <div v-show="!previewMode" class="relative">
+          <textarea ref="descriptionRef" v-model="description" placeholder="Description — additional context" rows="5" class="raw-textarea w-full" />
+          <GhRefSuggest v-if="ghRefs" :target="descriptionRef" :refs="ghRefs" />
+        </div>
         <div v-show="previewMode" class="min-h-[7rem] border-l-2 border-zinc-200 dark:border-zinc-700 pl-4">
           <BodyRenderer
             v-if="previewMode && description.trim()"
@@ -532,6 +549,7 @@ onMounted(async () => {
 
     <SnippetModal v-if="showSnippetModal" @save="saveSnippet" @close="showSnippetModal = false" />
     <AttachmentModal v-if="showAttachmentModal" @save="saveAttachment" @close="showAttachmentModal = false" />
+    <GhRefPreviewDialog v-if="ghRefs" :refs="ghRefs" />
     </div>
 
     <aside v-if="showSimilar" data-tour="similar" class="lg:sticky lg:top-6 lg:mt-3">

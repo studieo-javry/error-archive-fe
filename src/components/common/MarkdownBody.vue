@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import hljs from 'highlight.js'
 import { TASK_LINE } from '@/utils/markdownTasks'
+import { collectRefKeys, linkifyRefs } from '@/utils/githubRefs'
+import { useGithubRefs } from '@/composables/useGithubRefs'
 import '@/styles/markdown-task-list.css'
+import '@/styles/github-reference.css'
 
 const props = defineProps<{
   content: string
@@ -11,7 +14,22 @@ const props = defineProps<{
    * 없으면 체크박스는 보기 전용(disabled).
    */
   onToggleTask?: (index: number, checked: boolean) => Promise<unknown>
+  /**
+   * 본문의 GitHub 참조(`owner/repo#N`·GitHub 주소)를 링크로 — 누르면 미리보기. Case 본문·Step 에서만 켠다.
+   * 제공자(provideGithubRefs)가 없는 화면에선 꺼진다.
+   */
+  githubRefs?: boolean
 }>()
+
+const ghRefs = props.githubRefs ? useGithubRefs() : null
+
+// 링크로 바꿀 참조 — 코드 블록·인라인 코드 안은 빼고 센다(렌더와 같은 규칙).
+const refKeys = computed(() => {
+  if (!ghRefs) return []
+  const text = props.content.replace(/```(\w*)\n([\s\S]*?)```/g, '').replace(/`[^`]+`/g, '')
+  return collectRefKeys(text)
+})
+watch(refKeys, keys => { if (keys.length) ghRefs?.request(keys) }, { immediate: true })
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -50,6 +68,14 @@ const rendered = computed(() => {
 
   // italic — 볼드와 동일 정책.
   html = html.replace(/\*((?:(?!\n\n)[\s\S])+?)\*/g, '<em>$1</em>')
+
+  // GitHub 참조 → 링크 버튼. 인라인 코드 안은 그대로.
+  if (ghRefs) {
+    const refs = ghRefs
+    html = html.split(/(<code\b[^>]*>[\s\S]*?<\/code>)/g)
+      .map((part, i) => (i % 2 ? part : linkifyRefs(part, k => refs.lookup(k))))
+      .join('')
+  }
 
   // 블록 레벨: 제목(#/##/###) · 목록(-, 1.) · 작업 목록(- [ ]) · 문단 · 코드블록 센티넬. 라인 단위로 그룹핑한다.
   const out: string[] = []
@@ -96,6 +122,11 @@ const rendered = computed(() => {
   return html.replace(SENTINEL, (_m, i: string) => blocks[Number(i)] ?? '')
 })
 
+function onClick(e: MouseEvent) {
+  const link = (e.target as HTMLElement).closest<HTMLElement>('[data-gh-ref]')
+  if (link && ghRefs) ghRefs.open(link.dataset.ghRef!)
+}
+
 // 체크박스 클릭 → 저장. 저장 중엔 다른 클릭을 받지 않고(앞 저장 결과를 덮어쓰지 않게), 실패하면 되돌린다.
 const saving = ref(false)
 async function onChange(e: Event) {
@@ -114,5 +145,5 @@ async function onChange(e: Event) {
 </script>
 
 <template>
-  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-2 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic [&_h1]:text-[15px] [&_h1]:font-bold [&_h1]:text-zinc-800 dark:[&_h1]:text-zinc-100 [&_h1]:mt-6 [&_h1]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-zinc-800 dark:[&_h2]:text-zinc-100 [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-zinc-700 dark:[&_h3]:text-zinc-200 [&_h3]:mt-5 [&_h3]:mb-2 [&>h1:first-child]:mt-0 [&>h2:first-child]:mt-0 [&>h3:first-child]:mt-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-0.5" @change="onChange" v-html="rendered" />
+  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-2 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic [&_h1]:text-[15px] [&_h1]:font-bold [&_h1]:text-zinc-800 dark:[&_h1]:text-zinc-100 [&_h1]:mt-6 [&_h1]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-zinc-800 dark:[&_h2]:text-zinc-100 [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-zinc-700 dark:[&_h3]:text-zinc-200 [&_h3]:mt-5 [&_h3]:mb-2 [&>h1:first-child]:mt-0 [&>h2:first-child]:mt-0 [&>h3:first-child]:mt-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-0.5" :class="{ 'md-ghref': ghRefs }" @change="onChange" @click="onClick" v-html="rendered" />
 </template>
