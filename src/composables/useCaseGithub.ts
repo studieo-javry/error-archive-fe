@@ -119,6 +119,9 @@ export function parseUrl(url: string): { repo: string; kind: GithubRefKind; numb
 
 const PAGE = 8
 
+/** 시각순(오래된 것 먼저). Step(`+09:00`)과 GitHub 이벤트(`Z`)는 표기가 달라 문자열 비교로는 실제 순서가 안 맞는다 — 절대 시점으로 비교. */
+export const byTime = (a: { at: string }, b: { at: string }) => Date.parse(a.at) - Date.parse(b.at)
+
 function createCaseGithub(caseId: number, viewer: Viewer) {
   const evidence = ref<CaseGithubEvidence | null>(null)
   const failed = ref(false)
@@ -284,7 +287,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
     const list: GhTimelineEntry[] = []
     let hiddenOlder = 0
     if (ui.filter === 'github' && showEvents) {
-      const sorted = [...evs].sort((a, b) => a.at.localeCompare(b.at))
+      const sorted = [...evs].sort(byTime)
       const shown = sorted.slice(Math.max(0, sorted.length - ui.activityPageSize))
       hiddenOlder = Math.max(0, totalCount.value - shown.length)
       shown.forEach(e => list.push({ type: 'event', at: e.at, event: e }))
@@ -294,7 +297,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
     const rows: Row[] = [
       ...(showSteps ? viewer.steps.value.map(x => ({ at: x.createdAt, step: x })) : []),
       ...(showEvents ? evs.map(x => ({ at: x.at, event: x })) : []),
-    ].sort((a, b) => a.at.localeCompare(b.at))
+    ].sort(byTime)
     // 아직 안 받은 이전 이력이 있으면, 받은 이력 중 가장 오래된 것 앞에 "더 보기" 경계를 둔다.
     if (showEvents && hasNext.value && evs.length) {
       const first = rows.findIndex(r => r.event)

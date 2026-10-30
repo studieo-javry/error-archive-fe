@@ -3,7 +3,7 @@
 import { computed } from 'vue'
 import GhEvIcon from './GhEvIcon.vue'
 import GhHistoryRow from './GhHistoryRow.vue'
-import { kindName, useCaseGithub, type GhViewEvent } from '@/composables/useCaseGithub'
+import { byTime, kindName, useCaseGithub, type GhViewEvent } from '@/composables/useCaseGithub'
 
 const props = defineProps<{ events: GhViewEvent[]; groupKey: string; last: boolean }>()
 const g = useCaseGithub()
@@ -28,7 +28,7 @@ const eventLabelShort = (e: GhViewEvent) => {
 }
 // Prefer a meaningful state transition over repetitive CI notifications for a useful summary.
 const rank: Record<string, number> = { PR_MERGED: 8, ISSUE_CLOSED: 7, ISSUE_REOPENED: 7, PR_CLOSED: 6, PR_LINKED: 5, CI_COMPLETED: 4, PR_OPENED: 3 }
-const preview = computed(() => [...props.events].sort((a, b) => (rank[b.type] || 0) - (rank[a.type] || 0) || b.at.localeCompare(a.at))[0])
+const preview = computed(() => [...props.events].sort((a, b) => (rank[b.type] || 0) - (rank[a.type] || 0) || byTime(b, a))[0])
 const range = computed(() => {
   const from = props.events[0].when.split(' ')[0]
   const to = props.events[props.events.length - 1].when.split(' ')[0]
