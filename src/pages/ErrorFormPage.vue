@@ -371,14 +371,14 @@ function scrollToApplied() {
   requestAnimationFrame(() => document.getElementById('ai-applied-note')?.scrollIntoView({ behavior: smoothIfAllowed(), block: 'center' }))
 }
 
-// "다른 예제 불러오기" — 샘플 원문을 트레이스에 로드(목업 sampleModal).
+// "다른 예제 불러오기" — 샘플 원문을 트레이스에 로드(목업 sampleModal). 게스트(데모) 전용.
 const showSamplePicker = ref(false)
 function openSamplePicker() { showSamplePicker.value = true }
 function loadSample(s: DemoSample) {
   invalidateAi()
   paste.value = s.raw
   showSamplePicker.value = false
-  demo.toast(authStore.isGuest ? '예제 원문을 불러왔어요. 「샘플 결과 보기」는 별도의 미리 준비된 예시를 보여줘요.' : '예제 원문을 불러왔어요. AI로 채우기를 눌러 보세요.')
+  demo.toast('예제 원문을 불러왔어요. 「샘플 결과 보기」는 별도의 미리 준비된 예시를 보여줘요.')
 }
 function clearTrace() { invalidateAi(); paste.value = ''; showSamplePicker.value = false }
 const editFieldLabels: Record<string, string> = { title: '제목', summary: '설명', tags: '태그', severity: '심각도' }
@@ -761,8 +761,8 @@ onMounted(async () => {
         </div>
         <textarea v-model="paste" placeholder="Paste error output / stack trace" rows="4" maxlength="20000" class="raw-textarea w-full font-mono text-xs" />
         <div class="trace-tools">
-          <button type="button" class="text-button" @click="openSamplePicker"><svg class="icon" aria-hidden="true"><use href="#i-code" /></svg>다른 예제 불러오기</button>
-          <span class="tabular-nums">{{ traceCount.toLocaleString() }} / 20,000</span>
+          <button v-if="authStore.isGuest" type="button" class="text-button" @click="openSamplePicker"><svg class="icon" aria-hidden="true"><use href="#i-code" /></svg>다른 예제 불러오기</button>
+          <span class="trace-count tabular-nums">{{ traceCount.toLocaleString() }} / 20,000</span>
         </div>
         <p class="trace-caption">{{ authStore.isGuest ? '샘플 결과 보기는 입력한 원문을 분석하지 않아요. 내 로그를 분석하려면 「내 로그 분석」을 누르세요.' : '에러 원문에서 제목·요약·태그·심각도를 제안해 드려요.' }}</p>
 
@@ -1129,6 +1129,7 @@ onMounted(async () => {
 .applied-edit-button .icon{width:11px;height:11px}
 .button .icon{width:14px;height:14px}
 .trace-tools{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:10px;font-size:11px;color:var(--soft)}
+.trace-count{margin-left:auto}
 .text-button{font-size:11px;color:var(--label);display:inline-flex;align-items:center;gap:5px;background:none;border:0;cursor:pointer}
 .text-button:hover{color:var(--green)}
 .trace-caption{font-size:11px;color:var(--soft);margin-top:10px;line-height:1.7}
