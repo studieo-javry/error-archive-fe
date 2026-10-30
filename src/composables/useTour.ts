@@ -25,6 +25,9 @@ export const GUIDE_TITLES = ['상황 이해하기', '시도 살펴보기', '솔�
 /** 마지막에 항상 붙는 단계 — 내가 직접 기록할 때 비슷한 사례를 찾아주는 기능(New Entry). */
 const SIMILAR_TITLE = '비슷한 사례 찾기'
 
+/** AI 초안 단계 — 비슷한 사례(0) 다음, 상황 이해하기 앞. New Entry 의 'AI로 채우기'를 소개한다. */
+const AI_TITLE = 'AI로 초안 만들기'
+
 /** 발행하기(03) 단계에서 PublishSheet 가 올라온 뒤, 각 내부 단계에 맞춘 가이드 문구(목업 NAR 와 동일). */
 const PUBLISH_STAGE_COPY: Record<number, { title: string; body: string }> = {
   [-1]: {
@@ -83,6 +86,7 @@ export function useTour() {
   // 아티클을 모르면 발행 2단계를 건너뛴다(핵심 3단계). 유사 추천 단계는 항상 마지막에 덧붙인다.
   const titles = computed(() => [
     SIMILAR_TITLE,
+    AI_TITLE,
     ...(article.value ? GUIDE_TITLES : GUIDE_TITLES.slice(0, 3)),
   ])
   const total = computed(() => titles.value.length)
@@ -106,8 +110,19 @@ export function useTour() {
         chip: '비슷한 사례',
       }
     }
-    // 탐색 단계는 인트로(0) 뒤라 stepIndex-1 로 매핑한다.
-    switch (stepIndex.value - 1) {
+    // AI 초안 단계(1): New Entry 의 'AI로 채우기'. 샘플 AI 제안을 띄워본 뒤 다음으로.
+    if (stepIndex.value === 1) {
+      return {
+        title: '에러 원문을 기록 초안으로 빠르게 정리해요.',
+        body: '에러 로그를 바탕으로 <strong>제목·요약·태그·심각도 제안</strong>이 어떤 모습인지 먼저 체험해 보세요. 데모에서는 <strong>미리 준비된 샘플 결과</strong>를 보여줘요.',
+        hint: '샘플 미리보기는 내 입력값을 변경하지 않아요. 실제 내 로그 분석과 제안 적용은 회원 전용이에요.',
+        cta: f.aiTried ? '다음 · 상황 이해하기' : '샘플 AI 제안 띄워보기',
+        anchor: f.aiTried ? '[data-tour="ai-preview"]' : '[data-tour="ai-button"]',
+        chip: 'AI로 채우기',
+      }
+    }
+    // 탐색 단계는 인트로(0)+AI(1) 뒤라 stepIndex-2 로 매핑한다.
+    switch (stepIndex.value - 2) {
       case 0:
         return {
           title: '먼저, 에러가 발생한 맥락을 읽어보세요.',
@@ -228,7 +243,7 @@ export function useTour() {
    */
   function finishPublishToArticle() {
     if (!article.value) { articleOpen.value = false; tour.setStep(total.value); return }
-    tour.setStep(5) // 아티클 단계 (인트로가 0이라 +1)
+    tour.setStep(total.value - 1) // 아티클 단계(마지막 title; 인트로0+AI1 삽입으로 시프트)
     openArticle()
   }
 
@@ -264,10 +279,10 @@ export function useTour() {
    */
   function isCompatible(route: RouteLocationNormalizedLoaded): boolean {
     const onCase = route.name === 'errorDetail' && Number(route.params.id) === tour.caseId
-    // 인트로(비슷한 사례)는 New Entry 화면에서만.
-    if (stepIndex.value === 0) return route.name === 'errorCreate'
+    // 인트로(비슷한 사례)·AI 초안은 New Entry 화면에서만.
+    if (stepIndex.value === 0 || stepIndex.value === 1) return route.name === 'errorCreate'
     // 상황 이해(케이스 열기 전)는 Library 또는 샘플 케이스.
-    if (stepIndex.value === 1 && !tour.flags.contextOpened) return route.name === 'errorList' || onCase
+    if (stepIndex.value === 2 && !tour.flags.contextOpened) return route.name === 'errorList' || onCase
     return onCase
   }
 
@@ -281,31 +296,49 @@ export function useTour() {
     if (tour.status !== 'paused') { start(); return }
     tour.setStatus('active')
     const i = stepIndex.value
-    if (i === 0) goCreate()
-    else if (i === 1 && !tour.flags.contextOpened) goList()
+    if (i === 0 || i === 1) goCreate() // 비슷한 사례·AI 초안은 New Entry
+    else if (i === 2 && !tour.flags.contextOpened) goList()
     else goCase()
+  }
+
+  /** AI 초안 단계 — 샘플 AI 제안을 띄운다(ErrorFormPage 가 신호를 받아 샘플 미리보기 렌더). */
+  function aiDemo() {
+    tour.requestAiDemo()
+    tour.setFlag('aiTried', true)
+    goCreate()
+  }
+  /** AI 초안 단계 보조 — '내 로그 분석' → 로그인 안내 게이트(ErrorFormPage 가 신호를 받아 모달). */
+  function aiGate() {
+    tour.requestAiGate()
   }
 
   /** 카드의 1차 버튼 — 그 단계의 행동을 먼저 하고, 한 번 더 누르면 다음 단계로. */
   function next() {
     const f = tour.flags
-    // 00 인트로(비슷한 사례) → 탐색 시작(상황 이해). 케이스 열기 전이라 Library 로.
+    // 00 인트로(비슷한 사례) → AI 초안(1). 둘 다 New Entry 라 머문다.
     if (stepIndex.value === 0) {
       tour.setStep(1)
+      goCreate()
+      return
+    }
+    // 01 AI 초안 → 샘플을 띄워본 뒤 상황 이해(2)로. 케이스 열기 전이라 Library 로.
+    if (stepIndex.value === 1) {
+      if (!f.aiTried) { aiDemo(); return }
+      tour.setStep(2)
       goList()
       return
     }
-    switch (stepIndex.value - 1) {
+    switch (stepIndex.value - 2) {
       case 0: // 상황 이해하기
         if (!f.contextOpened) { tour.setFlag('contextOpened', true); goCase(); return }
-        tour.setStep(2); goCase(); return
+        tour.setStep(stepIndex.value + 1); goCase(); return
       case 1: // 시도 살펴보기
         if (!f.evidenceRead) { tour.setFlag('evidenceRead', true); goCase(); return }
-        tour.setStep(3); goCase(); return
+        tour.setStep(stepIndex.value + 1); goCase(); return
       case 2: // 솔루션 확인하기
         if (!f.solutionSelected) { tour.setFlag('solutionSelected', true); tour.requestSolution(); goCase(); return }
         // 아티클이 있으면 발행하기로, 없으면 여기서 완료.
-        if (article.value) { tour.setStep(4); return }
+        if (article.value) { tour.setStep(stepIndex.value + 1); return }
         tour.setStep(total.value); return
       case 3: // 발행하기
         // ① 시트가 닫혀 있으면 상단 Publish 로 열고 ② 미리보기 전이면 시트 단계를 한 칸 진행
@@ -326,10 +359,12 @@ export function useTour() {
     if (articleOpen.value) articleOpen.value = false
     // 인트로(0): 더 뒤가 없음 — New Entry 에 머문다.
     if (i === 0) { goCreate(); return }
-    // 상황 이해(1) → 인트로(비슷한 사례)로.
-    if (i === 1) { tour.setFlag('contextOpened', false); tour.setStep(0); goCreate(); return }
-    // 발행하기(4)에서 시트가 열려 있으면 시트만 닫고 그 단계에 머문다.
-    if (i === 4 && tour.publishStage != null) { tour.requestPublishClose(); return }
+    // AI 초안(1) → 인트로(비슷한 사례)로. 둘 다 New Entry.
+    if (i === 1) { tour.setStep(0); goCreate(); return }
+    // 상황 이해(2) → AI 초안(1)으로. AI 는 New Entry.
+    if (i === 2) { tour.setFlag('contextOpened', false); tour.setStep(1); goCreate(); return }
+    // 발행하기(5)에서 시트가 열려 있으면 시트만 닫고 그 단계에 머문다.
+    if (i === 5 && tour.publishStage != null) { tour.requestPublishClose(); return }
     tour.setStep(i - 1)
     goCase()
   }
@@ -350,6 +385,7 @@ export function useTour() {
   return {
     titles, total, active, canResume, stepIndex, isComplete, card, article,
     articleOpen, start, resume, next, prev, dismiss, convert, openArticle, closeArticle, finishPublishToArticle, isCompatible, pause,
+    aiDemo, aiGate,
   }
 }
 

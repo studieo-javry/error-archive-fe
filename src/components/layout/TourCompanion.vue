@@ -9,7 +9,7 @@ import DemoIcon from '@/components/demo/DemoIcon.vue'
 const route = useRoute()
 const router = useRouter()
 const tourStore = useTourStore()
-const { titles, total, active, card, stepIndex, isComplete, article, next, prev, dismiss, convert, openArticle, isCompatible, pause } = useTour()
+const { titles, total, active, card, stepIndex, isComplete, article, next, prev, dismiss, convert, openArticle, isCompatible, pause, aiGate } = useTour()
 const demo = useDemoStore()
 
 // 인트로(비슷한 사례): 두 버튼을 눌러 체험하면 주 버튼이 '둘러보기 시작'으로 바뀐다(자동 전환 X — 사용자가 직접 눌러야 넘어감).
@@ -43,7 +43,7 @@ watch(() => route.fullPath, () => {
 watch(
   () => route.fullPath,
   () => {
-    if (active.value && stepIndex.value === 1 && route.name === 'errorDetail' && Number(route.params.id) === tourStore.caseId) {
+    if (active.value && stepIndex.value === 2 && route.name === 'errorDetail' && Number(route.params.id) === tourStore.caseId) {
       tourStore.setFlag('contextOpened', true)
     }
   },
@@ -156,7 +156,8 @@ onBeforeUnmount(clearHighlight)
             </template>
             <template v-else>
               <button type="button" class="btn btn-primary btn-full" @click="next"><DemoIcon name="arrow" />{{ card.cta }}</button>
-              <button v-if="stepIndex === 5 && article" type="button" class="text-btn guide-reopen" @click="openArticle"><DemoIcon name="arrow" />아티클 다시 열기</button>
+              <button v-if="stepIndex === 1" type="button" class="btn btn-quiet btn-full" @click="aiGate">내 로그 분석 (로그인 안내)</button>
+              <button v-if="stepIndex === 6 && article" type="button" class="text-btn guide-reopen" @click="openArticle"><DemoIcon name="arrow" />아티클 다시 열기</button>
             </template>
           </div>
           <div class="guide-bottom">

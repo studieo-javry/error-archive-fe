@@ -8,6 +8,8 @@ import type {
   ErrorCaseUpdateRequest,
   MeTooResponse,
   SimilarCaseListResponse,
+  DraftSuggestionRequest,
+  DraftSuggestionResponse,
 } from '@/types/error'
 
 export const errorApi = {
@@ -28,6 +30,11 @@ export const errorApi = {
 
   create(data: ErrorCaseCreateRequest) {
     return apiClient.post<ErrorCaseCreateResponse>('/error-cases', data)
+  },
+
+  // 에러 원문 붙여넣기 → AI 초안 제안(제목·예외·요약·태그·심각도). 로그인 사용자 전용(게스트 403).
+  draftSuggestion(data: DraftSuggestionRequest) {
+    return apiClient.post<DraftSuggestionResponse>('/error-cases/draft-suggestion', data)
   },
 
   update(id: number, data: ErrorCaseUpdateRequest) {
