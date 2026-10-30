@@ -1109,15 +1109,15 @@ onMounted(async () => {
   visibility: visible;
   transform: translateX(-50%) translateY(0);
 }
-:global(.dark) .help-btn { border-color: #52525b; color: #a1a1aa; }
-:global(.dark) .help-btn:hover { border-color: #a1a1aa; color: #d4d4d8; }
-:global(.dark) .help-tip { background: #1f1f23; color: #d4d4d8; border-color: #3f3f46; }
-:global(.dark) .help-tip::after { border-bottom-color: #1f1f23; }
-:global(.dark) .help-tip b { color: #f4f4f5; }
+html.dark .help-btn { border-color: #52525b; color: #a1a1aa; }
+html.dark .help-btn:hover { border-color: #a1a1aa; color: #d4d4d8; }
+html.dark .help-tip { background: #1f1f23; color: #d4d4d8; border-color: #3f3f46; }
+html.dark .help-tip::after { border-bottom-color: #1f1f23; }
+html.dark .help-tip b { color: #f4f4f5; }
 
 /* ===== AI 영역 — 사용자 목업 CSS 그대로 (tokens + verbatim) ===== */
 .ea-ai{--green:#059669;--green-bright:#10b981;--green-soft:#ecfdf5;--green-line:#a7f3d0;--surface:#fff;--ink:#18181b;--label:#71717a;--muted:#52525b;--soft:#a1a1aa;--line:#e4e4e7;--strong:#d4d4d8;--hover:#f4f4f5;--eabg:#f7f7f5;--mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace}
-:global(.dark) .ea-ai{--green:#34d399;--green-bright:#10b981;--green-soft:#052e23;--green-line:#24614a;--surface:#202023;--ink:#f4f4f5;--label:#a1a1aa;--muted:#a1a1aa;--soft:#71717a;--line:#3f3f46;--strong:#52525b;--hover:#27272a;--eabg:#18181b}
+html.dark .ea-ai{--green:#34d399;--green-bright:#10b981;--green-soft:#052e23;--green-line:#24614a;--surface:#202023;--ink:#f4f4f5;--label:#a1a1aa;--muted:#a1a1aa;--soft:#71717a;--line:#3f3f46;--strong:#52525b;--hover:#27272a;--eabg:#18181b}
 .ea-ai .tag{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid var(--line);border-radius:4px;font-size:12px;color:var(--muted)}
 .icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}
 .ai-button .icon{width:14px;height:14px}
@@ -1162,7 +1162,7 @@ onMounted(async () => {
 .ai-tags{display:flex;flex-wrap:wrap;gap:5px}
 .ai-tags .tag{font-size:10.5px;color:var(--green);border-color:var(--green-line);background:var(--green-soft);padding:2px 7px}
 .keep-note{display:block;font-size:10px;color:#a16207;margin-top:5px}
-:global(.dark) .keep-note{color:#d6b66b}
+html.dark .keep-note{color:#d6b66b}
 .severity-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px}
 .pip{width:7px;height:7px;border-radius:50%;background:var(--s-color,#f59e0b);display:inline-block;flex:none}
 .ai-preview-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding:12px 16px;background:color-mix(in srgb,var(--eabg) 65%,var(--surface));flex-wrap:wrap}
@@ -1173,7 +1173,7 @@ onMounted(async () => {
 .analysis-status .cancel-analysis{margin-left:auto;font-size:11px;color:var(--soft);background:none;border:0;cursor:pointer}
 .analysis-status .retry-button{font-size:11px;color:var(--label);text-decoration:underline;background:none;border:0;cursor:pointer;flex:none}
 .error-status{border-color:#fecdd3;background:#fff1f2;color:#9f1239}
-:global(.dark) .error-status{background:#351f25;border-color:#6e303c;color:#fda4af}
+html.dark .error-status{background:#351f25;border-color:#6e303c;color:#fda4af}
 .button{padding:8px 24px;font-size:14px;font-weight:500;border-radius:12px;background:var(--hover);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;cursor:pointer;min-height:36px}
 .button:hover{background:var(--line)}
 .button.primary{background:#059669;color:#fff}
@@ -1207,9 +1207,9 @@ onMounted(async () => {
 .tour-highlight.guest-example-preview,
 .tour-highlight.guest-example-preview .ai-preview-head,
 .tour-highlight.guest-example-preview .ai-preview-foot{background:#f4faf6 !important}
-:global(.dark) .tour-highlight.guest-example-preview,
-:global(.dark) .tour-highlight.guest-example-preview .ai-preview-head,
-:global(.dark) .tour-highlight.guest-example-preview .ai-preview-foot{background:#202d25 !important}
+html.dark .tour-highlight.guest-example-preview,
+html.dark .tour-highlight.guest-example-preview .ai-preview-head,
+html.dark .tour-highlight.guest-example-preview .ai-preview-foot{background:#202d25 !important}
 .guest-demo-label{border:1px solid var(--green-line);color:var(--green);background:var(--green-soft);padding:2px 7px;border-radius:5px;font-size:9.5px;font-weight:600;letter-spacing:.03em;white-space:nowrap}
 .guest-example-intro{margin:13px 16px 0;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--hover);font-size:11.5px;color:var(--muted);line-height:1.65}
 .guest-example-intro strong{color:var(--ink);font-weight:600}
@@ -1229,7 +1229,7 @@ onMounted(async () => {
 
 /* ===== 모달 — 사용자 목업(.overlay/.modal/.auth-gate/.asset-row/.eyebrow) 그대로. teleport 라 토큰은 .overlay 에 정의 ===== */
 .overlay{--green:#059669;--green-soft:#ecfdf5;--green-line:#a7f3d0;--surface:#fff;--ink:#18181b;--label:#71717a;--muted:#52525b;--soft:#a1a1aa;--line:#e4e4e7;--hover:#f4f4f5;--mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace;position:fixed;inset:0;background:rgba(24,24,27,.36);backdrop-filter:blur(3px);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px}
-:global(.dark) .overlay{--green:#34d399;--green-soft:#052e23;--green-line:#24614a;--surface:#202023;--ink:#f4f4f5;--label:#a1a1aa;--muted:#a1a1aa;--soft:#71717a;--line:#3f3f46;--hover:#27272a}
+html.dark .overlay{--green:#34d399;--green-soft:#052e23;--green-line:#24614a;--surface:#202023;--ink:#f4f4f5;--label:#a1a1aa;--muted:#a1a1aa;--soft:#71717a;--line:#3f3f46;--hover:#27272a}
 .modal{position:relative;width:100%;max-width:600px;max-height:88dvh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 80px #0002;padding:28px;line-height:1.5;color:var(--ink)}
 .modal h2{font-size:19px;font-weight:600;margin-bottom:12px;color:var(--ink)}
 .modal>.icon-btn{position:absolute;right:12px;top:12px}

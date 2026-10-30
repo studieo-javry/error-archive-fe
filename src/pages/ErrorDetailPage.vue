@@ -826,7 +826,7 @@ onUnmounted(() => {
   filter: drop-shadow(0 6px 16px rgba(5, 150, 105, 0.45));
   animation: metoo-pawpop 0.72s cubic-bezier(0.2, 1.3, 0.4, 1) forwards;
 }
-:global(.dark) .metoo-ic {
+html.dark .metoo-ic {
   color: #34d399;
 }
 @keyframes metoo-pawpop {

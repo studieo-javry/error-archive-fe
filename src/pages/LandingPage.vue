@@ -131,7 +131,7 @@ onUnmounted(() => {
   background: radial-gradient(circle 600px at var(--smx, 50vw) var(--smy, 50vh), rgba(16, 185, 129, 0.35) 0%, rgba(16, 185, 129, 0.08) 40%, transparent 100%);
   transition: background 0.4s ease;
 }
-:global(.dark) .ambient-spotlight {
+html.dark .ambient-spotlight {
   background: radial-gradient(circle 600px at var(--smx, 50vw) var(--smy, 50vh), rgba(16, 185, 129, 0.20) 0%, rgba(16, 185, 129, 0.04) 40%, transparent 100%);
 }
 
@@ -179,11 +179,11 @@ onUnmounted(() => {
   box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
   transform: translateY(-2px);
 }
-:global(.dark) .btn-hybrid {
+html.dark .btn-hybrid {
   border-color: #3f3f46;
   color: #a1a1aa;
 }
-:global(.dark) .btn-hybrid:hover {
+html.dark .btn-hybrid:hover {
   background-color: #10b981;
   border-color: #10b981;
   color: #09090b;
