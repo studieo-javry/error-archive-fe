@@ -28,11 +28,16 @@ describe('읽기 화면 링크', () => {
       'acme/payment-api#95', 'acme/payment-api#61',
     ])
   })
-  it('제목을 알면 Context 본문 모양(제목 마지막 단어와 #번호 붙임), 모르면 키', () => {
-    const html = linkifyRefs('acme/payment-api#95', () => ({ kind: 'PULL_REQUEST', title: 'fix: 결제 재시도 중복 방지', status: 'MERGED', url: '' }))
+  it('제목을 알면 Context 본문 모양(제목 마지막 단어와 #번호 붙임), 확인 불가면 GitHub 아이콘 + 키', () => {
+    const html = linkifyRefs('acme/payment-api#95', () => ({ status: 'resolved', data: { kind: 'PULL_REQUEST', title: 'fix: 결제 재시도 중복 방지', status: 'MERGED', url: '' } }))
     expect(html).toContain('class="gh-task-link pr"')
-    expect(html).toContain('fix: 결제 재시도 중복 방지'.replace(' 방지', ' 방지 #95'))
-    expect(linkifyRefs('acme/payment-api#95', () => 'loading')).toContain('acme/payment-api#95 (대상 조회 전)')
-    expect(linkifyRefs('acme/payment-api#95', () => null)).toContain('<span class="gh-task-link-text">acme/payment-api#95</span>')
+    expect(html).toContain('fix: 결제 재시도 중복 방지'.replace(' 방지', ' 방지 #95'))
+    const unavailable = linkifyRefs('acme/payment-api#95', () => ({ status: 'unavailable' }))
+    expect(unavailable).toContain('<span class="gh-task-link-text">acme/payment-api#95</span>')
+    expect(unavailable).toContain('class="svg sm github"')
+  })
+  it('조회 중·일시 오류는 아이콘·링크 없이 본문에 적힌 그대로', () => {
+    expect(linkifyRefs('원인은 acme/payment-api#95 에서', () => ({ status: 'loading' }))).toBe('원인은 acme/payment-api#95 에서')
+    expect(linkifyRefs('https://github.com/acme/payment-api/pull/61', () => ({ status: 'error' }))).toBe('https://github.com/acme/payment-api/pull/61')
   })
 })

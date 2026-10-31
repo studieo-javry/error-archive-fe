@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { MyProfile, DemoArticle } from '@/types/user'
+import { clearRefCache } from '@/utils/githubRefCache'
 
 function loadDemoArticle(): DemoArticle | null {
   try {
@@ -56,6 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    clearRefCache()
     user.value = null
     accessToken.value = null
     userId.value = null
