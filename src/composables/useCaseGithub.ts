@@ -129,6 +129,10 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
   const nextCursor = ref<string | null>(null)
   const hasNext = ref(false)
   const totalCount = ref(0)
+  /** 목업 historyMemo.busy·error·generation — 이전 쪽 조회 중 / 실패 문구 / 늦게 온 응답 무시용 세대 */
+  const historyBusy = ref(false)
+  const historyError = ref('')
+  let generation = 0
   const hasInstallation = ref<boolean | null>(null)
 
   const ui = reactive({
@@ -245,38 +249,65 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
     }
   }
 
-  /** 근거 + 활동 첫 쪽을 다시 받는다. 이미 받은 이전 쪽들과는 이벤트 id 로 합친다. */
+  /**
+   * 근거 + 활동 첫 쪽을 다시 받는다(목업 historyRefresh). 처음이면 첫 쪽으로 시작(historySeed).
+   * 받아 둔 이력과 첫 쪽이 겹치지 않거나 전체 건수가 받아 둔 수보다 적으면 이어지지 않으므로 첫 쪽부터 다시,
+   * 아니면 id 로 합치고 이어 받던 커서를 유지한다. 진행 중이던 이전 쪽 응답은 세대가 바뀌어 버려진다.
+   */
   async function load() {
     try {
       const { data } = await githubEvidenceApi.get(caseId)
       evidence.value = data
       failed.value = false
-      const keepOlder = eventMap.value.size > 0
-      if (!keepOlder) {
-        nextCursor.value = data.activity.nextCursor
-        hasNext.value = data.activity.hasNext
+      generation++
+      historyBusy.value = false
+      historyError.value = ''
+      const fresh = data.activity
+      const reset = eventMap.value.size === 0
+      const overlap = fresh.events.some(e => eventMap.value.has(e.id))
+      const replaced = reset || (eventMap.value.size > 0 && !overlap) || fresh.totalCount < eventMap.value.size
+      if (replaced) {
+        eventMap.value = new Map(fresh.events.map(e => [e.id, e]))
+        nextCursor.value = fresh.nextCursor
+        hasNext.value = fresh.hasNext
+      } else {
+        mergeEvents(fresh.events)
+        if (!eventMap.value.size) {
+          nextCursor.value = fresh.nextCursor
+          hasNext.value = fresh.hasNext
+        }
+        // The oldest loaded cursor stays valid as long as both pages form one continuous range.
+        if (eventMap.value.size >= fresh.totalCount) hasNext.value = false
       }
-      totalCount.value = data.activity.totalCount
-      mergeEvents(data.activity.events)
-      if (keepOlder && eventMap.value.size >= totalCount.value) hasNext.value = false
+      totalCount.value = fresh.totalCount
       void loadInstallations()
     } catch {
       failed.value = true
     }
   }
 
-  async function loadOlder(size: number) {
-    if (!hasNext.value || !nextCursor.value) return
-    const { data } = await githubEvidenceApi.events(caseId, nextCursor.value, size)
+  /** 이전 쪽 하나(목업 historyOlderPage). 실패하면 받아 둔 이력은 그대로 두고 문구만 남긴다. */
+  async function loadOlder(size: number): Promise<boolean> {
+    if (!(hasNext.value && nextCursor.value && !historyBusy.value)) return false
+    historyBusy.value = true
+    historyError.value = ''
+    const token = ++generation
+    let data
+    try {
+      data = (await githubEvidenceApi.events(caseId, nextCursor.value, size)).data
+    } catch {
+      if (token !== generation) return false
+      historyBusy.value = false
+      historyError.value = '이전 GitHub 이력을 불러오지 못했어요. 기존 기록은 그대로 유지했어요.'
+      return false
+    }
+    if (token !== generation) return false
     mergeEvents(data.events)
     nextCursor.value = data.nextCursor
     hasNext.value = data.hasNext
     totalCount.value = data.totalCount
-  }
-
-  /** GitHub 이력 탭에서 activityPageSize 만큼은 받아 두기 */
-  async function ensureLoaded(n: number) {
-    while (eventMap.value.size < n && hasNext.value) await loadOlder(Math.max(PAGE, n - eventMap.value.size))
+    historyBusy.value = false
+    return true
   }
 
   // ── 타임라인(목업 timeline()) ──
@@ -321,10 +352,16 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
   }
   const remainingOlder = computed(() => Math.max(0, totalCount.value - eventMap.value.size))
 
+  /** 목업 historyMoreAction — GitHub 이력 탭은 보여줄 수만큼 받은 뒤에 늘린다(실패하면 그대로, 같은 쪽 재시도). */
   async function moreHistory() {
+    if (historyBusy.value) return
     if (ui.filter === 'github') {
-      ui.activityPageSize += PAGE
-      await ensureLoaded(ui.activityPageSize)
+      const target = ui.activityPageSize + PAGE
+      while (eventMap.value.size < target && hasNext.value) {
+        const ok = await loadOlder(Math.max(PAGE, target - eventMap.value.size))
+        if (!ok) return // Keep the visible count unchanged on failure; retry the same page.
+      }
+      ui.activityPageSize = target
     } else {
       await loadOlder(PAGE)
     }
@@ -332,10 +369,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
 
   function setFilter(f: GhFilter) {
     ui.filter = f
-    if (f === 'github') {
-      ui.activityPageSize = PAGE
-      void ensureLoaded(PAGE)
-    }
+    if (f === 'github') ui.activityPageSize = PAGE
   }
 
   // ── 토스트·이동(목업 toast·jump) ──
@@ -476,7 +510,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
   }
 
   return {
-    ui, modal, toastText, items, events, totalCount, hasNext, remainingOlder,
+    ui, modal, toastText, items, events, totalCount, hasNext, remainingOlder, historyBusy, historyError,
     scenario, available, ready, writes, exMember, readOnly, canSeePrivate, maskedCount, syncStopped, anyStale,
     workspaceId, stepNo,
     load, entries, moreHistory, setFilter, toast, jumpStep, jumpEvidence, toggleExpand,
