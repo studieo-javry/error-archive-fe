@@ -19,7 +19,7 @@ const urlInput = ref<HTMLInputElement | null>(null)
 let busy = false
 watch(() => m.value?.type, async t => {
   if (t !== 'add') return
-  draftUrl.value = ''
+  draftUrl.value = (m.value?.type === 'add' && m.value.url) || ''
   modalError.value = ''
   await nextTick()
   urlInput.value?.focus()

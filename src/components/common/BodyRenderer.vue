@@ -63,7 +63,7 @@ function toggleTask(seg: TextSegment) {
 <template>
   <div class="body-renderer">
     <template v-for="(seg, i) in segments" :key="i">
-      <MarkdownBody v-if="seg.type === 'text'" :content="seg.value" class="!text-sm" :on-toggle-task="onSaveContent ? toggleTask(seg) : undefined" />
+      <MarkdownBody v-if="seg.type === 'text'" :content="seg.value" class="!text-sm" github-refs :on-toggle-task="onSaveContent ? toggleTask(seg) : undefined" />
       <SnippetInline v-else-if="seg.type === 'snippet'" :snippet="seg.snippet" />
       <AttachmentInline v-else :attachment="seg.attachment" :width="seg.width" :editable="editable" @resize="(id, w) => emit('resize', id, w)" />
     </template>

@@ -62,7 +62,7 @@ export type GhTimelineEntry =
 export type GhFilter = 'all' | 'steps' | 'github'
 
 export type GhModal =
-  | { type: 'add' }
+  | { type: 'add'; url?: string }
   | { type: 'detach'; id: number }
   | { type: 'tag'; stepId: number }
   | { type: 'backfill'; issueId: number; issueNumber: number; linked: GithubBackfilledPullRequest[]; skipped: GithubRef[] }
@@ -413,9 +413,10 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
     return i === -1 ? undefined : i + 1
   }
 
-  function startAdd() {
+  /** [url] — 본문 참조 미리보기에서 "Case 근거로 연결하기"로 왔을 때 주소를 미리 채운다. */
+  function startAdd(url?: string) {
     if (!writes.value) return toast('근거를 변경할 권한이 없습니다.')
-    modal.value = { type: 'add' }
+    modal.value = { type: 'add', url }
   }
 
   /** 목업 addEvidence — 실패 문구는 돌려주고, 성공하면 모달을 닫고 안내한다. */
