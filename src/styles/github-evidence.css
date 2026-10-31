@@ -2654,3 +2654,149 @@
     transition: none;
   }
 }
+
+/* 목업 history_empty_redesign_6_options — GitHub 이력 0건(B · 타임라인 종료). */
+:where(.gh-ev) .history-empty-state {
+  color: var(--muted);
+  margin: 6px 0 30px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+:where(.gh-ev) .history-empty-state h4 {
+  color: var(--strong);
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+:where(.gh-ev) .history-empty-state p {
+  font-size: 11px;
+  line-height: 1.75;
+  margin: 0;
+  color: var(--muted);
+}
+:where(.gh-ev) .history-empty-state .svg {
+  flex: none;
+}
+:where(.gh-ev) .history-empty-state.fresh {
+  margin: 4px 0 34px;
+  color: var(--body);
+  font-size: 12px;
+  line-height: 1.6;
+  position: relative;
+}
+:where(.gh-ev) .history-empty-state.fresh h4 {
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.55;
+  letter-spacing: -0.15px;
+  color: var(--strong);
+  margin: 0 0 5px;
+}
+:where(.gh-ev) .history-empty-state.fresh p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 0;
+}
+:where(.gh-ev) .history-empty-state.fresh .fresh-rail {
+  width: 10px;
+  flex: 0 0 10px;
+  position: relative;
+  align-self: stretch;
+}
+:where(.gh-ev) .history-empty-state.fresh .fresh-main {
+  flex: 1;
+  min-width: 0;
+}
+:where(.gh-ev) .history-empty-state.fresh .fresh-node {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  position: absolute;
+  left: 0;
+  top: 7px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+}
+:where(.gh-ev) .history-empty-state.fresh .fresh-node::after {
+  content: '';
+  height: 3px;
+  width: 3px;
+  border-radius: 50%;
+  background: var(--soft);
+  opacity: 0.65;
+}
+:where(.gh-ev) .history-empty-state.fresh .fresh-rail-line {
+  position: absolute;
+  left: 4.5px;
+  top: 16px;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+  z-index: 1;
+}
+:where(.gh-ev) .history-empty-state.fresh .fresh-kicker {
+  font-size: 10px;
+  color: var(--soft);
+  letter-spacing: 0.02em;
+}
+:where(.gh-ev) .history-empty-state.fresh-b {
+  display: flex;
+  gap: 16px;
+  min-height: 101px;
+}
+:where(.gh-ev) .history-empty-state.fresh-b .fresh-rail {
+  min-height: 95px;
+}
+:where(.gh-ev) .history-empty-state.fresh-b .fresh-node {
+  top: 6px;
+  border-color: var(--soft);
+  background: var(--bg);
+}
+:where(.gh-ev) .history-empty-state.fresh-b .fresh-node::after {
+  display: none;
+}
+:where(.gh-ev) .history-empty-state.fresh-b .fresh-rail-line {
+  top: 16px;
+  bottom: 35px;
+  background: var(--line);
+}
+:where(.gh-ev) .history-empty-state.fresh-b .fresh-rail-line::after {
+  content: '';
+  position: absolute;
+  left: -2.5px;
+  bottom: 0;
+  width: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--soft);
+}
+:where(.gh-ev) .history-empty-state.fresh-b .fresh-main {
+  padding-top: 1px;
+}
+:where(.gh-ev) .history-empty-state.fresh-b .fresh-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  color: var(--soft);
+  margin-bottom: 9px;
+}
+:where(.gh-ev) .history-empty-state.fresh-b .fresh-kicker::before {
+  content: '';
+  width: 15px;
+  height: 1px;
+  background: var(--line);
+}
+:where(.gh-ev) .history-empty-state.fresh-b .fresh-main h4 {
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  :where(.gh-ev) .history-empty-state.fresh-b {
+    gap: 10px;
+  }
+}

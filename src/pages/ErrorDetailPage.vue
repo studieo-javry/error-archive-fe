@@ -34,6 +34,7 @@ import GithubEvidenceSection from '@/components/github-evidence/GithubEvidenceSe
 import GhTimelineTools from '@/components/github-evidence/GhTimelineTools.vue'
 import GhHistoryMore from '@/components/github-evidence/GhHistoryMore.vue'
 import GhHistoryError from '@/components/github-evidence/GhHistoryError.vue'
+import GhHistoryEmpty from '@/components/github-evidence/GhHistoryEmpty.vue'
 import GhHistoryRow from '@/components/github-evidence/GhHistoryRow.vue'
 import GhActivityGroup from '@/components/github-evidence/GhActivityGroup.vue'
 import GhStepEvidence from '@/components/github-evidence/GhStepEvidence.vue'
@@ -779,7 +780,8 @@ onUnmounted(() => {
           <GhHistoryMore v-else-if="asGhEntry(entry).type === 'more'" variant="all" :hidden="gh.remainingOlder.value" />
         </template>
         <template #empty>
-          <div class="gh-ev"><p class="text-xs muted" style="padding:8px 0 28px">표시할 GitHub 이력이 없습니다.</p></div>
+          <template v-if="gh.ui.filter === 'github'"><GhHistoryEmpty v-if="!gh.historyError.value" /></template>
+          <div v-else class="gh-ev"><p class="text-xs muted" style="padding:8px 0 28px">표시할 기록이 없습니다.</p></div>
         </template>
         <template #solution-extra="{ solution }">
           <GhSolutionEvidence v-if="gh.ready.value" :step-ids="solution.stepIds" />
