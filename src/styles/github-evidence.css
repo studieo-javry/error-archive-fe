@@ -2397,20 +2397,6 @@
   border-radius: 0;
   background: transparent;
 }
-:where(.gh-ev) .gh-history-topmore-head {
-  display: flex;
-  /* 'GitHub 활동 기록' 문구를 뺐다(사용자 요청) — 남은 표시 수는 목업 위치 그대로 오른쪽 끝 */
-  justify-content: flex-end;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 9px;
-}
-:where(.gh-ev) .gh-history-topmore-head span {
-  font-size: 10px;
-  color: var(--soft);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
 :where(.gh-ev) .gh-history-topmore .gh-history-fetch {
   min-height: 33px;
   border: 1px solid var(--line);
