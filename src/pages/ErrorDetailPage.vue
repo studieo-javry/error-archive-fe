@@ -39,6 +39,8 @@ import GhStepEvidence from '@/components/github-evidence/GhStepEvidence.vue'
 import GhSolutionEvidence from '@/components/github-evidence/GhSolutionEvidence.vue'
 import GhModalHost from '@/components/github-evidence/GhModalHost.vue'
 import { provideCaseGithub, type GhTimelineEntry } from '@/composables/useCaseGithub'
+import { githubRefsEnabled, provideGithubRefs } from '@/composables/useGithubRefs'
+import GhRefPreviewDialog from '@/components/github-reference/GhRefPreviewDialog.vue'
 import '@/styles/github-evidence.css'
 import { StarIcon as StarOutlineIcon, HandRaisedIcon as HandOutlineIcon, LinkIcon } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon, HandRaisedIcon as HandSolidIcon } from '@heroicons/vue/24/solid'
@@ -172,6 +174,10 @@ const workspaceRole = computed(() => {
   return wsId == null ? null : (teamStore.workspaces.find(w => w.workspaceId === wsId)?.role ?? null)
 })
 const gh = provideCaseGithub(caseId, { caseRef: errorCase, steps, isOwner, canWriteContent, workspaceRole })
+// 본문 GitHub 참조(Context·Step) — 읽기 화면 링크·미리보기, Step 작성란 `#` 자동완성.
+const ghRefs = githubRefsEnabled
+  ? provideGithubRefs({ caseId, workspaceId: computed(() => errorCase.value?.workspaceId ?? null), evidence: gh })
+  : null
 const ghSpaceName = computed(() => {
   const wsId = errorCase.value?.workspaceId
   return wsId == null ? 'Personal' : (teamStore.workspaces.find(w => w.workspaceId === wsId)?.name ?? '')
@@ -815,6 +821,7 @@ onUnmounted(() => {
     </section>
 
     <GhModalHost :steps="steps" :space-name="ghSpaceName" />
+    <GhRefPreviewDialog v-if="ghRefs" :refs="ghRefs" />
 
     <Teleport to="body">
       <QuotePopup

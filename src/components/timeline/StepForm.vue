@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { StepStatus, Step } from '@/types/error'
+import GhRefSuggest from '@/components/github-reference/GhRefSuggest.vue'
+import { useGithubRefs } from '@/composables/useGithubRefs'
 
 /** Raw field values — the caller maps them to a create or update request. */
 export interface StepFormValues {
@@ -21,6 +23,10 @@ const props = defineProps<{
 const emit = defineEmits<{ submit: [values: StepFormValues]; cancel: [] }>()
 
 const isEdit = computed(() => Boolean(props.initial))
+
+// 본문 `#` 자동완성 — Case 상세(제공자 있음)에서만.
+const ghRefs = useGithubRefs()
+const bodyRef = ref<HTMLTextAreaElement | null>(null)
 
 const title = ref('')
 const status = ref<StepStatus>('FAILED')
@@ -142,12 +148,16 @@ function onSubmit() {
         </button>
       </div>
     </div>
-    <textarea
-      v-model="body"
-      placeholder="Details — what happened, what you observed (markdown supported)"
-      rows="5"
-      class="raw-textarea w-full text-sm !resize-y"
-    />
+    <div class="relative">
+      <textarea
+        ref="bodyRef"
+        v-model="body"
+        placeholder="Details — what happened, what you observed (markdown supported)"
+        rows="5"
+        class="raw-textarea w-full text-sm !resize-y"
+      />
+      <GhRefSuggest v-if="ghRefs" :target="bodyRef" :refs="ghRefs" />
+    </div>
     <textarea
       v-model="insight"
       placeholder="Insight — key takeaway or summary (optional, max 500 chars)"
