@@ -23,12 +23,13 @@ function make(evidenceItems = ref<unknown[]>([])) {
   const refs = scope.run(() => createGithubRefs({ caseId: 7, workspaceId: null, evidence: { items: computed(() => evidenceItems.value) } as unknown as CaseGithub }))!
   return { refs, scope, evidenceItems }
 }
+const setViewer = (userId: number) => useAuthStore().setUser({ userId } as never)
 const flushAll = async () => { await vi.runOnlyPendingTimersAsync(); await nextTick() }
 
 beforeEach(() => {
   vi.useFakeTimers()
   setActivePinia(createPinia())
-  useAuthStore().userId = 1
+  setViewer(1)
   clearRefCache()
   resolve.mockReset()
 })
@@ -71,7 +72,7 @@ describe('본문 참조 조회 상태', () => {
     const b = make(); b.refs.request(['acme/payment-api#61'])
     expect(b.refs.lookup('acme/payment-api#61').status).toBe('resolved')
     expect(resolve).toHaveBeenCalledTimes(1)
-    useAuthStore().userId = 2
+    setViewer(2)
     const c = make(); c.refs.request(['acme/payment-api#61'])
     expect(c.refs.lookup('acme/payment-api#61').status).toBe('loading')
   })
@@ -82,7 +83,7 @@ describe('본문 참조 조회 상태', () => {
     vi.advanceTimersByTime(10 * 60 * 1000 + 1)
     expect(make().refs.lookup('acme/payment-api#61').status).toBe('loading')
     const b = make(); b.refs.request(['acme/payment-api#61']); await flushAll()
-    useAuthStore().logout(); useAuthStore().userId = 1
+    useAuthStore().logout(); setViewer(1)
     const c = make(); c.refs.request(['acme/payment-api#61'])
     expect(c.refs.lookup('acme/payment-api#61').status).toBe('loading')
   })

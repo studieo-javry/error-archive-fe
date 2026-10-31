@@ -36,6 +36,7 @@ export function createGithubRefs(opts: {
   evidence?: CaseGithub | null
 }) {
   const auth = useAuthStore()
+  const viewer = () => auth.user?.userId ?? null
   const states = reactive(new Map<string, RefState>())
   const preview = ref<RefPreview | null>(null)
   const attempts = new Map<string, number>()
@@ -50,7 +51,7 @@ export function createGithubRefs(opts: {
 
   function settle(key: string, info: RefInfo) {
     states.set(norm(key), { status: 'resolved', data: info })
-    putCachedRef(auth.userId, unref(opts.caseId), key, info)
+    putCachedRef(viewer(), unref(opts.caseId), key, info)
   }
 
   /** 이 Case 의 (보이는) 근거로 이미 가져온 Issue·PR 이면 다시 묻지 않는다. */
@@ -62,7 +63,7 @@ export function createGithubRefs(opts: {
     return x && x.title ? { kind: x.kind, title: x.title, status: x.status, url: x.url || refUrl(x.repo, number, x.kind) } : null
   }
 
-  const known = (key: string) => fromEvidence(key) ?? getCachedRef(auth.userId, unref(opts.caseId), key)
+  const known = (key: string) => fromEvidence(key) ?? getCachedRef(viewer(), unref(opts.caseId), key)
 
   function schedule() {
     if (pending.size && !timer) timer = setTimeout(flush, 0)
