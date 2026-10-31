@@ -2613,3 +2613,40 @@
     min-height: 26px;
   }
 }
+
+/* 목업 fold_design_6_options — 접기 버튼은 헤더로, 접힌 상태는 F안(원본 안내 박스). */
+:where(.gh-ev) .evidence-section.is-collapsed .evidence-heading {
+  margin-bottom: 0;
+}
+:where(.gh-ev) .evidence-collapse-button {
+  gap: 5px;
+  white-space: nowrap;
+}
+:where(.gh-ev) .evidence-collapse-button .svg {
+  transition: transform 0.16s ease;
+}
+:where(.gh-ev) .evidence-collapse-button[aria-expanded='false'] .svg {
+  transform: rotate(-90deg);
+}
+:where(.gh-ev) .evidence-folded-summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 18px;
+}
+:where(.gh-ev) .evidence-folded-summary .svg {
+  color: var(--soft);
+}
+:where(.gh-ev) .evidence-folded-summary .text-action {
+  margin-left: auto;
+  font-size: 11px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.gh-ev) .evidence-collapse-button .svg {
+    transition: none;
+  }
+}

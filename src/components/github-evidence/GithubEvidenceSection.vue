@@ -40,12 +40,13 @@ const maskedShown = computed(() => items.value.filter(x => x.masked).length)
 
 <template>
   <div class="gh-ev">
-    <section id="github-evidence" class="evidence-section">
+    <section id="github-evidence" class="evidence-section" :class="{ 'is-collapsed': g.ui.collapsed }">
       <div class="evidence-heading">
         <h3 class="section-title"><GhEvIcon name="github" size="sm" />GitHub Evidence <span class="count">{{ scenario === 'failure' ? '—' : items.length }}</span></h3>
-        <div class="evidence-header-actions"><button v-if="g.writes.value && scenario === 'normal'" class="text-action accent" @click="g.startAdd()"><GhEvIcon name="plus" size="xs" />근거 연결</button></div>
+        <div class="evidence-header-actions"><button v-if="g.writes.value && scenario === 'normal'" class="text-action accent" @click="g.startAdd()"><GhEvIcon name="plus" size="xs" />근거 연결</button><button type="button" class="text-action evidence-collapse-button" :aria-expanded="!g.ui.collapsed" aria-controls="github-evidence-details" @click="g.ui.collapsed = !g.ui.collapsed">{{ g.ui.collapsed ? '펼치기' : '접기' }} <GhEvIcon name="chevron" size="xs" /></button></div>
       </div>
-      <div class="evidence-intro"><span class="evidence-explanation">Issue를 통해 자동 연결된 PR은 묶어서 표시합니다. GitHub 변경사항은 자동 반영될 수 있어요.</span><button v-if="items.length" class="text-action" :aria-expanded="!g.ui.collapsed" @click="g.ui.collapsed = !g.ui.collapsed">{{ g.ui.collapsed ? '펼치기' : '접기' }} <GhEvIcon name="chevron" size="xs" /></button></div>
+      <div id="github-evidence-details" :hidden="g.ui.collapsed">
+      <div class="evidence-intro"></div>
 
       <GhNotice v-if="g.syncStopped.value" cls="warn" icon="alert">GitHub 연결이 중단됐어요. 저장해 둔 근거는 계속 볼 수 있지만, 연결 상태를 확인해야 합니다.</GhNotice>
       <GhNotice v-if="g.anyStale.value" cls="warn" icon="clock">새 커밋의 CI 결과를 기다리고 있어요. 이전 결과를 현재 커밋의 통과로 표시하지 않습니다.</GhNotice>
@@ -56,7 +57,6 @@ const maskedShown = computed(() => items.value.filter(x => x.masked).length)
       <div v-if="scenario === 'failure'" class="empty-evidence"><GhEvIcon name="alert" size="" /><h4>GitHub 근거를 불러오지 못했어요</h4><p>Case의 다른 기록은 계속 확인할 수 있어요.</p><button class="btn outline" @click="g.retry()">다시 시도</button></div>
       <div v-else-if="scenario === 'noapp'" class="empty-evidence"><GhEvIcon name="github" size="" /><h4>먼저 GitHub을 연결해 주세요</h4><p>이 Case가 속한 공간에 GitHub 저장소를 연결하면<br>Issue와 PR을 근거로 남길 수 있어요.</p><button class="btn outline" @click="goIntegrations">Settings → Integrations</button></div>
       <div v-else-if="!items.length" class="empty-evidence"><GhEvIcon name="link" size="" /><h4>아직 연결된 근거가 없어요</h4><p>문제를 추적한 Issue나 수정 PR의 주소를 붙여 보세요.</p><button v-if="g.writes.value" class="btn primary" @click="g.startAdd()">GitHub 근거 연결</button></div>
-      <div v-else-if="g.ui.collapsed" class="gh-notice"><GhEvIcon name="github" size="sm" /><span>Issue {{ items.filter(x => x.kind === 'ISSUE').length }} · Pull requests {{ items.filter(x => x.kind === 'PULL_REQUEST').length }} <span style="margin-left:8px;color:var(--soft)">Step에 연결한 근거는 타임라인에서도 볼 수 있어요.</span></span></div>
       <div v-else class="evidence-tree child-pr-no-icon">
         <div v-for="grp in tree.groups" :key="grp.key + grp.issue.id" class="evidence-tree-group">
           <GhEvidenceRow :item="grp.issue" />
@@ -76,6 +76,12 @@ const maskedShown = computed(() => items.value.filter(x => x.masked).length)
           </div>
         </template>
       </div>
+      </div>
+      <template v-if="g.ui.collapsed">
+        <div v-if="scenario === 'failure' || scenario === 'noapp'" class="evidence-folded-summary"><GhEvIcon :name="scenario === 'failure' ? 'alert' : 'github'" size="xs" /><span>{{ scenario === 'failure' ? 'GitHub 근거를 불러오지 못했어요.' : 'GitHub 연결이 필요해요.' }}</span><button v-if="scenario === 'failure'" class="text-action accent" @click="g.retry()"><GhEvIcon name="refresh" size="xs" />다시 시도</button><button v-else class="text-action accent" @click="goIntegrations"><GhEvIcon name="link" size="xs" />GitHub 연결하기</button></div>
+        <div v-else-if="!items.length" class="gh-notice"><GhEvIcon name="github" size="sm" /><span>Issue 0 · Pull requests 0 <span style="margin-left:8px;color:var(--soft)">Issue나 PR을 연결하면 이곳에서 확인할 수 있어요.</span></span></div>
+        <div v-else class="gh-notice"><GhEvIcon name="github" size="sm" /><span>Issue {{ items.filter(x => x.kind === 'ISSUE').length }} · Pull requests {{ items.filter(x => x.kind === 'PULL_REQUEST').length }} <span style="margin-left:8px;color:var(--soft)">Step에 연결한 근거는 타임라인에서도 볼 수 있어요.</span></span></div>
+      </template>
     </section>
   </div>
 </template>
