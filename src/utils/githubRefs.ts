@@ -5,14 +5,22 @@ import type { GithubRefKind } from '@/types/githubEvidence'
 /** 읽기 화면에서 링크로 바꾸는 모양 — GitHub 주소 또는 `owner/repo#N`. (목업 renderReferenceText 의 pattern) */
 export const REF_PATTERN = /(https:\/\/github\.com\/([a-z\d-]+\/[\w.-]+)\/(?:issues|pull)\/([1-9]\d{0,8}))|\b([a-z\d-]+\/[\w.-]+)#([1-9]\d{0,8})\b/gi
 
-/** 링크 하나의 표시 상태. loading = 조회 전, null = 조회했지만 제목을 못 가져옴(가림·미연결·없음). */
 export interface RefInfo {
   kind: GithubRefKind
   title: string
   status: string
   url: string
 }
-export type RefState = RefInfo | 'loading' | null
+/**
+ * 참조 하나의 조회 상태.
+ * - loading: 아직 조회 중 · unavailable: 조회는 됐지만 제목을 못 가져옴(가림·미연결·없음)
+ * - error: 네트워크·서버 오류로 조회 실패 — unavailable 과 달리 잠시 뒤 다시 조회한다
+ */
+export type RefState =
+  | { status: 'loading' }
+  | { status: 'resolved'; data: RefInfo }
+  | { status: 'unavailable' }
+  | { status: 'error' }
 
 /** 본문(코드 블록 제외 — 호출 쪽이 이미 뺀 텍스트)에서 참조 키 `owner/repo#N` 을 순서대로 모은다. */
 export function collectRefKeys(text: string): string[] {
@@ -49,14 +57,18 @@ const esc = (x: string) =>
 /**
  * 이미 HTML 이스케이프된 본문 조각에서 참조를 링크 버튼으로 바꾼다.
  * 제목을 가져온 참조는 Context 본문 디자인(목업 previewRefLink): 종류 아이콘 + "제목 #번호" — 제목 마지막 단어와 #번호가 한 줄에 붙는다.
- * 제목이 없으면 목업 renderReferenceText 의 미확인 모양: GitHub 아이콘 + 키(조회 전이면 "(대상 조회 전)").
+ * 확인할 수 없는 참조는 목업 renderReferenceText 의 미확인 모양: GitHub 아이콘 + 키.
+ * 조회 중·일시 오류는 아직 무엇인지 모르므로 본문에 적힌 그대로 둔다(아이콘이 바뀌어 보이는 깜빡임 방지).
  */
 export function linkifyRefs(escapedHtml: string, lookup: (key: string) => RefState): string {
   return escapedHtml.replace(REF_PATTERN, (...args) => {
+    const match = args[0] as string
     const key = refKey(args as unknown as RegExpMatchArray)
     const num = Number(key.slice(key.lastIndexOf('#') + 1))
-    const info = lookup(key)
-    if (info && info !== 'loading') {
+    const state = lookup(key)
+    if (state.status === 'loading' || state.status === 'error') return match
+    if (state.status === 'resolved') {
+      const info = state.data
       const kind = info.kind === 'ISSUE' ? 'issue' : 'pr'
       const words = info.title.split(' ')
       const lastWord = words.pop() ?? ''
@@ -64,8 +76,7 @@ export function linkifyRefs(escapedHtml: string, lookup: (key: string) => RefSta
       const linkedLabel = esc(words.join(' ')) + ' ' + esc(lastWord) + ' #' + num
       return `<button type="button" class="gh-task-link ${kind}" data-gh-ref="${esc(key)}" title="클릭하여 GitHub 미리보기" aria-label="${esc(info.title)} #${num} 미리보기">${icon(kind)}<span class="gh-task-link-text">${linkedLabel}</span></button>`
     }
-    const text = info === 'loading' ? `${key} (대상 조회 전)` : key
-    return `<button type="button" class="gh-task-link " data-gh-ref="${esc(key)}" title="GitHub 참조 미리보기">${icon('github')}<span class="gh-task-link-text">${esc(text)}</span></button>`
+    return `<button type="button" class="gh-task-link " data-gh-ref="${esc(key)}" title="GitHub 참조 미리보기">${icon('github')}<span class="gh-task-link-text">${esc(key)}</span></button>`
   })
 }
 
