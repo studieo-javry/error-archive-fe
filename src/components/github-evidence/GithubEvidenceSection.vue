@@ -46,7 +46,6 @@ const maskedShown = computed(() => items.value.filter(x => x.masked).length)
         <div class="evidence-header-actions"><button v-if="g.writes.value && scenario === 'normal'" class="text-action accent" @click="g.startAdd()"><GhEvIcon name="plus" size="xs" />근거 연결</button><button type="button" class="text-action evidence-collapse-button" :aria-expanded="!g.ui.collapsed" aria-controls="github-evidence-details" @click="g.ui.collapsed = !g.ui.collapsed">{{ g.ui.collapsed ? '펼치기' : '접기' }} <GhEvIcon name="chevron" size="xs" /></button></div>
       </div>
       <div id="github-evidence-details" :hidden="g.ui.collapsed">
-      <div class="evidence-intro"></div>
 
       <GhNotice v-if="g.syncStopped.value" cls="warn" icon="alert">GitHub 연결이 중단됐어요. 저장해 둔 근거는 계속 볼 수 있지만, 연결 상태를 확인해야 합니다.</GhNotice>
       <GhNotice v-if="g.anyStale.value" cls="warn" icon="clock">새 커밋의 CI 결과를 기다리고 있어요. 이전 결과를 현재 커밋의 통과로 표시하지 않습니다.</GhNotice>
