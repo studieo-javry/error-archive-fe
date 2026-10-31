@@ -2615,6 +2615,10 @@
 }
 
 /* 목업 fold_design_6_options — 접기 버튼은 헤더로, 접힌 상태는 F안(원본 안내 박스). */
+/* 펼쳤을 때도 제목 ↔ 첫 내용 간격을 접힌 안내 박스(제목 아래 12px)와 같게 — 설명 문구 줄을 뺀 자리. */
+:where(.gh-ev) .evidence-section .evidence-heading {
+  margin-bottom: 12px;
+}
 :where(.gh-ev) .evidence-section.is-collapsed .evidence-heading {
   margin-bottom: 0;
 }
