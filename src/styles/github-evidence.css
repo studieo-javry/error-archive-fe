@@ -1457,24 +1457,6 @@
   gap: 4px;
   white-space: nowrap;
 }
-:where(.gh-ev) .history-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  border: 1px dashed var(--line);
-  border-radius: 9px;
-  padding: 11px 12px;
-  margin-bottom: 20px;
-  color: var(--muted);
-  font-size: 11px;
-}
-:where(.gh-ev) .history-page:hover {
-  border-color: var(--green-line);
-  color: var(--green-text);
-  background: var(--green-bg);
-}
 :where(.gh-ev) .timeline-quiet-note {
   font-size: 11px;
   color: var(--soft);
@@ -2223,4 +2205,429 @@
   --gh-task-empty: #3b3b3b;
   --gh-task-filled: #a2c8fa;
   --gh-task-tick: #0d1116;
+}
+/* GitHub 이력 커서 UX — error_archive_github_history_timeline_aligned.html 의 이력 규칙을 값 그대로 옮김.
+ * 체험 패널(gh-pages-demo 등)·안내 박스(gh-pages-notice)·쓰지 않는 규칙은 뺐다. 목업의 덮어쓰기 순서 그대로. */
+:where(.gh-ev) .gh-history-cutoff {
+  display: flex;
+  gap: 14px;
+  position: relative;
+  padding-bottom: 20px;
+  align-items: flex-start;
+}
+:where(.gh-ev) .gh-history-cutoff-spine {
+  width: 11px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 17px;
+}
+:where(.gh-ev) .gh-history-cutoff-spine:before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--soft);
+  background: var(--bg);
+  border-radius: 50%;
+}
+:where(.gh-ev) .gh-history-cutoff-body {
+  flex: 1;
+  min-width: 0;
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+:where(.gh-ev) .gh-history-cutoff-caption {
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--soft);
+  margin-bottom: 7px;
+}
+:where(.gh-ev) .gh-history-cutoff button,
+:where(.gh-ev) .gh-history-topmore button {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  min-height: 35px;
+  color: var(--body);
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  padding: 6px 9px;
+}
+:where(.gh-ev) .gh-history-cutoff button:hover:not(:disabled),
+:where(.gh-ev) .gh-history-topmore button:hover:not(:disabled) {
+  border-color: var(--green-line);
+  color: var(--green-text);
+  background: var(--green-bg);
+}
+:where(.gh-ev) .gh-history-cutoff button:disabled,
+:where(.gh-ev) .gh-history-topmore button:disabled {
+  opacity: .55;
+  cursor: progress;
+}
+:where(.gh-ev) .gh-history-cutoff .pending-copy,
+:where(.gh-ev) .gh-history-topmore .pending-copy {
+  font-size: 10px;
+  color: var(--soft);
+  font-weight: 400;
+}
+:where(.gh-ev) .gh-history-topmore {
+  margin-bottom: 17px;
+}
+:where(.gh-ev) .gh-history-topmore p {
+  font-size: 10px;
+  color: var(--soft);
+  line-height: 1.6;
+  margin-bottom: 7px;
+}
+:where(.gh-ev) .gh-pages-error {
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--red-line,#fca5a555);
+  border-radius: 9px;
+  background: var(--red-bg);
+  font-size: 11px;
+  color: var(--red-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+:where(.gh-ev) .gh-pages-error button {
+  border: 1px solid currentColor;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+@media(max-width:580px) {
+  :where(.gh-ev) .gh-history-cutoff {
+    gap: 9px;
+  }
+  :where(.gh-ev) .gh-history-cutoff-body {
+    padding: 9px;
+  }
+}
+:where(.gh-ev) .gh-history-cutoff {
+  gap: 15px;
+  padding: 6px 0 24px;
+  margin: 2px 0 2px;
+  align-items: flex-start;
+}
+:where(.gh-ev) .gh-history-cutoff-spine {
+  margin-top: 12px;
+  width: 11px;
+}
+:where(.gh-ev) .gh-history-cutoff-spine::before {
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid var(--soft);
+  background: var(--surface);
+  box-shadow: 0 0 0 4px var(--bg);
+}
+:where(.gh-ev) .gh-history-cutoff-body {
+  padding: 11px 13px 11px 14px;
+  border: 0;
+  border-left: 2px solid var(--line);
+  border-radius: 0 8px 8px 0;
+  background: var(--hover);
+}
+:where(.gh-ev) .gh-history-cutoff-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--body);
+  font-size: 11px;
+  line-height: 1.5;
+}
+:where(.gh-ev) .gh-history-cutoff-label .svg {
+  width: 12px;
+  height: 12px;
+  color: var(--soft);
+}
+:where(.gh-ev) .gh-history-cutoff-description {
+  font-size: 11px;
+  line-height: 1.75;
+  color: var(--muted);
+  margin: 4px 0 9px;
+  max-width: 520px;
+}
+:where(.gh-ev) .gh-history-cutoff-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+:where(.gh-ev) .gh-history-cutoff .gh-history-fetch {
+  width: auto;
+  min-height: 30px;
+  display: inline-flex;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 550;
+  border-radius: 6px;
+  color: var(--body);
+}
+:where(.gh-ev) .gh-history-cutoff .gh-history-fetch:hover:not(:disabled) {
+  color: var(--green-text);
+  background: var(--green-bg);
+  border-color: var(--green-line);
+}
+:where(.gh-ev) .gh-history-remaining {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--soft);
+  font-variant-numeric: tabular-nums;
+}
+:where(.gh-ev) .gh-history-topmore {
+  margin: 2px 0 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+:where(.gh-ev) .gh-history-topmore-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 9px;
+}
+:where(.gh-ev) .gh-history-topmore-head strong {
+  font-size: 11px;
+  color: var(--strong);
+  font-weight: 550;
+}
+:where(.gh-ev) .gh-history-topmore-head span {
+  font-size: 10px;
+  color: var(--soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+:where(.gh-ev) .gh-history-topmore .gh-history-fetch {
+  min-height: 33px;
+  border: 1px solid var(--line);
+  background: transparent;
+  width: 100%;
+  border-radius: 7px;
+  color: var(--body);
+  font-size: 11px;
+}
+:where(.gh-ev) .gh-history-topmore .gh-history-fetch:hover:not(:disabled) {
+  border-color: var(--green-line);
+  background: var(--green-bg);
+  color: var(--green-text);
+}
+:where(.gh-ev) .gh-history-topmore .gh-history-fetch .svg {
+  width: 13px;
+  height: 13px;
+}
+:where(.gh-ev) .gh-history-help {
+  color: var(--soft);
+  font-size: 10px;
+  line-height: 1.6;
+  margin-top: 7px;
+  text-align: center;
+}
+@media(max-width:580px) {
+  :where(.gh-ev) .gh-history-cutoff {
+    gap: 10px;
+  }
+  :where(.gh-ev) .gh-history-cutoff-body {
+    padding: 9px 10px;
+  }
+  :where(.gh-ev) .gh-history-cutoff-description {
+    font-size: 10px;
+  }
+  :where(.gh-ev) .gh-history-cutoff-controls {
+    gap: 7px;
+  }
+  :where(.gh-ev) .gh-history-topmore {
+    padding: 0;
+  }
+}
+:where(.gh-ev) .gh-history-cutoff {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  position: relative;
+  padding: 0 0 24px;
+  margin: 0;
+  min-width: 0;
+}
+:where(.gh-ev) .gh-history-cutoff .cb-wrapper {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  flex: none;
+  margin: 0;
+  padding: 0;
+}
+:where(.gh-ev) .gh-history-cutoff-spine {
+  width: 10px;
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  margin: 0;
+}
+:where(.gh-ev) .gh-history-cutoff-spine::before {
+  display: none;
+}
+:where(.gh-ev) .gh-history-cutoff-dot {
+  display: block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--soft);
+  border-radius: 50%;
+  background: var(--bg);
+  margin-top: 6px;
+  position: relative;
+  z-index: 2;
+}
+:where(.gh-ev) .gh-history-cutoff-line {
+  position: absolute;
+  top: 0;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  background: var(--line);
+  z-index: 0;
+  pointer-events: none;
+}
+:where(.gh-ev) .gh-history-cutoff-body {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  padding: 1px 0 2px;
+  background: transparent;
+  box-shadow: none;
+}
+:where(.gh-ev) .gh-history-cutoff-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+:where(.gh-ev) .gh-history-cutoff-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  font-size: 11px;
+  line-height: 19px;
+  font-weight: 550;
+  color: var(--muted);
+}
+:where(.gh-ev) .gh-history-cutoff-label .svg {
+  width: 12px;
+  height: 12px;
+  color: var(--soft);
+}
+:where(.gh-ev) .gh-history-cutoff-rule {
+  flex: 1;
+  min-width: 8px;
+  height: 0;
+  border-top: 1px dashed var(--line);
+}
+:where(.gh-ev) .gh-history-remaining {
+  font-size: 10px;
+  line-height: 18px;
+  color: var(--soft);
+  white-space: nowrap;
+}
+:where(.gh-ev) .gh-history-cutoff-detail {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+:where(.gh-ev) .gh-history-cutoff-description {
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--soft);
+  margin: 0;
+  max-width: none;
+  flex: 1 1 210px;
+}
+:where(.gh-ev) .gh-history-cutoff .gh-history-fetch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  width: auto;
+  min-height: 25px;
+  flex: none;
+  padding: 3px 0;
+  color: var(--green-text);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-size: 11px;
+  line-height: 17px;
+  font-weight: 500;
+}
+:where(.gh-ev) .gh-history-cutoff .gh-history-fetch .svg {
+  width: 12px;
+  height: 12px;
+}
+:where(.gh-ev) .gh-history-cutoff .gh-history-fetch:hover:not(:disabled) {
+  background: transparent;
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+:where(.gh-ev) .gh-history-cutoff .gh-history-fetch:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+:where(.gh-ev) .gh-history-cutoff .gh-history-fetch:disabled {
+  opacity: .55;
+  cursor: progress;
+}
+:where(.gh-ev) .selection-mode .gh-history-cutoff .cb-wrapper {
+  width: 18px;
+  opacity: 1;
+  margin-right: 8px;
+}
+@media(max-width:760px) {
+  :where(.gh-ev) .gh-history-cutoff {
+    gap: 10px;
+    padding-bottom: 22px;
+  }
+  :where(.gh-ev) .gh-history-cutoff-line {
+    bottom: -22px;
+  }
+  :where(.gh-ev) .gh-history-cutoff-detail {
+    gap: 3px;
+    align-items: flex-start;
+  }
+  :where(.gh-ev) .gh-history-cutoff-description {
+    font-size: 10px;
+    flex-basis: 100%;
+  }
+  :where(.gh-ev) .gh-history-cutoff .gh-history-fetch {
+    min-height: 26px;
+  }
 }

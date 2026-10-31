@@ -33,6 +33,7 @@ import type { QuoteInfo } from '@/components/comment/CommentForm.vue'
 import GithubEvidenceSection from '@/components/github-evidence/GithubEvidenceSection.vue'
 import GhTimelineTools from '@/components/github-evidence/GhTimelineTools.vue'
 import GhHistoryMore from '@/components/github-evidence/GhHistoryMore.vue'
+import GhHistoryError from '@/components/github-evidence/GhHistoryError.vue'
 import GhHistoryRow from '@/components/github-evidence/GhHistoryRow.vue'
 import GhActivityGroup from '@/components/github-evidence/GhActivityGroup.vue'
 import GhStepEvidence from '@/components/github-evidence/GhStepEvidence.vue'
@@ -745,7 +746,8 @@ onUnmounted(() => {
         :shown-count="ghTimeline.list.length"
       />
 
-      <GhHistoryMore v-if="gh.ui.filter === 'github' && ghTimeline.hiddenOlder" :remaining="ghTimeline.hiddenOlder" />
+      <GhHistoryError />
+      <GhHistoryMore v-if="gh.ui.filter === 'github' && ghTimeline.hiddenOlder" variant="github" :hidden="ghTimeline.hiddenOlder" />
       <TimelineList
         :steps="steps"
         :entries="ghTimeline.list"
@@ -768,7 +770,7 @@ onUnmounted(() => {
         <template #entry="{ entry, last }">
           <GhHistoryRow v-if="asGhEntry(entry).type === 'event'" :event="(asGhEntry(entry) as Extract<GhTimelineEntry, { type: 'event' }>).event" :last="last" />
           <GhActivityGroup v-else-if="asGhEntry(entry).type === 'activity'" :events="(asGhEntry(entry) as Extract<GhTimelineEntry, { type: 'activity' }>).events" :group-key="(asGhEntry(entry) as Extract<GhTimelineEntry, { type: 'activity' }>).key" :last="last" />
-          <GhHistoryMore v-else-if="asGhEntry(entry).type === 'more'" :remaining="gh.remainingOlder.value" />
+          <GhHistoryMore v-else-if="asGhEntry(entry).type === 'more'" variant="all" :hidden="gh.remainingOlder.value" />
         </template>
         <template #empty>
           <div class="gh-ev"><p class="text-xs muted" style="padding:8px 0 28px">표시할 GitHub 이력이 없습니다.</p></div>
