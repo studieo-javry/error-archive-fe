@@ -138,7 +138,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
   const ui = reactive({
     expanded: new Set<number>(),
     groupExpanded: new Set<string>(),
-    collapsed: false,
+    collapsed: true,
     activityExpanded: new Set<string>(),
     activityExpandAll: false,
     activityPageSize: PAGE,
