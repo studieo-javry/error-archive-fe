@@ -35,6 +35,8 @@ export interface GhViewItem {
   /** Issue #N 을 닫는 PR 이라 자동 연결(viaIssue) */
   via?: number
   viaRepo?: string
+  /** 이 PR 이 보일 Issue — BE 가 issues[].pullRequests 로 정해 준 자리(경유 Issue 또는 이 PR 이 닫는 Case 의 Issue). 없으면 단독 */
+  home?: { repo: string; number: number }
 }
 
 /** 목업 state.events 의 한 줄. */
@@ -174,6 +176,15 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
     const prs = [...e.issues.flatMap(i => i.pullRequests ?? []), ...e.ungroupedPullRequests]
     return [...e.issues, ...prs]
   })
+  /** PR → BE 가 그 PR 을 넣어 보낸 Issue */
+  const homeOf = computed(() => {
+    const m = new Map<GithubEvidenceItem, { repo: string; number: number }>()
+    for (const i of evidence.value?.issues ?? []) {
+      if (i.repo == null || i.number == null) continue
+      for (const p of i.pullRequests ?? []) m.set(p, { repo: i.repo, number: i.number })
+    }
+    return m
+  })
 
   const items = computed<GhViewItem[]>(() => {
     if (!available.value) return []
@@ -199,6 +210,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
         ci: x.ci ? { status: x.ci.status, passed: x.ci.passed, total: x.ci.total, failed: x.ci.failed, stale: x.ci.stale } : null,
         via: x.viaIssue?.number,
         viaRepo: x.viaIssue?.repo ?? undefined,
+        home: homeOf.value.get(x),
       }
     })
     // 목업 state.items 처럼 연결한 순서. 가려진 근거는 연결 시각이 없어 뒤로.
