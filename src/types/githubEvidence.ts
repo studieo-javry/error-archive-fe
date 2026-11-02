@@ -1,4 +1,4 @@
-// core-api Case GitHub 근거(P1-a·b·c) — CaseGithubDtos.kt 와 1:1.
+// core-api Case GitHub 근거(P1-a·b·c·d) — CaseGithubDtos.kt 와 1:1.
 
 export type GithubRefKind = 'ISSUE' | 'PULL_REQUEST'
 export type GithubLinkSource = 'MANUAL' | 'IMPORTED' | 'VIA_ISSUE'
@@ -29,7 +29,13 @@ export interface GithubCi {
   url: string
   /** 최신 CI 가 지금 head 커밋 것이 아님 — 새 커밋의 CI 대기 중 */
   stale: boolean
+  /** HEAD = PR head 커밋 검사, MERGE = PR 단계 검사가 없어 머지 커밋 검사(머지 후 CI) */
+  source: GithubCiSource
+  /** 검사한 커밋 */
+  sha: string | null
 }
+
+export type GithubCiSource = 'HEAD' | 'MERGE'
 
 export interface GithubEvidenceItem {
   linkId: number | null
@@ -67,7 +73,7 @@ export interface GithubEvidenceEvent {
   masked: boolean
   /** PR_LINKED(그 Issue 를 닫는 PR 이라 자동 연결)·REF_REMOVED 가 가리키는 Issue */
   issue: GithubRef | null
-  /** CI_COMPLETED: sha·conclusion·total·passed·failed (가려지면 conclusion 만) */
+  /** CI_COMPLETED: sha·conclusion·total·passed·failed·source (가려지면 conclusion·source 만) */
   data: Record<string, unknown>
 }
 

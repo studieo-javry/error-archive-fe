@@ -8,6 +8,7 @@ import type {
   GithubEvidenceEvent,
   GithubEvidenceItem,
   GithubRef,
+  GithubCiSource,
   GithubRefKind,
 } from '@/types/githubEvidence'
 import type { ErrorCaseDetail, Step } from '@/types/error'
@@ -31,7 +32,7 @@ export interface GhViewItem {
   linkedAt: string
   stepIds: number[]
   diff: { files: number; additions: number; deletions: number } | null
-  ci: { status: string; passed: number; total: number; failed: string[]; stale: boolean } | null
+  ci: { status: string; passed: number; total: number; failed: string[]; stale: boolean; source: GithubCiSource; sha: string | null } | null
   /** Issue #N 을 닫는 PR 이라 자동 연결(viaIssue) */
   via?: number
   viaRepo?: string
@@ -51,6 +52,7 @@ export interface GhViewEvent {
   conclusion?: string
   passed?: number
   total?: number
+  source?: GithubCiSource
 }
 
 export type GhTimelineEntry =
@@ -101,10 +103,18 @@ export function ciLabel(item: GhViewItem): { label: string; cls: string; icon: '
   if (!c) return { label: 'CI 정보 없음', cls: 'none', icon: 'info' }
   if (c.stale) return { label: '새 커밋 CI 대기', cls: 'stale', icon: 'clock' }
   if (c.status === 'WAITING') return { label: 'CI 결과 대기', cls: 'pending', icon: 'clock' }
-  if (c.status === 'SUCCESS') return { label: `CI 통과 · ${c.passed}/${c.total}`, cls: '', icon: 'check' }
-  if (c.status === 'FAILURE') return { label: `CI 실패 · ${c.passed}/${c.total}`, cls: 'failure', icon: 'close' }
+  const ci = c.source === 'MERGE' ? '머지 후 CI' : 'CI'
+  if (c.status === 'SUCCESS') return { label: `${ci} 통과 · ${c.passed}/${c.total}`, cls: '', icon: 'check' }
+  if (c.status === 'FAILURE') return { label: `${ci} 실패 · ${c.passed}/${c.total}`, cls: 'failure', icon: 'close' }
   if (c.status === 'NEUTRAL') return { label: 'CI 결과 없음', cls: 'none', icon: 'info' }
   return { label: 'CI 진행 중', cls: 'pending', icon: 'clock' }
+}
+
+/** 머지 후 CI 안내 — 상세에서 검사한 머지 커밋을 밝힌다. 머지 후 CI 가 아니면 null */
+export function mergeCiNote(item: GhViewItem): string | null {
+  const c = item.ci
+  if (c?.source !== 'MERGE') return null
+  return `PR 단계 검사가 없어 머지 커밋(${(c.sha ?? '').slice(0, 7)})의 검사 결과를 표시해요. 빌드·배포 단계가 포함될 수 있어요.`
 }
 
 /** 목업 parseUrl(url) */
@@ -196,7 +206,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
         diff: d && d.changedFiles != null && d.additions != null && d.deletions != null
           ? { files: d.changedFiles, additions: d.additions, deletions: d.deletions }
           : null,
-        ci: x.ci ? { status: x.ci.status, passed: x.ci.passed, total: x.ci.total, failed: x.ci.failed, stale: x.ci.stale } : null,
+        ci: x.ci ? { status: x.ci.status, passed: x.ci.passed, total: x.ci.total, failed: x.ci.failed, stale: x.ci.stale, source: x.ci.source, sha: x.ci.sha } : null,
         via: x.viaIssue?.number,
         viaRepo: x.viaIssue?.repo ?? undefined,
       }
@@ -226,6 +236,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
       conclusion: typeof e.data?.conclusion === 'string' ? e.data.conclusion : undefined,
       passed: typeof e.data?.passed === 'number' ? e.data.passed : undefined,
       total: typeof e.data?.total === 'number' ? e.data.total : undefined,
+      source: e.data?.source === 'MERGE' || e.data?.source === 'HEAD' ? e.data.source : undefined,
     }))
   })
 

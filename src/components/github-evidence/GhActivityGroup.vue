@@ -18,7 +18,7 @@ const eventLabelShort = (e: GhViewEvent) => {
     PR_REOPENED: `${ref} Reopened`,
     ISSUE_CLOSED: `${ref} Closed`,
     ISSUE_REOPENED: `${ref} Reopened`,
-    CI_COMPLETED: `${ref} CI ${e.conclusion === 'SUCCESS' ? '통과' : '실패'}`,
+    CI_COMPLETED: `${ref} ${e.source === 'MERGE' ? '머지 후 CI' : 'CI'} ${e.conclusion === 'SUCCESS' ? '통과' : '실패'}`,
     PR_LINKED: `${ref} 연결`,
     ISSUE_LINKED: `${ref} 연결`,
     REF_REMOVED: `${ref} 참조 변경`,
