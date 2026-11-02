@@ -82,6 +82,8 @@ export interface GithubActivity {
   nextCursor: string | null
   hasNext: boolean
   totalCount: number
+  /** 활동 줄이 생기거나 내용이 바뀔 때마다 +1. 받아 둔 이력과 다르면 처음부터 다시 받는다 */
+  revision: number
 }
 
 export interface CaseGithubEvidence {
