@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 목업 renderNestedPr(x) — Issue 아래 자동 연결된 PR(childPrStyle 'b' · CI 우측 정렬).
+// 목업 renderNestedPr(x) — Issue 아래 PR(childPrStyle 'b' · CI 우측 정렬). 자동 연결 PR 과, 그 Issue 를 닫는 직접 연결 PR.
 import { computed } from 'vue'
 import GhEvIcon from './GhEvIcon.vue'
 import GhStepRefs from './GhStepRefs.vue'
@@ -30,7 +30,7 @@ const openSource = () => window.open(x.value.url, '_blank', 'noopener')
       </div>
     </div>
     <div :id="`evidence-detail-${x.id}`" class="ev-detail" :hidden="!open">
-      <p>{{ x.author }} · {{ x.linkedAt }} 연결 · Issue #{{ x.via }}를 닫는 PR이라 자동 연결</p>
+      <p>{{ x.author }} · {{ x.linkedAt }} 연결 · {{ x.via ? `Issue #${x.via}를 닫는 PR이라 자동 연결` : '직접 연결' }}</p>
       <p v-if="x.stepIds.length" class="compact-scope">연결 범위 · <GhStepRefs :item="x" /></p>
       <p v-if="x.diff">변경 파일 {{ x.diff.files }}개 <span class="diff-add">+{{ x.diff.additions }}</span> <span class="diff-del">−{{ x.diff.deletions }}</span></p>
       <p v-if="mergeNote">{{ mergeNote }}</p>

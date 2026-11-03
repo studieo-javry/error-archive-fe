@@ -14,18 +14,21 @@ const router = useRouter()
 const items = computed(() => g.items.value)
 const scenario = computed(() => g.scenario.value)
 
-// Group only where the read DTO actually provides via Issue linkage. Masked items have no reference.
+// Issue 아래 자리는 BE 가 정해 준 대로(경유 Issue → 이 PR 이 닫는 Case 의 Issue). 직접 붙인 PR 도 그 Issue 를 닫으면 묶인다.
+// 가려진 근거는 관계 자체가 비공개라 BE 가 묶지 않는다.
 const tree = computed(() => {
   const issues = items.value.filter(x => x.kind === 'ISSUE')
   const prs = items.value.filter(x => x.kind === 'PULL_REQUEST')
   const seen = new Set<number>()
   const groups = issues.map(issue => {
     // repo + issue number prevents an unrelated repository with the same issue number being grouped.
-    const linked: GhViewItem[] = issue.masked ? [] : prs.filter(pr => !pr.masked && pr.via === issue.number && (pr.viaRepo || pr.repo) === issue.repo)
+    const linked: GhViewItem[] = issue.masked ? [] : prs.filter(pr => pr.home?.number === issue.number && pr.home.repo === issue.repo)
     linked.forEach(pr => seen.add(pr.id))
     const key = `${issue.repo || 'masked'}#${issue.number || 'private'}`
     const expanded = g.ui.groupExpanded.has(key)
-    return { issue, linked, key, expanded, visible: expanded ? linked : linked.slice(0, 2) }
+    // 직접 붙인 PR(via 없음)이 섞이면 "자동 연결"이라 부를 수 없다.
+    const allAuto = linked.every(pr => pr.via != null)
+    return { issue, linked, key, expanded, allAuto, visible: expanded ? linked : linked.slice(0, 2) }
   })
   return { groups, standalone: prs.filter(x => !seen.has(x.id)) }
 })
@@ -60,7 +63,7 @@ const maskedShown = computed(() => items.value.filter(x => x.masked).length)
         <div v-for="grp in tree.groups" :key="grp.key + grp.issue.id" class="evidence-tree-group">
           <GhEvidenceRow :item="grp.issue" />
           <div v-if="grp.linked.length" class="evidence-tree-branch">
-            <div class="branch-heading ux-refine ux-a"><span class="branch-main"><span class="branch-gh-label"><GhEvIcon name="github" size="xs" /></span><span class="branch-join">자동 연결된 PR {{ grp.linked.length }}건</span></span><details class="link-why"><summary :aria-label="`Issue #${grp.issue.number}와 PR 자동 연결 기준 보기`"><GhEvIcon name="info" size="xs" />연결 기준</summary><div class="link-why-panel"><div class="link-why-title">왜 이 PR{{ grp.linked.length > 1 ? '들이' : '' }} 연결됐나요?</div><p>GitHub의 Issue를 닫는 참조가 있는 PR을 찾아 <strong>Case의 근거로 자동 연결</strong>했어요. GitHub에 PR을 새로 만든 것은 아니에요.</p><p class="why-example">예: Fixes #{{ grp.issue.number }} · Closes #{{ grp.issue.number }}</p><p class="why-muted">이미 닫힌 Issue의 PR은 소급 연결하고, 이후 PR은 웹훅으로 연결할 수 있어요.</p></div></details></div>
+            <div class="branch-heading ux-refine ux-a"><span class="branch-main"><span class="branch-gh-label"><GhEvIcon name="github" size="xs" /></span><span class="branch-join">{{ grp.allAuto ? '자동 연결된 PR' : '이 Issue를 닫는 PR' }} {{ grp.linked.length }}건</span></span><details class="link-why"><summary :aria-label="`Issue #${grp.issue.number}와 PR 자동 연결 기준 보기`"><GhEvIcon name="info" size="xs" />연결 기준</summary><div class="link-why-panel"><div class="link-why-title">왜 이 PR{{ grp.linked.length > 1 ? '들이' : '' }} 연결됐나요?</div><p>GitHub의 Issue를 닫는 참조가 있는 PR을 찾아 <strong>Case의 근거로 자동 연결</strong>했어요. GitHub에 PR을 새로 만든 것은 아니에요.</p><p class="why-example">예: Fixes #{{ grp.issue.number }} · Closes #{{ grp.issue.number }}</p><p class="why-muted">이미 닫힌 Issue의 PR은 소급 연결하고, 이후 PR은 웹훅으로 연결할 수 있어요.</p><p v-if="!grp.allAuto" class="why-muted">직접 연결한 PR도 이 Issue를 닫는 PR이면 여기에 함께 보여요.</p></div></details></div>
             <GhNestedPr v-for="pr in grp.visible" :key="pr.id" :item="pr" />
             <button v-if="grp.linked.length > 2" class="gh-group-more" :aria-expanded="grp.expanded" @click="toggleGroup(grp.key)">{{ grp.expanded ? '접기' : `나머지 PR ${grp.linked.length - 2}개 보기` }} <GhEvIcon name="chevron" size="xs" /></button>
           </div>
