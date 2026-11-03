@@ -22,7 +22,7 @@ const desc = computed(() => {
     PR_LINKED: x.via ? `${ref}를 ${via}를 닫는 PR로 자동 연결했습니다` : `${ref}를 근거로 연결했습니다`,
     ISSUE_LINKED: `${ref}를 근거로 연결했습니다`,
     LINK_DETACHED: `${ref} 연결을 해제했습니다`,
-    CI_COMPLETED: `${ref} · CI ${x.conclusion === 'SUCCESS' ? '통과' : '실패'}${!hide.value && x.total ? ` ${x.passed}/${x.total}` : ''}`,
+    CI_COMPLETED: `${ref} · ${x.source === 'MERGE' ? '머지 후 CI' : 'CI'} ${x.conclusion === 'SUCCESS' ? '통과' : '실패'}${!hide.value && x.total ? ` ${x.passed}/${x.total}` : ''}`,
   }
   return map[x.type] || ref
 })

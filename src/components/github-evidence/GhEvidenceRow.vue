@@ -3,12 +3,13 @@
 import { computed } from 'vue'
 import GhEvIcon from './GhEvIcon.vue'
 import GhStepRefs from './GhStepRefs.vue'
-import { ciLabel, kindName, shortRef, statusName, useCaseGithub, type GhViewItem } from '@/composables/useCaseGithub'
+import { ciLabel, mergeCiNote, kindName, shortRef, statusName, useCaseGithub, type GhViewItem } from '@/composables/useCaseGithub'
 
 const props = defineProps<{ item: GhViewItem }>()
 const g = useCaseGithub()
 const x = computed(() => props.item)
 const ci = computed(() => ciLabel(x.value))
+const mergeNote = computed(() => mergeCiNote(x.value))
 const open = computed(() => g.ui.expanded.has(x.value.id))
 const badgeCls = computed(() => (x.value.status === 'OPEN' ? 'green' : x.value.status === 'MERGED' ? 'merged-accent' : ''))
 const openSource = () => window.open(x.value.url, '_blank', 'noopener')
@@ -42,6 +43,7 @@ const openSource = () => window.open(x.value.url, '_blank', 'noopener')
     <div :id="`evidence-detail-${x.id}`" class="ev-detail" :hidden="!open">
       <p>{{ x.author }} · {{ x.linkedAt }} 연결 · {{ x.via ? `Issue #${x.via}를 닫는 PR이라 자동 연결` : '직접 연결' }}</p>
       <p v-if="x.diff">변경 파일 {{ x.diff.files }}개 <span class="diff-add">+{{ x.diff.additions }}</span> <span class="diff-del">−{{ x.diff.deletions }}</span></p>
+      <p v-if="mergeNote">{{ mergeNote }}</p>
       <p v-if="x.ci?.stale" class="ci-inline stale">이전 커밋의 검사 결과입니다. 새 커밋 검증 결과가 아닙니다.</p>
       <p v-else-if="x.ci?.status === 'FAILURE'" class="red">실패한 검사: {{ x.ci.failed.join(', ') }}</p>
       <p v-else-if="x.kind === 'PULL_REQUEST' && !x.ci">CI를 사용하지 않거나 조회하지 못했을 수 있습니다.</p>

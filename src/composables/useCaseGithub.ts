@@ -8,6 +8,7 @@ import type {
   GithubEvidenceEvent,
   GithubEvidenceItem,
   GithubRef,
+  GithubCiSource,
   GithubRefKind,
 } from '@/types/githubEvidence'
 import type { ErrorCaseDetail, Step } from '@/types/error'
@@ -31,7 +32,7 @@ export interface GhViewItem {
   linkedAt: string
   stepIds: number[]
   diff: { files: number; additions: number; deletions: number } | null
-  ci: { status: string; passed: number; total: number; failed: string[]; stale: boolean } | null
+  ci: { status: string; passed: number; total: number; failed: string[]; stale: boolean; source: GithubCiSource; sha: string | null } | null
   /** Issue #N 을 닫는 PR 이라 자동 연결(viaIssue) */
   via?: number
   viaRepo?: string
@@ -51,6 +52,7 @@ export interface GhViewEvent {
   conclusion?: string
   passed?: number
   total?: number
+  source?: GithubCiSource
 }
 
 export type GhTimelineEntry =
@@ -101,10 +103,18 @@ export function ciLabel(item: GhViewItem): { label: string; cls: string; icon: '
   if (!c) return { label: 'CI 정보 없음', cls: 'none', icon: 'info' }
   if (c.stale) return { label: '새 커밋 CI 대기', cls: 'stale', icon: 'clock' }
   if (c.status === 'WAITING') return { label: 'CI 결과 대기', cls: 'pending', icon: 'clock' }
-  if (c.status === 'SUCCESS') return { label: `CI 통과 · ${c.passed}/${c.total}`, cls: '', icon: 'check' }
-  if (c.status === 'FAILURE') return { label: `CI 실패 · ${c.passed}/${c.total}`, cls: 'failure', icon: 'close' }
+  const ci = c.source === 'MERGE' ? '머지 후 CI' : 'CI'
+  if (c.status === 'SUCCESS') return { label: `${ci} 통과 · ${c.passed}/${c.total}`, cls: '', icon: 'check' }
+  if (c.status === 'FAILURE') return { label: `${ci} 실패 · ${c.passed}/${c.total}`, cls: 'failure', icon: 'close' }
   if (c.status === 'NEUTRAL') return { label: 'CI 결과 없음', cls: 'none', icon: 'info' }
   return { label: 'CI 진행 중', cls: 'pending', icon: 'clock' }
+}
+
+/** 머지 후 CI 안내 — 상세에서 검사한 머지 커밋을 밝힌다. 머지 후 CI 가 아니면 null */
+export function mergeCiNote(item: GhViewItem): string | null {
+  const c = item.ci
+  if (c?.source !== 'MERGE') return null
+  return `PR 단계 검사가 없어 머지 커밋(${(c.sha ?? '').slice(0, 7)})의 검사 결과를 표시해요. 빌드·배포 단계가 포함될 수 있어요.`
 }
 
 /** 목업 parseUrl(url) */
@@ -129,6 +139,8 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
   const nextCursor = ref<string | null>(null)
   const hasNext = ref(false)
   const totalCount = ref(0)
+  /** 받아 둔 이력의 활동 리비전. 다르면 줄 내용이 바뀌었을 수 있어 처음부터 다시 받는다 */
+  const revision = ref<number | null>(null)
   /** 목업 historyMemo.busy·error·generation — 이전 쪽 조회 중 / 실패 문구 / 늦게 온 응답 무시용 세대 */
   const historyBusy = ref(false)
   const historyError = ref('')
@@ -196,7 +208,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
         diff: d && d.changedFiles != null && d.additions != null && d.deletions != null
           ? { files: d.changedFiles, additions: d.additions, deletions: d.deletions }
           : null,
-        ci: x.ci ? { status: x.ci.status, passed: x.ci.passed, total: x.ci.total, failed: x.ci.failed, stale: x.ci.stale } : null,
+        ci: x.ci ? { status: x.ci.status, passed: x.ci.passed, total: x.ci.total, failed: x.ci.failed, stale: x.ci.stale, source: x.ci.source, sha: x.ci.sha } : null,
         via: x.viaIssue?.number,
         viaRepo: x.viaIssue?.repo ?? undefined,
       }
@@ -226,6 +238,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
       conclusion: typeof e.data?.conclusion === 'string' ? e.data.conclusion : undefined,
       passed: typeof e.data?.passed === 'number' ? e.data.passed : undefined,
       total: typeof e.data?.total === 'number' ? e.data.total : undefined,
+      source: e.data?.source === 'MERGE' || e.data?.source === 'HEAD' ? e.data.source : undefined,
     }))
   })
 
@@ -251,7 +264,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
 
   /**
    * 근거 + 활동 첫 쪽을 다시 받는다(목업 historyRefresh). 처음이면 첫 쪽으로 시작(historySeed).
-   * 받아 둔 이력과 첫 쪽이 겹치지 않거나 전체 건수가 받아 둔 수보다 적으면 이어지지 않으므로 첫 쪽부터 다시,
+   * 받아 둔 이력과 첫 쪽이 겹치지 않거나 전체 건수가 받아 둔 수보다 적거나 리비전이 바뀌었으면 첫 쪽부터 다시,
    * 아니면 id 로 합치고 이어 받던 커서를 유지한다. 진행 중이던 이전 쪽 응답은 세대가 바뀌어 버려진다.
    */
   async function load() {
@@ -265,7 +278,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
       const fresh = data.activity
       const reset = eventMap.value.size === 0
       const overlap = fresh.events.some(e => eventMap.value.has(e.id))
-      const replaced = reset || (eventMap.value.size > 0 && !overlap) || fresh.totalCount < eventMap.value.size
+      const replaced = reset || (eventMap.value.size > 0 && !overlap) || fresh.totalCount < eventMap.value.size || fresh.revision !== revision.value
       if (replaced) {
         eventMap.value = new Map(fresh.events.map(e => [e.id, e]))
         nextCursor.value = fresh.nextCursor
@@ -280,13 +293,17 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
         if (eventMap.value.size >= fresh.totalCount) hasNext.value = false
       }
       totalCount.value = fresh.totalCount
+      revision.value = fresh.revision
       void loadInstallations()
     } catch {
       failed.value = true
     }
   }
 
-  /** 이전 쪽 하나(목업 historyOlderPage). 실패하면 받아 둔 이력은 그대로 두고 문구만 남긴다. */
+  /**
+   * 이전 쪽 하나(목업 historyOlderPage). 실패하면 받아 둔 이력은 그대로 두고 문구만 남긴다.
+   * 리비전이 바뀌었으면 받아 둔 이력과 이어 붙일 수 없으므로 첫 쪽부터 다시 받는다.
+   */
   async function loadOlder(size: number): Promise<boolean> {
     if (!(hasNext.value && nextCursor.value && !historyBusy.value)) return false
     historyBusy.value = true
@@ -302,6 +319,10 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
       return false
     }
     if (token !== generation) return false
+    if (data.revision !== revision.value) {
+      await load()
+      return false
+    }
     mergeEvents(data.events)
     nextCursor.value = data.nextCursor
     hasNext.value = data.hasNext
