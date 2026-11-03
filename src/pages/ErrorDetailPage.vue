@@ -12,6 +12,7 @@ import { solutionApi } from '@/services/solutionApi'
 import { commentApi } from '@/services/commentApi'
 import type { ErrorCaseDetail, Step, Solution, Comment, CommentAuthor } from '@/types/error'
 import ErrorStatusBadge from '@/components/error/ErrorStatusBadge.vue'
+import SeverityIndicator from '@/components/error/SeverityIndicator.vue'
 import TimelineList from '@/components/timeline/TimelineList.vue'
 import StepForm, { type StepFormValues } from '@/components/timeline/StepForm.vue'
 import DemoStepForm from '@/components/demo/DemoStepForm.vue'
@@ -584,6 +585,8 @@ onUnmounted(() => {
       <h1 class="serif-title text-3xl md:text-4xl leading-tight text-zinc-900 dark:text-zinc-100 mb-6">
         {{ errorCase.title }}
       </h1>
+
+      <SeverityIndicator :severity="errorCase.severity" />
 
       <div class="flex justify-center items-center gap-4 text-sm text-zinc-500 border-t border-b border-zinc-200 dark:border-zinc-800 py-4 flex-wrap">
         <span>{{ formatAbsolute(errorCase.createdAt) }}</span>
