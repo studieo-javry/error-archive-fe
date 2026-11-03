@@ -1,4 +1,4 @@
-import { computed, inject, provide, reactive, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
+import { computed, inject, onBeforeUnmount, provide, reactive, ref, watch, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import axios from 'axios'
 import { githubEvidenceApi } from '@/services/githubEvidenceApi'
 import { githubIntegrationApi } from '@/services/githubIntegrationApi'
@@ -130,11 +130,15 @@ export function parseUrl(url: string): { repo: string; kind: GithubRefKind; numb
 }
 
 const PAGE = 8
+/** 자동 새로고침 — CI 결과를 기다리는 PR 이 있으면 이 간격으로 다시 받는다 */
+const POLL_MS = 30_000
+/** 바뀐 것 없이 이만큼(10분) 지나면 멈춘다 — PR 단계 CI 가 없는 저장소는 "CI 정보 없음"이 끝나지 않는다. 탭으로 돌아오면 다시 */
+const POLL_IDLE_LIMIT = 20
 
 /** 시각순(오래된 것 먼저). Step(`+09:00`)과 GitHub 이벤트(`Z`)는 표기가 달라 문자열 비교로는 실제 순서가 안 맞는다 — 절대 시점으로 비교. */
 export const byTime = (a: { at: string }, b: { at: string }) => Date.parse(a.at) - Date.parse(b.at)
 
-function createCaseGithub(caseId: number, viewer: Viewer) {
+export function createCaseGithub(caseId: number, viewer: Viewer) {
   const evidence = ref<CaseGithubEvidence | null>(null)
   const failed = ref(false)
   const eventMap = ref(new Map<number, GithubEvidenceEvent>())
@@ -278,11 +282,20 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
    * 근거 + 활동 첫 쪽을 다시 받는다(목업 historyRefresh). 처음이면 첫 쪽으로 시작(historySeed).
    * 받아 둔 이력과 첫 쪽이 겹치지 않거나 전체 건수가 받아 둔 수보다 적거나 리비전이 바뀌었으면 첫 쪽부터 다시,
    * 아니면 id 로 합치고 이어 받던 커서를 유지한다. 진행 중이던 이전 쪽 응답은 세대가 바뀌어 버려진다.
+   * background(자동 새로고침): 실패해도 화면을 그대로 두고, 리비전이 같으면 이력은 건드리지 않으며,
+   * 리비전이 바뀌어도 이어지는 한 펼쳐 둔 이전 이력을 지우지 않고 id 로 합친다(바뀐 CI 줄은 같은 id 라 덮어써진다).
+   * @return 받은 내용이 이전과 달랐는가
    */
-  async function load() {
+  async function load(opts: { background?: boolean } = {}): Promise<boolean> {
+    const background = opts.background === true
     try {
       const { data } = await githubEvidenceApi.get(caseId)
+      const body = JSON.stringify(data)
+      const changed = body !== lastBody
+      lastBody = body
       evidence.value = data
+      failed.value = false
+      if (background && data.activity.revision === revision.value) return changed
       failed.value = false
       generation++
       historyBusy.value = false
@@ -290,7 +303,8 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
       const fresh = data.activity
       const reset = eventMap.value.size === 0
       const overlap = fresh.events.some(e => eventMap.value.has(e.id))
-      const replaced = reset || (eventMap.value.size > 0 && !overlap) || fresh.totalCount < eventMap.value.size || fresh.revision !== revision.value
+      const replaced = reset || (eventMap.value.size > 0 && !overlap) || fresh.totalCount < eventMap.value.size ||
+        (!background && fresh.revision !== revision.value)
       if (replaced) {
         eventMap.value = new Map(fresh.events.map(e => [e.id, e]))
         nextCursor.value = fresh.nextCursor
@@ -307,9 +321,57 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
       totalCount.value = fresh.totalCount
       revision.value = fresh.revision
       void loadInstallations()
+      return changed
     } catch {
-      failed.value = true
+      if (!background) failed.value = true
+      return false
     }
+  }
+
+  // ── 자동 새로고침 ──
+  // CI 는 GitHub 에서 끝나는 대로 BE 에 들어오지만 화면은 다시 받아야 보인다.
+  // 탭으로 돌아오면 한 번, CI 를 기다리는 PR 이 있으면 화면이 보이는 동안 POLL_MS 마다.
+  let lastBody = ''
+  let pollTimer: ReturnType<typeof setTimeout> | undefined
+  let idleTicks = 0
+  let lastVisibleRefresh = 0
+  /** 결과를 기다리는 PR 카드가 있나 — "CI 진행 중"·"새 커밋 CI 대기", 열린 PR 의 "CI 정보 없음" */
+  const waitingCi = computed(() => items.value.some(x =>
+    x.kind === 'PULL_REQUEST' && !x.masked &&
+    (x.ci ? x.ci.stale || x.ci.status === 'PENDING' || x.ci.status === 'WAITING' : x.status === 'OPEN')))
+
+  async function refresh(): Promise<boolean> {
+    if (!available.value || historyBusy.value) return false
+    return load({ background: true })
+  }
+  function stopPoll() {
+    clearTimeout(pollTimer)
+    pollTimer = undefined
+  }
+  function schedulePoll() {
+    stopPoll()
+    if (!waitingCi.value || document.hidden || idleTicks >= POLL_IDLE_LIMIT) return
+    pollTimer = setTimeout(async () => {
+      pollTimer = undefined
+      idleTicks = (await refresh()) ? 0 : idleTicks + 1
+      schedulePoll()
+    }, POLL_MS)
+  }
+  function onVisible() {
+    if (document.hidden) return stopPoll()
+    const now = Date.now()
+    if (now - lastVisibleRefresh < 5000) return // focus·visibilitychange 가 함께 온다
+    lastVisibleRefresh = now
+    idleTicks = 0
+    void refresh().then(schedulePoll)
+  }
+  watch(waitingCi, w => (w ? pollTimer ?? schedulePoll() : stopPoll()))
+  window.addEventListener('focus', onVisible)
+  document.addEventListener('visibilitychange', onVisible)
+  function dispose() {
+    stopPoll()
+    window.removeEventListener('focus', onVisible)
+    document.removeEventListener('visibilitychange', onVisible)
   }
 
   /**
@@ -548,7 +610,7 @@ function createCaseGithub(caseId: number, viewer: Viewer) {
     scenario, available, ready, writes, exMember, readOnly, canSeePrivate, maskedCount, syncStopped, anyStale,
     workspaceId, stepNo,
     load, entries, moreHistory, setFilter, toast, jumpStep, jumpEvidence, toggleExpand,
-    startAdd, addEvidence, confirmBackfill, confirmDetach, detach, openTagStep, saveTag, retry,
+    startAdd, addEvidence, confirmBackfill, confirmDetach, detach, openTagStep, saveTag, retry, dispose,
   }
 }
 
@@ -558,6 +620,7 @@ const KEY: InjectionKey<CaseGithub> = Symbol('caseGithub')
 export function provideCaseGithub(caseId: number, viewer: Viewer): CaseGithub {
   const g = createCaseGithub(caseId, viewer)
   provide(KEY, g)
+  onBeforeUnmount(g.dispose)
   return g
 }
 
