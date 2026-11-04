@@ -339,8 +339,8 @@ async function restoreAccount() {
                 <p class="text-xs text-zinc-500 mt-2 text-right">Max 280 characters</p>
               </div>
               <div class="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
-                <button class="px-5 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" @click="discardProfile">Discard</button>
-                <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md shadow-sm transition-colors" :disabled="saving" @click="saveProfile">{{ saving ? 'Saving...' : 'Save Changes' }}</button>
+                <button class="set-btn-text" @click="discardProfile">Discard</button>
+                <button class="set-btn-primary" :disabled="saving" @click="saveProfile">{{ saving ? 'Saving...' : 'Save Changes' }}</button>
               </div>
             </div>
 
@@ -407,8 +407,8 @@ async function restoreAccount() {
               </div>
             </div>
             <div class="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
-              <button class="px-5 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Discard</button>
-              <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md shadow-sm transition-colors" @click="savePreferences">Save</button>
+              <button class="set-btn-text">Discard</button>
+              <button class="set-btn-primary" @click="savePreferences">Save</button>
             </div>
           </div>
         </section>
@@ -483,8 +483,8 @@ async function restoreAccount() {
             </table>
           </div>
           <div class="pt-6 mt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
-            <button class="px-5 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" @click="discardNotifSettings">Discard</button>
-            <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md shadow-sm transition-colors" @click="saveNotifSettings">Save Settings</button>
+            <button class="set-btn-text" @click="discardNotifSettings">Discard</button>
+            <button class="set-btn-primary" @click="saveNotifSettings">Save Settings</button>
           </div>
         </section>
 
@@ -502,8 +502,8 @@ async function restoreAccount() {
               <p class="text-xs text-zinc-500 mt-3">This workspace will load automatically when you sign in.</p>
             </div>
             <div class="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
-              <button class="px-5 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" @click="discardWorkspace">Discard</button>
-              <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md shadow-sm transition-colors" @click="saveWorkspace">Save Changes</button>
+              <button class="set-btn-text" @click="discardWorkspace">Discard</button>
+              <button class="set-btn-primary" @click="saveWorkspace">Save Changes</button>
             </div>
           </div>
         </section>
@@ -559,7 +559,7 @@ async function restoreAccount() {
                 <div class="text-[13px] font-medium">Sign out everywhere</div>
                 <div class="text-xs text-zinc-500 mt-1 leading-relaxed max-w-[540px]">지금 이 기기를 <b class="font-medium">포함한</b> 모든 기기에서 로그아웃해요. 로그인이 도용된 것 같을 때 쓰는 기능이에요. 모든 기기에서 다시 로그인해야 해요.</div>
               </div>
-              <button class="shrink-0 px-3.5 py-2 bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium rounded-xl transition-colors" @click="revokeAllSessions">Revoke all sessions</button>
+              <button class="shrink-0 px-3.5 py-2 border border-transparent bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium rounded-xl transition-colors" @click="revokeAllSessions">Revoke all sessions</button>
             </div>
           </div>
 
@@ -693,14 +693,14 @@ async function restoreAccount() {
                 <div class="text-[13px] font-medium">Delete account</div>
                 <div class="text-xs text-zinc-500 mt-1 leading-relaxed max-w-[540px]">요청하면 30일 유예 기간이 시작되고, 끝나면 개인정보가 익명화돼요. 유예 기간 안에는 복구할 수 있어요.</div>
               </div>
-              <button class="shrink-0 px-3.5 py-2 bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-500" :disabled="pendingDeletion" @click="requestDeletion">{{ pendingDeletion ? 'Already requested' : 'Request deletion' }}</button>
+              <button class="shrink-0 px-3.5 py-2 border border-transparent bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-500" :disabled="pendingDeletion" @click="requestDeletion">{{ pendingDeletion ? 'Already requested' : 'Request deletion' }}</button>
             </div>
             <div class="flex items-center justify-between gap-6 pt-4">
               <div>
                 <div class="text-[13px] font-medium">Restore account</div>
                 <div class="text-xs text-zinc-500 mt-1 leading-relaxed max-w-[540px]">탈퇴를 요청한 상태에서만 쓸 수 있어요.</div>
               </div>
-              <button class="conn-btn !text-[13px] !px-3.5 !py-2" :disabled="!pendingDeletion" @click="restoreAccount">{{ pendingDeletion ? 'Restore account' : 'Not pending' }}</button>
+              <button class="set-btn" :disabled="!pendingDeletion" @click="restoreAccount">{{ pendingDeletion ? 'Restore account' : 'Not pending' }}</button>
             </div>
           </div>
         </section>
@@ -729,6 +729,62 @@ async function restoreAccount() {
 .setting-input:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+/* 저장 줄·카드 안 동작 버튼 공통 크기 — 보조(테두리)·주(초록)·취소(글자만). 위험 동작은 같은 크기에 rose */
+.set-btn,
+.set-btn-primary,
+.set-btn-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  transition: all 0.15s;
+}
+.set-btn {
+  color: #52525b;
+  border-color: #e4e4e7;
+}
+.set-btn:hover:not(:disabled) {
+  color: #18181b;
+  background: #f4f4f5;
+}
+.dark .set-btn {
+  color: #a1a1aa;
+  border-color: #3f3f46;
+}
+.dark .set-btn:hover:not(:disabled) {
+  color: #f4f4f5;
+  background: #27272a;
+}
+.set-btn-primary {
+  color: #fff;
+  background: #059669;
+}
+.set-btn-primary:hover:not(:disabled) {
+  background: #10b981;
+}
+.set-btn-text {
+  color: #71717a;
+}
+.set-btn-text:hover {
+  color: #18181b;
+}
+.dark .set-btn-text {
+  color: #a1a1aa;
+}
+.dark .set-btn-text:hover {
+  color: #f4f4f5;
+}
+.set-btn:disabled,
+.set-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .conn-btn {
   display: inline-flex;
