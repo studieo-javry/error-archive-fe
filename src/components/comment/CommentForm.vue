@@ -42,6 +42,7 @@ const mentionOpen = ref(false)
 const mentionItems = ref<MentionCandidate[]>([])
 const mentionIndex = ref(0)
 const mentionTokenStart = ref(-1) // 본문에서 '@' 의 위치
+const mentionQuery = ref('') // '@' 뒤 입력값 — 빈 결과 안내 문구 구분용
 let fetchTimer: ReturnType<typeof setTimeout> | null = null
 let fetchSeq = 0
 
@@ -96,8 +97,9 @@ function detectMention() {
       if (seq !== fetchSeq) return // 최신 요청만 반영
       mentionItems.value = data
       mentionIndex.value = 0
-      // 빈 검색어인데 후보가 없으면 굳이 열지 않음.
-      mentionOpen.value = data.length > 0 || q.length > 0
+      mentionQuery.value = q
+      // 빈 검색어에 후보가 없어도 연다 — 안 열면 멘션 기능이 없는 것처럼 보여 검색 안내를 띄운다.
+      mentionOpen.value = true
     } catch {
       closeMention()
     }
@@ -124,7 +126,14 @@ function applyMention(idx: number) {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (!mentionOpen.value || mentionItems.value.length === 0) return
+  if (!mentionOpen.value) return
+  // 후보가 없는 안내 상태에서도 Esc 로 닫을 수 있어야 한다.
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    closeMention()
+    return
+  }
+  if (mentionItems.value.length === 0) return
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     mentionIndex.value = (mentionIndex.value + 1) % mentionItems.value.length
@@ -134,9 +143,6 @@ function onKeydown(e: KeyboardEvent) {
   } else if (e.key === 'Enter' || e.key === 'Tab') {
     e.preventDefault()
     applyMention(mentionIndex.value)
-  } else if (e.key === 'Escape') {
-    e.preventDefault()
-    closeMention()
   }
 }
 
@@ -188,7 +194,7 @@ onBeforeUnmount(() => { if (fetchTimer) clearTimeout(fetchTimer) })
         <!-- 멘션 드롭다운 (Glass — 반투명 blur + 미끄러지는 하이라이트 + 소프트 아바타) -->
         <Transition name="mention">
           <div v-if="mentionOpen" class="mention-dd">
-            <p v-if="mentionItems.length === 0" class="mention-empty">매칭되는 사용자 없음</p>
+            <p v-if="mentionItems.length === 0" class="mention-empty">{{ mentionQuery ? '매칭되는 사용자 없음' : '이름을 입력해 검색하세요' }}</p>
             <div v-else ref="mentionListEl" class="mention-list">
               <div class="mention-pill" :style="{ transform: pillTransform, height: pillHeight + 'px' }" />
               <button
