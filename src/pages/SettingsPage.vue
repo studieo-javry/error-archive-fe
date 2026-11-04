@@ -162,6 +162,16 @@ function discardWorkspace() {
   showToast('Changes discarded')
 }
 
+// 섹션 성격 칩(제목 우측) — playground settings-ia.html 의 4축 분류: 누가 보나·언제 반영·맥락·위험
+const CHIP = {
+  public: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
+  private: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400',
+  instant: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  context: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  security: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+  danger: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
+}
+
 // ── Sessions ──
 const sessions = ref<Session[]>([])
 
@@ -305,8 +315,13 @@ async function restoreAccount() {
 
         <!-- ═══ PROFILE ═══ -->
         <section v-if="activeTab === 'profile'">
-          <h2 class="text-2xl font-bold mb-2">Public Profile</h2>
-          <p class="text-sm text-zinc-500 mb-8">This information will be displayed publicly across your workspaces.</p>
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Public Profile</h2>
+              <p class="text-sm text-zinc-500">This information will be displayed publicly across your workspaces.</p>
+            </div>
+            <div class="flex gap-1.5 shrink-0"><span class="set-chip" :class="CHIP.public">Public</span></div>
+          </div>
 
           <div class="flex flex-col lg:flex-row gap-10">
             <div class="flex-1 min-w-0 space-y-6">
@@ -372,8 +387,13 @@ async function restoreAccount() {
 
         <!-- ═══ PREFERENCES ═══ -->
         <section v-if="activeTab === 'preferences'">
-          <h2 class="text-2xl font-bold mb-2">Preferences</h2>
-          <p class="text-sm text-zinc-500 mb-8">Manage your workspace experience and UI settings.</p>
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Preferences</h2>
+              <p class="text-sm text-zinc-500">Manage your workspace experience and UI settings.</p>
+            </div>
+            <div class="flex gap-1.5 shrink-0"><span class="set-chip" :class="CHIP.private">Private</span><span class="set-chip" :class="CHIP.instant">Instant</span></div>
+          </div>
           <div class="space-y-8">
             <div>
               <h3 class="text-sm font-medium mb-4">Theme</h3>
@@ -415,6 +435,13 @@ async function restoreAccount() {
 
         <!-- ═══ NOTIFICATIONS ═══ -->
         <section v-if="activeTab === 'notifications'">
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Notifications</h2>
+              <p class="text-sm text-zinc-500">Choose which notifications you get and where.</p>
+            </div>
+            <div class="flex gap-1.5 shrink-0"><span class="set-chip" :class="CHIP.private">Private</span></div>
+          </div>
           <div class="flex items-center justify-between p-6 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl mb-8 shadow-sm">
             <div>
               <h3 class="text-lg font-bold mb-1 flex items-center gap-2">
@@ -490,8 +517,13 @@ async function restoreAccount() {
 
         <!-- ═══ WORKSPACE ═══ -->
         <section v-if="activeTab === 'workspace'">
-          <h2 class="text-2xl font-bold mb-2">Default Workspace</h2>
-          <p class="text-sm text-zinc-500 mb-8">Manage which workspace opens automatically when you sign in.</p>
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Default Workspace</h2>
+              <p class="text-sm text-zinc-500">Manage which workspace opens automatically when you sign in.</p>
+            </div>
+            <div class="flex gap-1.5 shrink-0"><span class="set-chip" :class="CHIP.context">Context</span></div>
+          </div>
           <div>
             <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm mb-8">
               <label class="block text-sm font-medium mb-2">Select Workspace</label>
@@ -520,7 +552,7 @@ async function restoreAccount() {
               <h2 class="text-2xl font-bold mb-2">Active Sessions</h2>
               <p class="text-sm text-zinc-500">Devices currently signed in to your account.</p>
             </div>
-            <span class="shrink-0 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">Security</span>
+            <span class="set-chip" :class="CHIP.security">Security</span>
           </div>
 
           <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6">
@@ -577,7 +609,7 @@ async function restoreAccount() {
               <h2 class="text-2xl font-bold mb-2">Connected Accounts</h2>
               <p class="text-sm text-zinc-500">External accounts you use to sign in.</p>
             </div>
-            <span class="shrink-0 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">Security</span>
+            <span class="set-chip" :class="CHIP.security">Security</span>
           </div>
 
           <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm px-6 py-2">
@@ -654,7 +686,7 @@ async function restoreAccount() {
               <h2 class="text-2xl font-bold mb-2">Account Information</h2>
               <p class="text-sm text-zinc-500">Read-only details about your account.</p>
             </div>
-            <span class="shrink-0 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">Private</span>
+            <span class="set-chip" :class="CHIP.private">Private</span>
           </div>
 
           <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 mb-6">
@@ -686,7 +718,7 @@ async function restoreAccount() {
           <div class="bg-white dark:bg-zinc-900/50 border border-rose-200 dark:border-rose-500/30 rounded-xl shadow-sm p-6">
             <div class="flex items-start justify-between gap-4 mb-1">
               <h3 class="text-base font-semibold text-rose-600 dark:text-rose-400">Danger Zone</h3>
-              <span class="shrink-0 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">Danger</span>
+              <span class="set-chip" :class="CHIP.danger">Danger</span>
             </div>
             <div class="flex items-center justify-between gap-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
               <div>
@@ -729,6 +761,18 @@ async function restoreAccount() {
 .setting-input:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+.set-chip {
+  display: inline-block;
+  vertical-align: top;
+  flex-shrink: 0;
+  padding: 0.125rem 0.5rem;
+  font-size: 10px;
+  line-height: 15px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  border-radius: 9999px;
 }
 /* 저장 줄·카드 안 동작 버튼 공통 크기 — 보조(테두리)·주(초록)·취소(글자만). 위험 동작은 같은 크기에 rose */
 .set-btn,
