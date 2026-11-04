@@ -102,7 +102,13 @@ async function removeAvatar() {
   showToast('Avatar removed')
 }
 
-const avatarInitials = computed(() => (displayName.value || 'U').slice(0, 2).toUpperCase())
+// 이니셜 — 두 단어 이상이면 앞 두 단어 첫 글자(Kim Developer → KD), 아니면 앞 두 글자 (playground settings-ia.html 과 같은 규칙)
+const avatarInitials = computed(() => {
+  const name = displayName.value.trim()
+  const parts = name.split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return (name || 'U').slice(0, 2).toUpperCase()
+})
 
 // ── Preferences ──
 async function savePreferences() {
@@ -326,31 +332,28 @@ async function restoreAccount() {
           <div class="flex flex-col lg:flex-row gap-10">
             <div class="flex-1 min-w-0 space-y-6">
               <div>
-                <label class="block text-sm font-medium mb-2">Avatar</label>
-                <div class="flex items-center gap-6">
-                  <div class="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 border-2 border-dashed border-emerald-500 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-2xl overflow-hidden">
+                <label class="profile-label">Avatar</label>
+                <div class="flex items-center gap-4 py-1">
+                  <div class="avatar-view">
                     <img v-if="authStore.user?.avatarUrl" :src="authStore.user.avatarUrl" class="w-full h-full object-cover" />
                     <span v-else>{{ avatarInitials }}</span>
                   </div>
-                  <div>
-                    <div class="flex gap-3 mb-2">
-                      <label class="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md text-sm font-medium transition-colors cursor-pointer">
-                        Upload Image
-                        <input ref="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" @change="uploadAvatar" />
-                      </label>
-                      <button class="px-4 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-md text-sm font-medium transition-colors" @click="removeAvatar">Remove</button>
-                    </div>
-                    <p class="text-xs text-zinc-500">JPG, GIF or PNG. Max size of 5MB.</p>
+                  <div class="flex gap-2">
+                    <label class="avatar-btn avatar-btn--secondary">
+                      Upload new
+                      <input ref="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" @change="uploadAvatar" />
+                    </label>
+                    <button class="avatar-btn avatar-btn--ghost" type="button" @click="removeAvatar">Remove</button>
                   </div>
                 </div>
               </div>
               <div>
-                <label class="block text-sm font-medium mb-2">Nickname</label>
-                <input v-model="displayName" type="text" maxlength="100" class="setting-input" />
+                <label class="profile-label">Display name</label>
+                <input v-model="displayName" type="text" maxlength="100" class="profile-input" />
               </div>
               <div>
-                <label class="block text-sm font-medium mb-2">Bio</label>
-                <textarea v-model="bio" maxlength="280" rows="3" class="setting-input resize-none" />
+                <label class="profile-label">Bio</label>
+                <textarea v-model="bio" maxlength="280" class="profile-textarea" />
                 <p class="text-xs text-zinc-500 mt-2 text-right">Max 280 characters</p>
               </div>
               <div class="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
@@ -869,6 +872,127 @@ async function restoreAccount() {
 .dark .acc-ro {
   color: #a1a1aa;
   border-bottom-color: #3f3f46;
+}
+/* Profile 입력 — playground settings-ia.html 의 .raw-input / .raw-textarea 값 그대로.
+   app.css 전역 .raw-input/.raw-textarea(다른 화면용, 값 다름)와 섞이지 않게 이름을 따로 둠 */
+.profile-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #71717a;
+}
+.dark .profile-label {
+  color: #a1a1aa;
+}
+.profile-input,
+.profile-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  line-height: 21px;
+}
+.profile-input {
+  padding: 8px 0;
+  color: #18181b;
+  border-bottom: 1px solid #e4e4e7;
+  transition: border-color 0.2s;
+}
+.profile-textarea {
+  min-height: 60px;
+  padding: 8px 0 8px 14px;
+  color: #71717a;
+  border-left: 2px solid #e4e4e7;
+  resize: vertical;
+  transition: border-color 0.2s, color 0.2s;
+}
+.profile-input:focus {
+  border-bottom-color: #10b981;
+}
+.profile-textarea:focus {
+  color: #18181b;
+  border-left-color: #10b981;
+}
+.dark .profile-input {
+  color: #e4e4e7;
+  border-bottom-color: #3f3f46;
+}
+.dark .profile-textarea {
+  color: #a1a1aa;
+  border-left-color: #3f3f46;
+}
+.dark .profile-input:focus {
+  border-bottom-color: #34d399;
+}
+.dark .profile-textarea:focus {
+  color: #e4e4e7;
+  border-left-color: #34d399;
+}
+/* 아바타 원 — playground settings-ia.html 의 .avatarEditor__view 값 그대로 */
+.avatar-view {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font: 600 22px/1 "Merriweather", serif;
+  color: #fff;
+  background: linear-gradient(135deg, #c7d2fe, #a7f3d0);
+  border: 1px solid #e4e4e7;
+  border-radius: 999px;
+}
+.avatar-view img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dark .avatar-view {
+  border-color: #3f3f46;
+}
+/* 아바타 버튼 — playground settings-ia.html 의 .btn.sm + secondary / ghost 값 그대로 */
+.avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.avatar-btn--secondary {
+  color: #18181b;
+  background: #f4f4f5;
+}
+.avatar-btn--ghost {
+  color: #71717a;
+  background: transparent;
+}
+.avatar-btn--ghost:hover {
+  color: #18181b;
+  background: #f4f4f5;
+}
+.dark .avatar-btn {
+  border-color: #3f3f46;
+}
+.dark .avatar-btn--secondary {
+  color: #e4e4e7;
+  background: #3f3f46;
+}
+.dark .avatar-btn--ghost {
+  color: #a1a1aa;
+}
+.dark .avatar-btn--ghost:hover {
+  color: #e4e4e7;
+  background: #27272a;
 }
 select.setting-input {
   appearance: none;
