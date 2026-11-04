@@ -560,7 +560,7 @@ async function restoreAccount() {
           <div class="flex items-start justify-between gap-4 mb-8">
             <div>
               <h2 class="text-2xl font-bold mb-2">Connected Accounts</h2>
-              <p class="text-sm text-zinc-500">로그인에 쓰는 외부 계정이에요. 서비스마다 하나씩 연결되고, 다른 로그인 수단이 남아 있을 때만 연결을 해제할 수 있어요.</p>
+              <p class="text-sm text-zinc-500">External accounts you use to sign in.</p>
             </div>
             <span class="shrink-0 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">Security</span>
           </div>
