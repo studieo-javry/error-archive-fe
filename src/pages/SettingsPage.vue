@@ -225,6 +225,21 @@ async function disconnectProvider(provider: string) {
 
 // ── Account / Danger ──
 const pendingDeletion = computed(() => authStore.user?.status === 'PENDING_DELETION')
+// 유예 30일 — iam 탈퇴 finalize 기준과 같음. pendingDeletionAt 은 요청 시각이라 마감은 +30일
+const DELETION_GRACE_DAYS = 30
+const deletionDeadline = computed(() => {
+  const at = authStore.user?.pendingDeletionAt
+  return at ? new Date(new Date(at).getTime() + DELETION_GRACE_DAYS * 86_400_000).toISOString() : null
+})
+const deletionDaysLeft = computed(() => deletionDeadline.value
+  ? Math.max(0, Math.ceil((new Date(deletionDeadline.value).getTime() - Date.now()) / 86_400_000))
+  : null)
+const statusBadge = computed(() => {
+  const st = authStore.user?.status ?? 'ACTIVE'
+  if (st === 'ACTIVE') return { label: 'Active', cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300', dot: 'bg-emerald-500' }
+  if (st === 'PENDING_DELETION') return { label: 'Pending deletion', cls: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300', dot: 'bg-amber-500' }
+  return { label: st.charAt(0) + st.slice(1).toLowerCase(), cls: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300', dot: 'bg-rose-500' }
+})
 
 async function requestDeletion() {
   if (!confirm('Are you sure you want to request account deletion? You will have 30 days to restore it.')) return
@@ -625,43 +640,67 @@ async function restoreAccount() {
 
         <!-- ═══ ACCOUNT / DANGER ═══ -->
         <section v-if="activeTab === 'account'">
-          <div v-if="pendingDeletion" class="mb-8 bg-rose-50 dark:bg-rose-500/10 border-l-4 border-rose-500 p-4 rounded-r-lg">
-            <h3 class="text-sm font-medium text-rose-800 dark:text-rose-400">Account Pending Deletion</h3>
-            <p class="text-sm text-rose-700 dark:text-rose-300 mt-1">Your account is scheduled to be permanently deleted in 30 days. You can restore it before the grace period ends.</p>
-          </div>
-
-          <h2 class="text-2xl font-bold mb-2">Account Information</h2>
-          <p class="text-sm text-zinc-500 mb-8">Basic information about your ErrorLog account.</p>
-
-          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 mb-12 space-y-6 shadow-sm">
-            <div>
-              <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Primary Email</label>
-              <div class="font-medium">{{ authStore.user?.email || '—' }}</div>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Account Status</label>
-              <div v-if="!pendingDeletion" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
-              </div>
-              <div v-else class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 text-xs font-bold uppercase tracking-wider">
-                <span class="w-1.5 h-1.5 rounded-full bg-rose-500" /> Pending Deletion
-              </div>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Member Since</label>
-              <div class="text-sm">{{ authStore.user?.createdAt ? formatAbsolute(authStore.user.createdAt) : '—' }}</div>
+          <!-- 탈퇴 진행 중 배너 -->
+          <div v-if="pendingDeletion" class="mb-8 flex items-start gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+            <svg class="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M10.3 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-sm font-semibold">탈퇴 진행 중 <span v-if="deletionDaysLeft !== null">&middot; D-{{ deletionDaysLeft }}</span></h3>
+              <p class="text-xs mt-1 opacity-90"><template v-if="deletionDeadline">{{ formatAbsolute(deletionDeadline) }} 이후 </template>데이터가 영구 익명화돼요. 그 전까지는 아래에서 복구할 수 있어요.</p>
             </div>
           </div>
 
-          <div class="border border-rose-200 dark:border-rose-900/50 rounded-xl p-6 bg-rose-50/30 dark:bg-rose-900/10 shadow-sm">
-            <h3 class="text-lg font-bold text-rose-600 dark:text-rose-500 mb-2">Danger Zone</h3>
-            <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">Once you delete your account, you will lose all data and workspace access. A 30-day grace period is provided before hard deletion.</p>
-            <div v-if="!pendingDeletion">
-              <button class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-md transition-colors shadow-sm" @click="requestDeletion">Request Account Deletion</button>
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Account Information</h2>
+              <p class="text-sm text-zinc-500">Read-only details about your account.</p>
             </div>
-            <div v-else class="flex items-center gap-3">
-              <button class="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium rounded-md transition-colors shadow-sm" @click="restoreAccount">Restore Account</button>
-              <span class="text-xs text-zinc-500">Deletes permanently in 30 days</span>
+            <span class="shrink-0 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">Private</span>
+          </div>
+
+          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <div class="text-xs font-medium text-zinc-500 mb-1.5">Email <span class="font-normal text-zinc-400">(non-editable)</span></div>
+                <div class="acc-ro">{{ authStore.user?.email || '—' }}</div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-zinc-500 mb-1.5">Status</div>
+                <div class="acc-ro">
+                  <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-sans text-[11px] font-semibold" :class="statusBadge.cls">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="statusBadge.dot" />{{ statusBadge.label }}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-zinc-500 mb-1.5">Member since</div>
+                <div class="acc-ro">{{ authStore.user?.createdAt ? formatAbsolute(authStore.user.createdAt) : '—' }}</div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-zinc-500 mb-1.5">Pending deletion at</div>
+                <div class="acc-ro">{{ authStore.user?.pendingDeletionAt ? formatAbsolute(authStore.user.pendingDeletionAt) : '— (not pending)' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 되돌리기 어려운 동작은 별도 카드로 격리 -->
+          <div class="bg-white dark:bg-zinc-900/50 border border-rose-200 dark:border-rose-500/30 rounded-xl shadow-sm p-6">
+            <div class="flex items-start justify-between gap-4 mb-1">
+              <h3 class="text-base font-semibold text-rose-600 dark:text-rose-400">Danger Zone</h3>
+              <span class="shrink-0 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">Danger</span>
+            </div>
+            <div class="flex items-center justify-between gap-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+              <div>
+                <div class="text-[13px] font-medium">Delete account</div>
+                <div class="text-xs text-zinc-500 mt-1 leading-relaxed max-w-[540px]">요청하면 30일 유예 기간이 시작되고, 끝나면 개인정보가 익명화돼요. 유예 기간 안에는 복구할 수 있어요.</div>
+              </div>
+              <button class="shrink-0 px-3.5 py-2 bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-500" :disabled="pendingDeletion" @click="requestDeletion">{{ pendingDeletion ? 'Already requested' : 'Request deletion' }}</button>
+            </div>
+            <div class="flex items-center justify-between gap-6 pt-4">
+              <div>
+                <div class="text-[13px] font-medium">Restore account</div>
+                <div class="text-xs text-zinc-500 mt-1 leading-relaxed max-w-[540px]">탈퇴를 요청한 상태에서만 쓸 수 있어요.</div>
+              </div>
+              <button class="conn-btn !text-[13px] !px-3.5 !py-2" :disabled="!pendingDeletion" @click="restoreAccount">{{ pendingDeletion ? 'Restore account' : 'Not pending' }}</button>
             </div>
           </div>
         </section>
@@ -719,6 +758,17 @@ async function restoreAccount() {
 .conn-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.acc-ro {
+  padding: 0.5rem 0;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.75rem;
+  color: #52525b;
+  border-bottom: 1px dashed #e4e4e7;
+}
+.dark .acc-ro {
+  color: #a1a1aa;
+  border-bottom-color: #3f3f46;
 }
 select.setting-input {
   appearance: none;
