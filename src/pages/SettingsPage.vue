@@ -267,14 +267,15 @@ async function restoreAccount() {
 
     <!-- Content -->
     <div class="flex-1 overflow-y-auto p-10 pb-32">
-      <div>
+      <!-- 모든 탭 공통 폭: 섹션마다 max-w 를 따로 주면 탭 전환 시 박스 오른쪽 끝이 들쭉날쭉해짐 -->
+      <div class="max-w-3xl">
 
         <!-- ═══ PROFILE ═══ -->
         <section v-if="activeTab === 'profile'">
           <h2 class="text-2xl font-bold mb-2">Public Profile</h2>
           <p class="text-sm text-zinc-500 mb-8">This information will be displayed publicly across your workspaces.</p>
 
-          <div class="flex flex-col lg:flex-row gap-16">
+          <div class="flex flex-col lg:flex-row gap-10">
             <div class="flex-1 min-w-0 space-y-6">
               <div>
                 <label class="block text-sm font-medium mb-2">Avatar</label>
@@ -340,7 +341,7 @@ async function restoreAccount() {
         <section v-if="activeTab === 'preferences'">
           <h2 class="text-2xl font-bold mb-2">Preferences</h2>
           <p class="text-sm text-zinc-500 mb-8">Manage your workspace experience and UI settings.</p>
-          <div class="space-y-8 max-w-2xl">
+          <div class="space-y-8">
             <div>
               <h3 class="text-sm font-medium mb-4">Theme</h3>
               <div class="grid grid-cols-3 gap-4">
@@ -395,7 +396,7 @@ async function restoreAccount() {
           </div>
 
           <h2 class="text-xl font-bold mb-4">Notification Channels</h2>
-          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden max-w-3xl shadow-sm">
+          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
             <table class="w-full text-left text-sm">
               <thead class="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500">
                 <tr>
@@ -448,7 +449,7 @@ async function restoreAccount() {
               </tbody>
             </table>
           </div>
-          <div class="pt-6 mt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4 max-w-3xl">
+          <div class="pt-6 mt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
             <button class="px-5 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" @click="discardNotifSettings">Discard</button>
             <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md shadow-sm transition-colors" @click="saveNotifSettings">Save Settings</button>
           </div>
@@ -458,7 +459,7 @@ async function restoreAccount() {
         <section v-if="activeTab === 'workspace'">
           <h2 class="text-2xl font-bold mb-2">Default Workspace</h2>
           <p class="text-sm text-zinc-500 mb-8">Manage which workspace opens automatically when you sign in.</p>
-          <div class="max-w-2xl">
+          <div>
             <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm mb-8">
               <label class="block text-sm font-medium mb-2">Select Workspace</label>
               <select v-model="defaultWorkspaceId" class="setting-input">
@@ -491,7 +492,7 @@ async function restoreAccount() {
             </button>
           </div>
 
-          <div v-if="sessions.length" class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-4 mb-8 flex items-center gap-4 max-w-3xl">
+          <div v-if="sessions.length" class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-4 mb-8 flex items-center gap-4">
             <div class="text-emerald-500 text-xl ml-2">&#9200;</div>
             <div>
               <div class="text-sm font-bold text-emerald-900 dark:text-emerald-400">Last Login: {{ formatAbsolute(sessions[0]?.lastUsedAt || sessions[0]?.createdAt) }}</div>
@@ -499,7 +500,7 @@ async function restoreAccount() {
             </div>
           </div>
 
-          <div class="space-y-4 max-w-3xl">
+          <div class="space-y-4">
             <div v-for="(session, idx) in sessions" :key="session.sessionId" class="flex items-center justify-between p-5 rounded-xl" :class="idx === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30' : 'bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800'">
               <div class="flex items-center gap-4">
                 <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" :class="idx === 0 ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'">&#128187;</div>
@@ -521,7 +522,7 @@ async function restoreAccount() {
         <section v-if="activeTab === 'connections'">
           <h2 class="text-2xl font-bold mb-2">Connected Accounts</h2>
           <p class="text-sm text-zinc-500 mb-8">Manage OAuth providers used to sign in.</p>
-          <div class="space-y-4 max-w-2xl">
+          <div class="space-y-4">
             <div v-for="conn in connections" :key="conn.provider" class="flex items-center justify-between p-5 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
               <div class="flex items-center gap-4">
                 <div class="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-sm">{{ conn.provider.slice(0, 2).toUpperCase() }}</div>
@@ -561,7 +562,7 @@ async function restoreAccount() {
           <h2 class="text-2xl font-bold mb-2">Account Information</h2>
           <p class="text-sm text-zinc-500 mb-8">Basic information about your ErrorLog account.</p>
 
-          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 max-w-2xl mb-12 space-y-6 shadow-sm">
+          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 mb-12 space-y-6 shadow-sm">
             <div>
               <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Primary Email</label>
               <div class="font-medium">{{ authStore.user?.email || '—' }}</div>
@@ -581,7 +582,7 @@ async function restoreAccount() {
             </div>
           </div>
 
-          <div class="border border-rose-200 dark:border-rose-900/50 rounded-xl p-6 max-w-2xl bg-rose-50/30 dark:bg-rose-900/10 shadow-sm">
+          <div class="border border-rose-200 dark:border-rose-900/50 rounded-xl p-6 bg-rose-50/30 dark:bg-rose-900/10 shadow-sm">
             <h3 class="text-lg font-bold text-rose-600 dark:text-rose-500 mb-2">Danger Zone</h3>
             <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">Once you delete your account, you will lose all data and workspace access. A 30-day grace period is provided before hard deletion.</p>
             <div v-if="!pendingDeletion">
