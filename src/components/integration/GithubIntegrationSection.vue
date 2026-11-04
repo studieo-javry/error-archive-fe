@@ -300,7 +300,7 @@ onMounted(async () => {
         <h1>Integrations</h1>
         <p>개발 도구와 연결하고, 에러 기록의 맥락을 이어가세요.</p>
       </div>
-      <div class="heading-end"><span class="pill">Workspace &amp; Personal</span></div>
+      <div class="heading-end !mt-0"><span class="set-chip bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Workspace &amp; Personal</span></div>
     </div>
 
     <!-- 게스트 -->

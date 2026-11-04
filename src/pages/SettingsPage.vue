@@ -102,7 +102,13 @@ async function removeAvatar() {
   showToast('Avatar removed')
 }
 
-const avatarInitials = computed(() => (displayName.value || 'U').slice(0, 2).toUpperCase())
+// 이니셜 — 두 단어 이상이면 앞 두 단어 첫 글자(Kim Developer → KD), 아니면 앞 두 글자 (playground settings-ia.html 과 같은 규칙)
+const avatarInitials = computed(() => {
+  const name = displayName.value.trim()
+  const parts = name.split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return (name || 'U').slice(0, 2).toUpperCase()
+})
 
 // ── Preferences ──
 async function savePreferences() {
@@ -162,6 +168,16 @@ function discardWorkspace() {
   showToast('Changes discarded')
 }
 
+// 섹션 성격 칩(제목 우측) — playground settings-ia.html 의 4축 분류: 누가 보나·언제 반영·맥락·위험
+const CHIP = {
+  public: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
+  private: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400',
+  instant: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  context: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  security: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+  danger: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
+}
+
 // ── Sessions ──
 const sessions = ref<Session[]>([])
 
@@ -171,6 +187,9 @@ async function loadSessions() {
     sessions.value = data
   } catch { /* empty */ }
 }
+
+// 기기 아이콘(폰/노트북) 고르기 — 서버는 기기 종류를 따로 주지 않아 deviceLabel·userAgent 로 추정
+const isMobileDevice = (s: Session) => /iphone|ipad|android|mobile/i.test(`${s.deviceLabel} ${s.userAgent}`)
 
 async function revokeSession(sessionId: string) {
   await authApi.revokeSession(sessionId)
@@ -187,6 +206,21 @@ async function revokeAllSessions() {
 
 // ── Connections ──
 const connections = ref<Connection[]>([])
+
+// 로그인 제공자 목록(iam SocialProvider). available=false 는 아직 연결 경로가 없어 'Coming soon' 으로만 보인다.
+const PROVIDERS = [
+  { id: 'GITHUB', label: 'GitHub', available: true, blurb: 'Sign in with GitHub' },
+  { id: 'GOOGLE', label: 'Google', available: false, blurb: 'Sign in with your Google account · 출시 예정' },
+  { id: 'APPLE', label: 'Apple', available: false, blurb: 'Sign in with Apple · iOS 도입과 함께 제공 예정' },
+]
+const providerLabel = (id: string) => PROVIDERS.find(p => p.id === id.toUpperCase())?.label ?? id
+const providerSwatch = (id: string) => ({
+  GITHUB: 'bg-zinc-900 text-white dark:bg-[#0d1117]',
+  GOOGLE: 'bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700',
+  APPLE: 'bg-black text-white',
+} as Record<string, string>)[id.toUpperCase()] ?? 'bg-zinc-100 dark:bg-zinc-800'
+const connectedProviders = computed(() => connections.value.map(c => ({ ...c, provider: c.provider.toUpperCase() })))
+const upcomingProviders = computed(() => PROVIDERS.filter(p => !p.available && !connectedProviders.value.some(c => c.provider === p.id)))
 
 async function loadConnections() {
   try {
@@ -207,6 +241,21 @@ async function disconnectProvider(provider: string) {
 
 // ── Account / Danger ──
 const pendingDeletion = computed(() => authStore.user?.status === 'PENDING_DELETION')
+// 유예 30일 — iam 탈퇴 finalize 기준과 같음. pendingDeletionAt 은 요청 시각이라 마감은 +30일
+const DELETION_GRACE_DAYS = 30
+const deletionDeadline = computed(() => {
+  const at = authStore.user?.pendingDeletionAt
+  return at ? new Date(new Date(at).getTime() + DELETION_GRACE_DAYS * 86_400_000).toISOString() : null
+})
+const deletionDaysLeft = computed(() => deletionDeadline.value
+  ? Math.max(0, Math.ceil((new Date(deletionDeadline.value).getTime() - Date.now()) / 86_400_000))
+  : null)
+const statusBadge = computed(() => {
+  const st = authStore.user?.status ?? 'ACTIVE'
+  if (st === 'ACTIVE') return { label: 'Active', cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300', dot: 'bg-emerald-500' }
+  if (st === 'PENDING_DELETION') return { label: 'Pending deletion', cls: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300', dot: 'bg-amber-500' }
+  return { label: st.charAt(0) + st.slice(1).toLowerCase(), cls: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300', dot: 'bg-rose-500' }
+})
 
 async function requestDeletion() {
   if (!confirm('Are you sure you want to request account deletion? You will have 30 days to restore it.')) return
@@ -267,46 +316,49 @@ async function restoreAccount() {
 
     <!-- Content -->
     <div class="flex-1 overflow-y-auto p-10 pb-32">
-      <div>
+      <!-- 모든 탭 공통 폭: 섹션마다 max-w 를 따로 주면 탭 전환 시 박스 오른쪽 끝이 들쭉날쭉해짐 -->
+      <div class="max-w-3xl">
 
         <!-- ═══ PROFILE ═══ -->
         <section v-if="activeTab === 'profile'">
-          <h2 class="text-2xl font-bold mb-2">Public Profile</h2>
-          <p class="text-sm text-zinc-500 mb-8">This information will be displayed publicly across your workspaces.</p>
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Public Profile</h2>
+              <p class="text-sm text-zinc-500">This information will be displayed publicly across your workspaces.</p>
+            </div>
+            <div class="flex gap-1.5 shrink-0"><span class="set-chip" :class="CHIP.public">Public</span></div>
+          </div>
 
-          <div class="flex flex-col lg:flex-row gap-16">
+          <div class="flex flex-col lg:flex-row gap-10">
             <div class="flex-1 min-w-0 space-y-6">
               <div>
-                <label class="block text-sm font-medium mb-2">Avatar</label>
-                <div class="flex items-center gap-6">
-                  <div class="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 border-2 border-dashed border-emerald-500 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-2xl overflow-hidden">
+                <label class="profile-label">Avatar</label>
+                <div class="flex items-center gap-4 py-1">
+                  <div class="avatar-view">
                     <img v-if="authStore.user?.avatarUrl" :src="authStore.user.avatarUrl" class="w-full h-full object-cover" />
                     <span v-else>{{ avatarInitials }}</span>
                   </div>
-                  <div>
-                    <div class="flex gap-3 mb-2">
-                      <label class="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md text-sm font-medium transition-colors cursor-pointer">
-                        Upload Image
-                        <input ref="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" @change="uploadAvatar" />
-                      </label>
-                      <button class="px-4 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-md text-sm font-medium transition-colors" @click="removeAvatar">Remove</button>
-                    </div>
-                    <p class="text-xs text-zinc-500">JPG, GIF or PNG. Max size of 5MB.</p>
+                  <div class="flex gap-2">
+                    <label class="avatar-btn avatar-btn--secondary">
+                      Upload new
+                      <input ref="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" @change="uploadAvatar" />
+                    </label>
+                    <button class="avatar-btn avatar-btn--ghost" type="button" @click="removeAvatar">Remove</button>
                   </div>
                 </div>
               </div>
               <div>
-                <label class="block text-sm font-medium mb-2">Nickname</label>
-                <input v-model="displayName" type="text" maxlength="100" class="setting-input" />
+                <label class="profile-label">Display name</label>
+                <input v-model="displayName" type="text" maxlength="100" class="profile-input" />
               </div>
               <div>
-                <label class="block text-sm font-medium mb-2">Bio</label>
-                <textarea v-model="bio" maxlength="280" rows="3" class="setting-input resize-none" />
+                <label class="profile-label">Bio</label>
+                <textarea v-model="bio" maxlength="280" class="profile-textarea" />
                 <p class="text-xs text-zinc-500 mt-2 text-right">Max 280 characters</p>
               </div>
               <div class="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
-                <button class="px-5 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" @click="discardProfile">Discard</button>
-                <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md shadow-sm transition-colors" :disabled="saving" @click="saveProfile">{{ saving ? 'Saving...' : 'Save Changes' }}</button>
+                <button class="set-btn-text" @click="discardProfile">Discard</button>
+                <button class="set-btn-primary" :disabled="saving" @click="saveProfile">{{ saving ? 'Saving...' : 'Save Changes' }}</button>
               </div>
             </div>
 
@@ -338,9 +390,14 @@ async function restoreAccount() {
 
         <!-- ═══ PREFERENCES ═══ -->
         <section v-if="activeTab === 'preferences'">
-          <h2 class="text-2xl font-bold mb-2">Preferences</h2>
-          <p class="text-sm text-zinc-500 mb-8">Manage your workspace experience and UI settings.</p>
-          <div class="space-y-8 max-w-2xl">
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Preferences</h2>
+              <p class="text-sm text-zinc-500">Manage your workspace experience and UI settings.</p>
+            </div>
+            <div class="flex gap-1.5 shrink-0"><span class="set-chip" :class="CHIP.private">Private</span><span class="set-chip" :class="CHIP.instant">Instant</span></div>
+          </div>
+          <div class="space-y-8">
             <div>
               <h3 class="text-sm font-medium mb-4">Theme</h3>
               <div class="grid grid-cols-3 gap-4">
@@ -373,14 +430,21 @@ async function restoreAccount() {
               </div>
             </div>
             <div class="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
-              <button class="px-5 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Discard</button>
-              <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md shadow-sm transition-colors" @click="savePreferences">Save</button>
+              <button class="set-btn-text">Discard</button>
+              <button class="set-btn-primary" @click="savePreferences">Save</button>
             </div>
           </div>
         </section>
 
         <!-- ═══ NOTIFICATIONS ═══ -->
         <section v-if="activeTab === 'notifications'">
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Notifications</h2>
+              <p class="text-sm text-zinc-500">Choose which notifications you get and where.</p>
+            </div>
+            <div class="flex gap-1.5 shrink-0"><span class="set-chip" :class="CHIP.private">Private</span></div>
+          </div>
           <div class="flex items-center justify-between p-6 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl mb-8 shadow-sm">
             <div>
               <h3 class="text-lg font-bold mb-1 flex items-center gap-2">
@@ -395,7 +459,7 @@ async function restoreAccount() {
           </div>
 
           <h2 class="text-xl font-bold mb-4">Notification Channels</h2>
-          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden max-w-3xl shadow-sm">
+          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
             <table class="w-full text-left text-sm">
               <thead class="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500">
                 <tr>
@@ -448,17 +512,22 @@ async function restoreAccount() {
               </tbody>
             </table>
           </div>
-          <div class="pt-6 mt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4 max-w-3xl">
-            <button class="px-5 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" @click="discardNotifSettings">Discard</button>
-            <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md shadow-sm transition-colors" @click="saveNotifSettings">Save Settings</button>
+          <div class="pt-6 mt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
+            <button class="set-btn-text" @click="discardNotifSettings">Discard</button>
+            <button class="set-btn-primary" @click="saveNotifSettings">Save Settings</button>
           </div>
         </section>
 
         <!-- ═══ WORKSPACE ═══ -->
         <section v-if="activeTab === 'workspace'">
-          <h2 class="text-2xl font-bold mb-2">Default Workspace</h2>
-          <p class="text-sm text-zinc-500 mb-8">Manage which workspace opens automatically when you sign in.</p>
-          <div class="max-w-2xl">
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Default Workspace</h2>
+              <p class="text-sm text-zinc-500">Manage which workspace opens automatically when you sign in.</p>
+            </div>
+            <div class="flex gap-1.5 shrink-0"><span class="set-chip" :class="CHIP.context">Context</span></div>
+          </div>
+          <div>
             <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm mb-8">
               <label class="block text-sm font-medium mb-2">Select Workspace</label>
               <select v-model="defaultWorkspaceId" class="setting-input">
@@ -468,8 +537,8 @@ async function restoreAccount() {
               <p class="text-xs text-zinc-500 mt-3">This workspace will load automatically when you sign in.</p>
             </div>
             <div class="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4">
-              <button class="px-5 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" @click="discardWorkspace">Discard</button>
-              <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md shadow-sm transition-colors" @click="saveWorkspace">Save Changes</button>
+              <button class="set-btn-text" @click="discardWorkspace">Discard</button>
+              <button class="set-btn-primary" @click="saveWorkspace">Save Changes</button>
             </div>
           </div>
         </section>
@@ -481,115 +550,192 @@ async function restoreAccount() {
 
         <!-- ═══ SESSIONS ═══ -->
         <section v-if="activeTab === 'sessions'">
-          <div class="flex justify-between items-end mb-6">
+          <div class="flex items-start justify-between gap-4 mb-8">
             <div>
               <h2 class="text-2xl font-bold mb-2">Active Sessions</h2>
-              <p class="text-sm text-zinc-500">Review devices currently logged into your account.</p>
+              <p class="text-sm text-zinc-500">Devices currently signed in to your account.</p>
             </div>
-            <button class="px-4 py-2 bg-zinc-800 hover:bg-zinc-900 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white text-sm font-medium rounded-md transition-colors shadow-sm" @click="revokeAllSessions">
-              Sign out everywhere
-            </button>
+            <span class="set-chip" :class="CHIP.security">Security</span>
           </div>
 
-          <div v-if="sessions.length" class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-4 mb-8 flex items-center gap-4 max-w-3xl">
-            <div class="text-emerald-500 text-xl ml-2">&#9200;</div>
-            <div>
-              <div class="text-sm font-bold text-emerald-900 dark:text-emerald-400">Last Login: {{ formatAbsolute(sessions[0]?.lastUsedAt || sessions[0]?.createdAt) }}</div>
-              <div class="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">{{ sessions[0]?.deviceLabel }} &middot; {{ sessions[0]?.ipAddress }}</div>
+          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6">
+            <!-- 최근 활동 -->
+            <div class="flex items-center gap-3 px-4 py-3.5 mb-5 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300 text-xs">
+              <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9" /><path stroke-linecap="round" d="M12 7v5l3 2" /></svg>
+              <div v-if="sessions.length" class="min-w-0">
+                Most recent activity: <span class="font-semibold">{{ formatAbsolute(sessions[0].lastUsedAt || sessions[0].createdAt) }}</span> &middot; {{ sessions[0].deviceLabel }} &middot; {{ sessions[0].ipAddress }}
+              </div>
+              <div v-else>활성 세션이 없어요.</div>
             </div>
-          </div>
 
-          <div class="space-y-4 max-w-3xl">
-            <div v-for="(session, idx) in sessions" :key="session.sessionId" class="flex items-center justify-between p-5 rounded-xl" :class="idx === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30' : 'bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800'">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" :class="idx === 0 ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'">&#128187;</div>
-                <div>
-                  <div class="font-medium flex items-center gap-2">
-                    {{ session.deviceLabel }}
-                    <span v-if="idx === 0" class="text-[10px] uppercase tracking-wider bg-emerald-500 text-white px-2 py-0.5 rounded">Current</span>
-                  </div>
-                  <div class="text-xs text-zinc-500 mt-1">{{ session.ipAddress }} &middot; {{ idx === 0 ? 'Active now' : formatAbsolute(session.lastUsedAt) }}</div>
+            <!-- 세션 목록 -->
+            <h3 class="text-[13px] font-medium mb-1 flex items-baseline gap-2">Active sessions <span class="text-[11px] font-normal text-zinc-400">{{ sessions.length }} active</span></h3>
+            <div v-for="(session, idx) in sessions" :key="session.sessionId" class="flex items-center gap-3.5 py-3.5 border-b border-zinc-200 dark:border-zinc-800">
+              <div class="w-10 h-10 rounded-xl grid place-items-center shrink-0" :class="idx === 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'">
+                <svg v-if="isMobileDevice(session)" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="10" height="20" rx="2" /><path stroke-linecap="round" d="M11 19h2" /></svg>
+                <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="12" rx="2" /><path stroke-linecap="round" d="M8 21h8M12 17v4" /></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium flex items-center gap-2">
+                  {{ session.deviceLabel || 'Unknown device' }}
+                  <span v-if="idx === 0" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">This device</span>
+                </div>
+                <div class="text-[11px] text-zinc-500 mt-0.5 truncate">
+                  {{ session.ipAddress }} &middot; last active {{ idx === 0 ? 'now' : formatAbsolute(session.lastUsedAt || session.createdAt) }} &middot; expires {{ formatAbsolute(session.expiresAt) }}
                 </div>
               </div>
-              <button v-if="idx > 0" class="text-sm font-medium text-rose-600 hover:text-rose-700 dark:text-rose-500 dark:hover:text-rose-400 px-3 py-1.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded transition-colors" @click="revokeSession(session.sessionId)">Revoke</button>
+              <button v-if="idx > 0" class="conn-btn" @click="revokeSession(session.sessionId)">Sign out</button>
             </div>
-            <p v-if="!sessions.length" class="text-sm text-zinc-400 py-4">No active sessions found.</p>
+            <p v-if="!sessions.length" class="text-xs italic text-zinc-400 py-3">활성 세션이 없어요.</p>
+
+            <!-- 전체 로그아웃 -->
+            <div class="flex items-center justify-between gap-6 pt-4">
+              <div>
+                <div class="text-[13px] font-medium">Sign out everywhere</div>
+                <div class="text-xs text-zinc-500 mt-1 leading-relaxed max-w-[540px]">지금 이 기기를 <b class="font-medium">포함한</b> 모든 기기에서 로그아웃해요. 로그인이 도용된 것 같을 때 쓰는 기능이에요. 모든 기기에서 다시 로그인해야 해요.</div>
+              </div>
+              <button class="shrink-0 px-3.5 py-2 border border-transparent bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium rounded-xl transition-colors" @click="revokeAllSessions">Revoke all sessions</button>
+            </div>
+          </div>
+
+          <!-- 2단계 인증 안내 -->
+          <div class="mt-3.5 flex gap-3 px-3.5 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-500 leading-relaxed">
+            <svg class="w-[18px] h-[18px] shrink-0 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M12 22a10 10 0 100-20 10 10 0 000 20z" /></svg>
+            <div><b class="font-semibold text-zinc-700 dark:text-zinc-300">2단계 인증(2FA)</b>은 로그인 제공자(GitHub)에서 관리해요. 그 계정에 2FA 가 켜져 있으면 Error Archive 로그인도 자동으로 보호돼요. 따로 설정할 건 없어요.</div>
           </div>
         </section>
 
         <!-- ═══ CONNECTIONS ═══ -->
         <section v-if="activeTab === 'connections'">
-          <h2 class="text-2xl font-bold mb-2">Connected Accounts</h2>
-          <p class="text-sm text-zinc-500 mb-8">Manage OAuth providers used to sign in.</p>
-          <div class="space-y-4 max-w-2xl">
-            <div v-for="conn in connections" :key="conn.provider" class="flex items-center justify-between p-5 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-sm">{{ conn.provider.slice(0, 2).toUpperCase() }}</div>
-                <div>
-                  <div class="font-medium">{{ conn.provider }}</div>
-                  <div class="text-xs text-zinc-500 mt-1">{{ conn.providerEmail || 'Connected' }} &middot; {{ formatAbsolute(conn.linkedAt) }}</div>
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Connected Accounts</h2>
+              <p class="text-sm text-zinc-500">External accounts you use to sign in.</p>
+            </div>
+            <span class="set-chip" :class="CHIP.security">Security</span>
+          </div>
+
+          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm px-6 py-2">
+            <!-- 연결됨 -->
+            <div class="py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800">
+              <h3 class="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500 mb-1">Available now</h3>
+              <div v-for="conn in connectedProviders" :key="conn.provider" class="flex items-center gap-3.5 py-3.5 border-b last:border-b-0 border-zinc-200 dark:border-zinc-800">
+                <div class="w-10 h-10 rounded-xl grid place-items-center shrink-0" :class="providerSwatch(conn.provider)">
+                  <svg v-if="conn.provider === 'GITHUB'" viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor"><path d="M12 .5A11.5 11.5 0 00.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.34-1.27-1.7-1.27-1.7-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.17 1.18a11 11 0 015.78 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.59.23 2.77.11 3.06.73.81 1.18 1.84 1.18 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.07.78 2.15v3.18c0 .31.21.67.8.56A11.5 11.5 0 0023.5 12 11.5 11.5 0 0012 .5z" /></svg>
+                  <span v-else class="font-bold text-sm">{{ providerLabel(conn.provider).slice(0, 1) }}</span>
                 </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium flex items-center gap-2">
+                    {{ providerLabel(conn.provider) }}
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Connected</span>
+                  </div>
+                  <div class="text-xs text-zinc-500 mt-0.5 truncate">
+                    <template v-if="conn.providerEmail">{{ conn.providerEmail }} &middot; </template>linked {{ formatAbsolute(conn.linkedAt) }}
+                  </div>
+                </div>
+                <a v-if="conn.profileUrl" :href="conn.profileUrl" target="_blank" rel="noopener" class="conn-btn">View &#8599;</a>
+                <button class="conn-btn" :disabled="connections.length <= 1" :title="connections.length <= 1 ? '마지막 로그인 수단은 해제할 수 없어요' : undefined" @click="disconnectProvider(conn.provider)">Disconnect</button>
               </div>
-              <button class="text-sm font-medium transition-colors" :class="connections.length <= 1 ? 'text-zinc-400 cursor-not-allowed' : 'text-rose-600 hover:text-rose-700 dark:text-rose-500'" :disabled="connections.length <= 1" @click="disconnectProvider(conn.provider)">Disconnect</button>
+              <p v-if="!connections.length" class="text-xs italic text-zinc-400 py-3">연결된 외부 계정이 없어요.</p>
             </div>
 
-            <div class="flex items-center justify-between p-5 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl opacity-60 grayscale">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-white border border-zinc-200 dark:border-zinc-700 text-blue-500 flex items-center justify-center font-bold">G</div>
-                <div>
-                  <div class="font-medium flex items-center gap-2">Google <span class="text-[10px] uppercase border border-zinc-300 dark:border-zinc-600 px-1.5 rounded">Coming soon</span></div>
-                  <div class="text-xs text-zinc-500 mt-1">Not connected</div>
+            <!-- 준비 중 -->
+            <div v-if="upcomingProviders.length" class="py-4">
+              <h3 class="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500 mb-1 flex flex-wrap items-baseline gap-x-2">
+                Coming soon
+                <span class="normal-case tracking-normal font-normal text-zinc-400">추후 지원 예정이에요. 출시되면 여기서 바로 연결할 수 있어요.</span>
+              </h3>
+              <div v-for="p in upcomingProviders" :key="p.id" class="flex items-center gap-3.5 py-3.5 border-b last:border-b-0 border-zinc-200 dark:border-zinc-800 opacity-60 hover:opacity-80 transition-opacity">
+                <div class="w-10 h-10 rounded-xl grid place-items-center shrink-0 grayscale-[.7]" :class="providerSwatch(p.id)">
+                  <svg v-if="p.id === 'GOOGLE'" viewBox="0 0 24 24" class="w-[18px] h-[18px]"><path fill="#4285F4" d="M22.5 12.27c0-.78-.07-1.53-.2-2.27H12v4.3h5.92a5.07 5.07 0 01-2.2 3.33v2.77h3.56c2.08-1.92 3.28-4.74 3.28-8.13z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.77c-.99.66-2.25 1.05-3.72 1.05-2.86 0-5.29-1.93-6.16-4.53H2.18v2.85A11 11 0 0012 23z" /><path fill="#FBBC05" d="M5.84 14.09a6.6 6.6 0 010-4.18V7.07H2.18a11 11 0 000 9.86l3.66-2.84z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A11 11 0 0012 1a11 11 0 00-9.82 6.07l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z" /></svg>
+                  <svg v-else-if="p.id === 'APPLE'" viewBox="0 0 24 24" class="w-[18px] h-[18px]" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" /></svg>
                 </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium flex items-center gap-2">
+                    {{ p.label }}
+                    <span class="text-[10px] italic px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">Coming soon</span>
+                  </div>
+                  <div class="text-xs text-zinc-500 mt-0.5">{{ p.blurb }}</div>
+                </div>
+                <button class="conn-btn" disabled>Connect</button>
               </div>
-              <button class="text-sm font-medium text-zinc-400" disabled>Connect</button>
             </div>
+          </div>
 
-            <div class="gh-int">
-              <div class="notice"><GhIcon name="info" /><div>이 연결은 Error Archive 로그인에 사용됩니다.<br>GitHub 저장소의 접근 권한은 Integrations에서 설정하세요.</div></div>
-              <button class="text-button" @click="activeTab = 'integrations'">GitHub 저장소 연동으로 이동 <GhIcon name="arrow" class="sm" /></button>
-            </div>
+          <div class="mt-3.5 flex items-center gap-2.5 p-3 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-zinc-500">
+            <svg class="w-4 h-4 shrink-0 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M12 22a10 10 0 100-20 10 10 0 000 20z" /></svg>
+            <div>마지막 로그인 수단은 해제할 수 없어요. 다른 로그인 수단을 연결한 뒤에 기존 연결을 해제할 수 있어요.</div>
+          </div>
+
+          <div class="gh-int mt-6">
+            <div class="notice"><GhIcon name="info" /><div>이 연결은 Error Archive 로그인에 사용됩니다.<br>GitHub 저장소의 접근 권한은 Integrations에서 설정하세요.</div></div>
+            <button class="text-button" @click="activeTab = 'integrations'">GitHub 저장소 연동으로 이동 <GhIcon name="arrow" class="sm" /></button>
           </div>
         </section>
 
         <!-- ═══ ACCOUNT / DANGER ═══ -->
         <section v-if="activeTab === 'account'">
-          <div v-if="pendingDeletion" class="mb-8 bg-rose-50 dark:bg-rose-500/10 border-l-4 border-rose-500 p-4 rounded-r-lg">
-            <h3 class="text-sm font-medium text-rose-800 dark:text-rose-400">Account Pending Deletion</h3>
-            <p class="text-sm text-rose-700 dark:text-rose-300 mt-1">Your account is scheduled to be permanently deleted in 30 days. You can restore it before the grace period ends.</p>
-          </div>
-
-          <h2 class="text-2xl font-bold mb-2">Account Information</h2>
-          <p class="text-sm text-zinc-500 mb-8">Basic information about your ErrorLog account.</p>
-
-          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 max-w-2xl mb-12 space-y-6 shadow-sm">
-            <div>
-              <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Primary Email</label>
-              <div class="font-medium">{{ authStore.user?.email || '—' }}</div>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Account Status</label>
-              <div v-if="!pendingDeletion" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
-              </div>
-              <div v-else class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 text-xs font-bold uppercase tracking-wider">
-                <span class="w-1.5 h-1.5 rounded-full bg-rose-500" /> Pending Deletion
-              </div>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Member Since</label>
-              <div class="text-sm">{{ authStore.user?.createdAt ? formatAbsolute(authStore.user.createdAt) : '—' }}</div>
+          <!-- 탈퇴 진행 중 배너 -->
+          <div v-if="pendingDeletion" class="mb-8 flex items-start gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+            <svg class="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M10.3 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-sm font-semibold">탈퇴 진행 중 <span v-if="deletionDaysLeft !== null">&middot; D-{{ deletionDaysLeft }}</span></h3>
+              <p class="text-xs mt-1 opacity-90"><template v-if="deletionDeadline">{{ formatAbsolute(deletionDeadline) }} 이후 </template>데이터가 영구 익명화돼요. 그 전까지는 아래에서 복구할 수 있어요.</p>
             </div>
           </div>
 
-          <div class="border border-rose-200 dark:border-rose-900/50 rounded-xl p-6 max-w-2xl bg-rose-50/30 dark:bg-rose-900/10 shadow-sm">
-            <h3 class="text-lg font-bold text-rose-600 dark:text-rose-500 mb-2">Danger Zone</h3>
-            <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">Once you delete your account, you will lose all data and workspace access. A 30-day grace period is provided before hard deletion.</p>
-            <div v-if="!pendingDeletion">
-              <button class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-md transition-colors shadow-sm" @click="requestDeletion">Request Account Deletion</button>
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Account Information</h2>
+              <p class="text-sm text-zinc-500">Read-only details about your account.</p>
             </div>
-            <div v-else class="flex items-center gap-3">
-              <button class="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium rounded-md transition-colors shadow-sm" @click="restoreAccount">Restore Account</button>
-              <span class="text-xs text-zinc-500">Deletes permanently in 30 days</span>
+            <span class="set-chip" :class="CHIP.private">Private</span>
+          </div>
+
+          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <div class="text-xs font-medium text-zinc-500 mb-1.5">Email <span class="font-normal text-zinc-400">(non-editable)</span></div>
+                <div class="acc-ro">{{ authStore.user?.email || '—' }}</div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-zinc-500 mb-1.5">Status</div>
+                <div class="acc-ro">
+                  <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-sans text-[11px] font-semibold" :class="statusBadge.cls">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="statusBadge.dot" />{{ statusBadge.label }}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-zinc-500 mb-1.5">Member since</div>
+                <div class="acc-ro">{{ authStore.user?.createdAt ? formatAbsolute(authStore.user.createdAt) : '—' }}</div>
+              </div>
+              <div>
+                <div class="text-xs font-medium text-zinc-500 mb-1.5">Pending deletion at</div>
+                <div class="acc-ro">{{ authStore.user?.pendingDeletionAt ? formatAbsolute(authStore.user.pendingDeletionAt) : '— (not pending)' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 되돌리기 어려운 동작은 별도 카드로 격리 -->
+          <div class="bg-white dark:bg-zinc-900/50 border border-rose-200 dark:border-rose-500/30 rounded-xl shadow-sm p-6">
+            <div class="flex items-start justify-between gap-4 mb-1">
+              <h3 class="text-base font-semibold text-rose-600 dark:text-rose-400">Danger Zone</h3>
+              <span class="set-chip" :class="CHIP.danger">Danger</span>
+            </div>
+            <div class="flex items-center justify-between gap-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+              <div>
+                <div class="text-[13px] font-medium">Delete account</div>
+                <div class="text-xs text-zinc-500 mt-1 leading-relaxed max-w-[540px]">요청하면 30일 유예 기간이 시작되고, 끝나면 개인정보가 익명화돼요. 유예 기간 안에는 복구할 수 있어요.</div>
+              </div>
+              <button class="shrink-0 px-3.5 py-2 border border-transparent bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-500" :disabled="pendingDeletion" @click="requestDeletion">{{ pendingDeletion ? 'Already requested' : 'Request deletion' }}</button>
+            </div>
+            <div class="flex items-center justify-between gap-6 pt-4">
+              <div>
+                <div class="text-[13px] font-medium">Restore account</div>
+                <div class="text-xs text-zinc-500 mt-1 leading-relaxed max-w-[540px]">탈퇴를 요청한 상태에서만 쓸 수 있어요.</div>
+              </div>
+              <button class="set-btn" :disabled="!pendingDeletion" @click="restoreAccount">{{ pendingDeletion ? 'Restore account' : 'Not pending' }}</button>
             </div>
           </div>
         </section>
@@ -618,6 +764,235 @@ async function restoreAccount() {
 .setting-input:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+.set-chip {
+  display: inline-block;
+  vertical-align: top;
+  flex-shrink: 0;
+  padding: 0.125rem 0.5rem;
+  font-size: 10px;
+  line-height: 15px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  border-radius: 9999px;
+}
+/* 저장 줄·카드 안 동작 버튼 공통 크기 — 보조(테두리)·주(초록)·취소(글자만). 위험 동작은 같은 크기에 rose */
+.set-btn,
+.set-btn-primary,
+.set-btn-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  transition: all 0.15s;
+}
+.set-btn {
+  color: #52525b;
+  border-color: #e4e4e7;
+}
+.set-btn:hover:not(:disabled) {
+  color: #18181b;
+  background: #f4f4f5;
+}
+.dark .set-btn {
+  color: #a1a1aa;
+  border-color: #3f3f46;
+}
+.dark .set-btn:hover:not(:disabled) {
+  color: #f4f4f5;
+  background: #27272a;
+}
+.set-btn-primary {
+  color: #fff;
+  background: #059669;
+}
+.set-btn-primary:hover:not(:disabled) {
+  background: #10b981;
+}
+.set-btn-text {
+  color: #71717a;
+}
+.set-btn-text:hover {
+  color: #18181b;
+}
+.dark .set-btn-text {
+  color: #a1a1aa;
+}
+.dark .set-btn-text:hover {
+  color: #f4f4f5;
+}
+.set-btn:disabled,
+.set-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.conn-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  padding: 0.3125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #71717a;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.75rem;
+  transition: all 0.15s;
+}
+.conn-btn:hover:not(:disabled) {
+  color: #18181b;
+  background: #f4f4f5;
+}
+.dark .conn-btn {
+  color: #a1a1aa;
+  border-color: #3f3f46;
+}
+.dark .conn-btn:hover:not(:disabled) {
+  color: #f4f4f5;
+  background: #27272a;
+}
+.conn-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.acc-ro {
+  padding: 0.5rem 0;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.75rem;
+  color: #52525b;
+  border-bottom: 1px dashed #e4e4e7;
+}
+.dark .acc-ro {
+  color: #a1a1aa;
+  border-bottom-color: #3f3f46;
+}
+/* Profile 입력 — playground settings-ia.html 의 .raw-input / .raw-textarea 값 그대로.
+   app.css 전역 .raw-input/.raw-textarea(다른 화면용, 값 다름)와 섞이지 않게 이름을 따로 둠 */
+.profile-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #71717a;
+}
+.dark .profile-label {
+  color: #a1a1aa;
+}
+.profile-input,
+.profile-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  line-height: 21px;
+}
+.profile-input {
+  padding: 8px 0;
+  color: #18181b;
+  border-bottom: 1px solid #e4e4e7;
+  transition: border-color 0.2s;
+}
+.profile-textarea {
+  min-height: 60px;
+  padding: 8px 0 8px 14px;
+  color: #71717a;
+  border-left: 2px solid #e4e4e7;
+  resize: vertical;
+  transition: border-color 0.2s, color 0.2s;
+}
+.profile-input:focus {
+  border-bottom-color: #10b981;
+}
+.profile-textarea:focus {
+  color: #18181b;
+  border-left-color: #10b981;
+}
+.dark .profile-input {
+  color: #e4e4e7;
+  border-bottom-color: #3f3f46;
+}
+.dark .profile-textarea {
+  color: #a1a1aa;
+  border-left-color: #3f3f46;
+}
+.dark .profile-input:focus {
+  border-bottom-color: #34d399;
+}
+.dark .profile-textarea:focus {
+  color: #e4e4e7;
+  border-left-color: #34d399;
+}
+/* 아바타 원 — playground settings-ia.html 의 .avatarEditor__view 값 그대로 */
+.avatar-view {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font: 600 22px/1 "Merriweather", serif;
+  color: #fff;
+  background: linear-gradient(135deg, #c7d2fe, #a7f3d0);
+  border: 1px solid #e4e4e7;
+  border-radius: 999px;
+}
+.avatar-view img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dark .avatar-view {
+  border-color: #3f3f46;
+}
+/* 아바타 버튼 — playground settings-ia.html 의 .btn.sm + secondary / ghost 값 그대로 */
+.avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.avatar-btn--secondary {
+  color: #18181b;
+  background: #f4f4f5;
+}
+.avatar-btn--ghost {
+  color: #71717a;
+  background: transparent;
+}
+.avatar-btn--ghost:hover {
+  color: #18181b;
+  background: #f4f4f5;
+}
+.dark .avatar-btn {
+  border-color: #3f3f46;
+}
+.dark .avatar-btn--secondary {
+  color: #e4e4e7;
+  background: #3f3f46;
+}
+.dark .avatar-btn--ghost {
+  color: #a1a1aa;
+}
+.dark .avatar-btn--ghost:hover {
+  color: #e4e4e7;
+  background: #27272a;
 }
 select.setting-input {
   appearance: none;
