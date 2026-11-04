@@ -188,6 +188,21 @@ async function revokeAllSessions() {
 // ── Connections ──
 const connections = ref<Connection[]>([])
 
+// 로그인 제공자 목록(iam SocialProvider). available=false 는 아직 연결 경로가 없어 'Coming soon' 으로만 보인다.
+const PROVIDERS = [
+  { id: 'GITHUB', label: 'GitHub', available: true, blurb: 'Sign in with GitHub' },
+  { id: 'GOOGLE', label: 'Google', available: false, blurb: 'Sign in with your Google account · 출시 예정' },
+  { id: 'APPLE', label: 'Apple', available: false, blurb: 'Sign in with Apple · iOS 도입과 함께 제공 예정' },
+]
+const providerLabel = (id: string) => PROVIDERS.find(p => p.id === id.toUpperCase())?.label ?? id
+const providerSwatch = (id: string) => ({
+  GITHUB: 'bg-zinc-900 text-white dark:bg-[#0d1117]',
+  GOOGLE: 'bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700',
+  APPLE: 'bg-black text-white',
+} as Record<string, string>)[id.toUpperCase()] ?? 'bg-zinc-100 dark:bg-zinc-800'
+const connectedProviders = computed(() => connections.value.map(c => ({ ...c, provider: c.provider.toUpperCase() })))
+const upcomingProviders = computed(() => PROVIDERS.filter(p => !p.available && !connectedProviders.value.some(c => c.provider === p.id)))
+
 async function loadConnections() {
   try {
     const { data } = await authApi.getConnections()
@@ -520,35 +535,69 @@ async function restoreAccount() {
 
         <!-- ═══ CONNECTIONS ═══ -->
         <section v-if="activeTab === 'connections'">
-          <h2 class="text-2xl font-bold mb-2">Connected Accounts</h2>
-          <p class="text-sm text-zinc-500 mb-8">Manage OAuth providers used to sign in.</p>
-          <div class="space-y-4">
-            <div v-for="conn in connections" :key="conn.provider" class="flex items-center justify-between p-5 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-sm">{{ conn.provider.slice(0, 2).toUpperCase() }}</div>
-                <div>
-                  <div class="font-medium">{{ conn.provider }}</div>
-                  <div class="text-xs text-zinc-500 mt-1">{{ conn.providerEmail || 'Connected' }} &middot; {{ formatAbsolute(conn.linkedAt) }}</div>
+          <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Connected Accounts</h2>
+              <p class="text-sm text-zinc-500">로그인에 쓰는 외부 계정이에요. 서비스마다 하나씩 연결되고, 다른 로그인 수단이 남아 있을 때만 연결을 해제할 수 있어요.</p>
+            </div>
+            <span class="shrink-0 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">Security</span>
+          </div>
+
+          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm px-6 py-2">
+            <!-- 연결됨 -->
+            <div class="py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800">
+              <h3 class="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500 mb-1">Available now</h3>
+              <div v-for="conn in connectedProviders" :key="conn.provider" class="flex items-center gap-3.5 py-3.5 border-b last:border-b-0 border-zinc-200 dark:border-zinc-800">
+                <div class="w-10 h-10 rounded-xl grid place-items-center shrink-0" :class="providerSwatch(conn.provider)">
+                  <svg v-if="conn.provider === 'GITHUB'" viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor"><path d="M12 .5A11.5 11.5 0 00.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.34-1.27-1.7-1.27-1.7-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.17 1.18a11 11 0 015.78 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.59.23 2.77.11 3.06.73.81 1.18 1.84 1.18 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.07.78 2.15v3.18c0 .31.21.67.8.56A11.5 11.5 0 0023.5 12 11.5 11.5 0 0012 .5z" /></svg>
+                  <span v-else class="font-bold text-sm">{{ providerLabel(conn.provider).slice(0, 1) }}</span>
                 </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium flex items-center gap-2">
+                    {{ providerLabel(conn.provider) }}
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Connected</span>
+                  </div>
+                  <div class="text-xs text-zinc-500 mt-0.5 truncate">
+                    <template v-if="conn.providerEmail">{{ conn.providerEmail }} &middot; </template>linked {{ formatAbsolute(conn.linkedAt) }}
+                  </div>
+                </div>
+                <a v-if="conn.profileUrl" :href="conn.profileUrl" target="_blank" rel="noopener" class="conn-btn">View &#8599;</a>
+                <button class="conn-btn" :disabled="connections.length <= 1" :title="connections.length <= 1 ? '마지막 로그인 수단은 해제할 수 없어요' : undefined" @click="disconnectProvider(conn.provider)">Disconnect</button>
               </div>
-              <button class="text-sm font-medium transition-colors" :class="connections.length <= 1 ? 'text-zinc-400 cursor-not-allowed' : 'text-rose-600 hover:text-rose-700 dark:text-rose-500'" :disabled="connections.length <= 1" @click="disconnectProvider(conn.provider)">Disconnect</button>
+              <p v-if="!connections.length" class="text-xs italic text-zinc-400 py-3">연결된 외부 계정이 없어요.</p>
             </div>
 
-            <div class="flex items-center justify-between p-5 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl opacity-60 grayscale">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-white border border-zinc-200 dark:border-zinc-700 text-blue-500 flex items-center justify-center font-bold">G</div>
-                <div>
-                  <div class="font-medium flex items-center gap-2">Google <span class="text-[10px] uppercase border border-zinc-300 dark:border-zinc-600 px-1.5 rounded">Coming soon</span></div>
-                  <div class="text-xs text-zinc-500 mt-1">Not connected</div>
+            <!-- 준비 중 -->
+            <div v-if="upcomingProviders.length" class="py-4">
+              <h3 class="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500 mb-1 flex flex-wrap items-baseline gap-x-2">
+                Coming soon
+                <span class="normal-case tracking-normal font-normal text-zinc-400">추후 지원 예정이에요. 출시되면 여기서 바로 연결할 수 있어요.</span>
+              </h3>
+              <div v-for="p in upcomingProviders" :key="p.id" class="flex items-center gap-3.5 py-3.5 border-b last:border-b-0 border-zinc-200 dark:border-zinc-800 opacity-60 hover:opacity-80 transition-opacity">
+                <div class="w-10 h-10 rounded-xl grid place-items-center shrink-0 grayscale-[.7]" :class="providerSwatch(p.id)">
+                  <svg v-if="p.id === 'GOOGLE'" viewBox="0 0 24 24" class="w-[18px] h-[18px]"><path fill="#4285F4" d="M22.5 12.27c0-.78-.07-1.53-.2-2.27H12v4.3h5.92a5.07 5.07 0 01-2.2 3.33v2.77h3.56c2.08-1.92 3.28-4.74 3.28-8.13z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.77c-.99.66-2.25 1.05-3.72 1.05-2.86 0-5.29-1.93-6.16-4.53H2.18v2.85A11 11 0 0012 23z" /><path fill="#FBBC05" d="M5.84 14.09a6.6 6.6 0 010-4.18V7.07H2.18a11 11 0 000 9.86l3.66-2.84z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A11 11 0 0012 1a11 11 0 00-9.82 6.07l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z" /></svg>
+                  <svg v-else-if="p.id === 'APPLE'" viewBox="0 0 24 24" class="w-[18px] h-[18px]" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" /></svg>
                 </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium flex items-center gap-2">
+                    {{ p.label }}
+                    <span class="text-[10px] italic px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">Coming soon</span>
+                  </div>
+                  <div class="text-xs text-zinc-500 mt-0.5">{{ p.blurb }}</div>
+                </div>
+                <button class="conn-btn" disabled>Connect</button>
               </div>
-              <button class="text-sm font-medium text-zinc-400" disabled>Connect</button>
             </div>
+          </div>
 
-            <div class="gh-int">
-              <div class="notice"><GhIcon name="info" /><div>이 연결은 Error Archive 로그인에 사용됩니다.<br>GitHub 저장소의 접근 권한은 Integrations에서 설정하세요.</div></div>
-              <button class="text-button" @click="activeTab = 'integrations'">GitHub 저장소 연동으로 이동 <GhIcon name="arrow" class="sm" /></button>
-            </div>
+          <div class="mt-3.5 flex items-center gap-2.5 p-3 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-zinc-500">
+            <svg class="w-4 h-4 shrink-0 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M12 22a10 10 0 100-20 10 10 0 000 20z" /></svg>
+            <div>마지막 로그인 수단은 해제할 수 없어요. 다른 로그인 수단을 연결한 뒤에 기존 연결을 해제할 수 있어요.</div>
+          </div>
+
+          <div class="gh-int mt-6">
+            <div class="notice"><GhIcon name="info" /><div>이 연결은 Error Archive 로그인에 사용됩니다.<br>GitHub 저장소의 접근 권한은 Integrations에서 설정하세요.</div></div>
+            <button class="text-button" @click="activeTab = 'integrations'">GitHub 저장소 연동으로 이동 <GhIcon name="arrow" class="sm" /></button>
           </div>
         </section>
 
@@ -619,6 +668,35 @@ async function restoreAccount() {
 .setting-input:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+.conn-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  padding: 0.3125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #71717a;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.75rem;
+  transition: all 0.15s;
+}
+.conn-btn:hover:not(:disabled) {
+  color: #18181b;
+  background: #f4f4f5;
+}
+.dark .conn-btn {
+  color: #a1a1aa;
+  border-color: #3f3f46;
+}
+.dark .conn-btn:hover:not(:disabled) {
+  color: #f4f4f5;
+  background: #27272a;
+}
+.conn-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 select.setting-input {
   appearance: none;
