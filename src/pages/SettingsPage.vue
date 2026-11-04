@@ -172,6 +172,9 @@ async function loadSessions() {
   } catch { /* empty */ }
 }
 
+// 기기 아이콘(폰/노트북) 고르기 — 서버는 기기 종류를 따로 주지 않아 deviceLabel·userAgent 로 추정
+const isMobileDevice = (s: Session) => /iphone|ipad|android|mobile/i.test(`${s.deviceLabel} ${s.userAgent}`)
+
 async function revokeSession(sessionId: string) {
   await authApi.revokeSession(sessionId)
   sessions.value = sessions.value.filter(s => s.sessionId !== sessionId)
@@ -497,39 +500,58 @@ async function restoreAccount() {
 
         <!-- ═══ SESSIONS ═══ -->
         <section v-if="activeTab === 'sessions'">
-          <div class="flex justify-between items-end mb-6">
+          <div class="flex items-start justify-between gap-4 mb-8">
             <div>
               <h2 class="text-2xl font-bold mb-2">Active Sessions</h2>
-              <p class="text-sm text-zinc-500">Review devices currently logged into your account.</p>
+              <p class="text-sm text-zinc-500">Devices currently signed in to your account.</p>
             </div>
-            <button class="px-4 py-2 bg-zinc-800 hover:bg-zinc-900 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white text-sm font-medium rounded-md transition-colors shadow-sm" @click="revokeAllSessions">
-              Sign out everywhere
-            </button>
+            <span class="shrink-0 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">Security</span>
           </div>
 
-          <div v-if="sessions.length" class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-4 mb-8 flex items-center gap-4">
-            <div class="text-emerald-500 text-xl ml-2">&#9200;</div>
-            <div>
-              <div class="text-sm font-bold text-emerald-900 dark:text-emerald-400">Last Login: {{ formatAbsolute(sessions[0]?.lastUsedAt || sessions[0]?.createdAt) }}</div>
-              <div class="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">{{ sessions[0]?.deviceLabel }} &middot; {{ sessions[0]?.ipAddress }}</div>
+          <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6">
+            <!-- 최근 활동 -->
+            <div class="flex items-center gap-3 px-4 py-3.5 mb-5 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300 text-xs">
+              <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9" /><path stroke-linecap="round" d="M12 7v5l3 2" /></svg>
+              <div v-if="sessions.length" class="min-w-0">
+                Most recent activity: <span class="font-semibold">{{ formatAbsolute(sessions[0].lastUsedAt || sessions[0].createdAt) }}</span> &middot; {{ sessions[0].deviceLabel }} &middot; {{ sessions[0].ipAddress }}
+              </div>
+              <div v-else>활성 세션이 없어요.</div>
             </div>
-          </div>
 
-          <div class="space-y-4">
-            <div v-for="(session, idx) in sessions" :key="session.sessionId" class="flex items-center justify-between p-5 rounded-xl" :class="idx === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30' : 'bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800'">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" :class="idx === 0 ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'">&#128187;</div>
-                <div>
-                  <div class="font-medium flex items-center gap-2">
-                    {{ session.deviceLabel }}
-                    <span v-if="idx === 0" class="text-[10px] uppercase tracking-wider bg-emerald-500 text-white px-2 py-0.5 rounded">Current</span>
-                  </div>
-                  <div class="text-xs text-zinc-500 mt-1">{{ session.ipAddress }} &middot; {{ idx === 0 ? 'Active now' : formatAbsolute(session.lastUsedAt) }}</div>
+            <!-- 세션 목록 -->
+            <h3 class="text-[13px] font-medium mb-1 flex items-baseline gap-2">Active sessions <span class="text-[11px] font-normal text-zinc-400">{{ sessions.length }} active</span></h3>
+            <div v-for="(session, idx) in sessions" :key="session.sessionId" class="flex items-center gap-3.5 py-3.5 border-b border-zinc-200 dark:border-zinc-800">
+              <div class="w-10 h-10 rounded-xl grid place-items-center shrink-0" :class="idx === 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'">
+                <svg v-if="isMobileDevice(session)" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="10" height="20" rx="2" /><path stroke-linecap="round" d="M11 19h2" /></svg>
+                <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="12" rx="2" /><path stroke-linecap="round" d="M8 21h8M12 17v4" /></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium flex items-center gap-2">
+                  {{ session.deviceLabel || 'Unknown device' }}
+                  <span v-if="idx === 0" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">This device</span>
+                </div>
+                <div class="text-[11px] text-zinc-500 mt-0.5 truncate">
+                  {{ session.ipAddress }} &middot; last active {{ idx === 0 ? 'now' : formatAbsolute(session.lastUsedAt || session.createdAt) }} &middot; expires {{ formatAbsolute(session.expiresAt) }}
                 </div>
               </div>
-              <button v-if="idx > 0" class="text-sm font-medium text-rose-600 hover:text-rose-700 dark:text-rose-500 dark:hover:text-rose-400 px-3 py-1.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded transition-colors" @click="revokeSession(session.sessionId)">Revoke</button>
+              <button v-if="idx > 0" class="conn-btn" @click="revokeSession(session.sessionId)">Sign out</button>
             </div>
-            <p v-if="!sessions.length" class="text-sm text-zinc-400 py-4">No active sessions found.</p>
+            <p v-if="!sessions.length" class="text-xs italic text-zinc-400 py-3">활성 세션이 없어요.</p>
+
+            <!-- 전체 로그아웃 -->
+            <div class="flex items-center justify-between gap-6 pt-4">
+              <div>
+                <div class="text-[13px] font-medium">Sign out everywhere</div>
+                <div class="text-xs text-zinc-500 mt-1 leading-relaxed max-w-[540px]">지금 이 기기를 <b class="font-medium">포함한</b> 모든 기기에서 로그아웃해요. 로그인이 도용된 것 같을 때 쓰는 기능이에요. 모든 기기에서 다시 로그인해야 해요.</div>
+              </div>
+              <button class="shrink-0 px-3.5 py-2 bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium rounded-xl transition-colors" @click="revokeAllSessions">Revoke all sessions</button>
+            </div>
+          </div>
+
+          <!-- 2단계 인증 안내 -->
+          <div class="mt-3.5 flex gap-3 px-3.5 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-500 leading-relaxed">
+            <svg class="w-[18px] h-[18px] shrink-0 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M12 22a10 10 0 100-20 10 10 0 000 20z" /></svg>
+            <div><b class="font-semibold text-zinc-700 dark:text-zinc-300">2단계 인증(2FA)</b>은 로그인 제공자(GitHub)에서 관리해요. 그 계정에 2FA 가 켜져 있으면 Error Archive 로그인도 자동으로 보호돼요. 따로 설정할 건 없어요.</div>
           </div>
         </section>
 
