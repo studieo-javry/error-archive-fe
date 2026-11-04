@@ -582,6 +582,7 @@ async function onSubmit() {
       snippetMarkerIds,
       attachmentMarkerIds,
       tags: tags.value,
+      severity: severity.value ?? undefined,
     })
     router.push({ name: 'errorDetail', params: { slug: teamStore.currentSlug, id: caseId } })
   } else {
