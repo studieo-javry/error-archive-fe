@@ -307,6 +307,16 @@ export interface MentionCandidate {
   badge: string | null
 }
 
+/** 댓글 본문의 멘션 하나 (core-api MentionedUserDto). handle 이 null 이면 탈퇴했거나 조회 실패. */
+export interface MentionedUser {
+  /** 본문에 적힌 그대로의 표기 (예: alice, 홍길동). */
+  identifier: string
+  userId: number
+  handle: string | null
+  displayName: string
+  avatarUrl: string | null
+}
+
 export interface Comment {
   id: number
   errorCaseId: number
@@ -320,6 +330,8 @@ export interface Comment {
   reactions: CommentReaction[]
   helpful: CommentHelpful
   mentions: string[]
+  /** 이름이 확인된 멘션 — 본문의 @표기(identifier)를 이 사람으로 바꿔 보여 준다. 구버전 응답엔 없을 수 있다. */
+  mentionedUsers?: MentionedUser[]
   suggestion: CommentSuggestion | null
   editedAt: string | null
   deletedAt: string | null

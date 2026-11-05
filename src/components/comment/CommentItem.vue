@@ -7,6 +7,7 @@ import { HandThumbUpIcon } from '@heroicons/vue/24/outline'
 import { HandThumbUpIcon as HandThumbUpSolidIcon } from '@heroicons/vue/24/solid'
 import CommentForm from './CommentForm.vue'
 import type { QuoteInfo } from './CommentForm.vue'
+import { useAuthStore } from '@/stores/authStore'
 
 const props = defineProps<{
   comment: Comment
@@ -16,6 +17,8 @@ const props = defineProps<{
   stepIndexMap?: Map<number, number>
   authorMap?: Map<number, CommentAuthor>
 }>()
+
+const authStore = useAuthStore()
 
 // 작성자 이니셜(아바타 없을 때). displayName 첫 글자.
 const authorInitial = computed(() => (props.comment.author?.displayName || '?').charAt(0).toUpperCase())
@@ -116,11 +119,12 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
           </div>
 
           <div v-if="!editing">
-            <MarkdownBody :content="comment.body" class="!text-sm !text-zinc-600 dark:!text-zinc-400 !leading-relaxed" />
+            <MarkdownBody :content="comment.body" :mentions="comment.mentionedUsers" :viewer-user-id="authStore.user?.userId" class="!text-sm !text-zinc-600 dark:!text-zinc-400 !leading-relaxed" />
           </div>
           <div v-else>
             <CommentForm
               :initial-body="comment.body"
+              :known-mentions="comment.mentionedUsers"
               :case-id="caseId"
               submit-label="Save"
               @submit="(body) => handleEdit(body)"

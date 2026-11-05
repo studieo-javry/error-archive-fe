@@ -1,0 +1,31 @@
+/* 댓글 본문의 멘션 — 배경 없이 굵은 기본 글자색, 나를 멘션한 곳만 글자색을 바꾼다.
+   마우스를 올리면 회색 박스(입력창의 @검색어 박스와 같은 색), 잠시 뒤 프로필 카드(MentionHoverCard).
+   전역 스타일 — scoped 의 :global(.dark) 는 이 프로젝트 빌드에서 빠진다. */
+.mention {
+  --mention-ink: #18181b;
+  --mention-me: #047857;
+  --mention-box: rgba(24, 24, 27, .075);
+  color: var(--mention-ink);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color .12s, box-shadow .12s;
+}
+.dark .mention {
+  --mention-ink: #f4f4f5;
+  --mention-me: #34d399;
+  --mention-box: rgba(255, 255, 255, .11);
+}
+.mention.me { color: var(--mention-me); }
+/* .hot = 카드가 열려 있는 동안(포인터가 카드로 옮겨 가도 박스 유지) */
+.mention:hover, .mention.hot {
+  background: var(--mention-box);
+  box-shadow: 0 0 0 2px var(--mention-box);
+}
+.mention:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+.mention-gone { color: #71717a; }
+.dark .mention-gone { color: #8b8b94; }
+@media (prefers-reduced-motion: reduce) {
+  .mention { transition: none; }
+}
