@@ -28,7 +28,6 @@ export function useAuth() {
 
     const { data } = await authApi.callback(code, state, redirectUri, rememberMe)
     store.setAccessToken(data.accessToken)
-    store.userId = data.userId
     // 실제 로그인/가입이 성립하면 게스트 플래그를 반드시 해제(게스트 → 가입 전환 시 데모 배너 잔존 방지).
     store.setGuest(false)
     tourStore.reset()
@@ -51,7 +50,6 @@ export function useAuth() {
   async function loginAsGuest() {
     const { data } = await authApi.guest()
     store.setAccessToken(data.accessToken)
-    store.userId = data.userId
     // 실제 세션 수명(accessTokenExpiresAt)을 보존 → 데모 타이머/만료 오버레이가 사용.
     store.setGuest(true, data.accessTokenExpiresAt)
     tourStore.reset()
