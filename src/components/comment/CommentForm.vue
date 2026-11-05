@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
-import type { QuoteSourceKind, MentionCandidate } from '@/types/error'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import type { QuoteSourceKind, MentionCandidate, MentionedUser } from '@/types/error'
 import { commentApi } from '@/services/commentApi'
 
 export interface QuoteInfo {
@@ -17,6 +17,8 @@ const props = defineProps<{
   submitLabel?: string
   /** 멘션 자동완성용 케이스 ID. 없으면 멘션 비활성. */
   caseId?: number
+  /** 수정 시 이미 걸려 있던 멘션 — 입력창에서도 굵게 보이게. */
+  knownMentions?: MentionedUser[]
 }>()
 
 const emit = defineEmits<{
@@ -27,11 +29,13 @@ const emit = defineEmits<{
 
 const body = ref(props.initialBody ?? '')
 const textareaEl = ref<HTMLTextAreaElement | null>(null)
+const mirrorEl = ref<HTMLElement | null>(null)
 
 function onSubmit() {
   if (!body.value.trim()) return
   emit('submit', body.value, props.quote ?? null)
   body.value = ''
+  closeMention()
   emit('clearQuote')
 }
 
@@ -42,6 +46,7 @@ const mentionOpen = ref(false)
 const mentionItems = ref<MentionCandidate[]>([])
 const mentionIndex = ref(0)
 const mentionTokenStart = ref(-1) // 본문에서 '@' 의 위치
+const mentionTokenEnd = ref(-1) // 검색어 끝(= 감지 시점 커서)
 const mentionQuery = ref('') // '@' 뒤 입력값 — 빈 결과 안내 문구 구분용
 let fetchTimer: ReturnType<typeof setTimeout> | null = null
 let fetchSeq = 0
@@ -108,6 +113,7 @@ function closeMention() {
   mentionOpen.value = false
   mentionItems.value = []
   mentionTokenStart.value = -1
+  mentionTokenEnd.value = -1
   if (fetchTimer) { clearTimeout(fetchTimer); fetchTimer = null }
 }
 
@@ -122,6 +128,7 @@ function detectMention() {
   const q = m[1] // '@' 뒤 입력값(빈 문자열 가능)
   // '@' 위치 = 커서 - 입력값 길이 - 1('@' 자신). m[0] 의 선행 공백은 무시.
   mentionTokenStart.value = caret - q.length - 1
+  mentionTokenEnd.value = caret
 
   if (fetchTimer) clearTimeout(fetchTimer)
   const seq = ++fetchSeq
@@ -152,6 +159,7 @@ function applyMention(idx: number) {
   const before = body.value.slice(0, mentionTokenStart.value)
   const after = body.value.slice(caret)
   const insert = `@${token} `
+  knownTokens.value = new Set(knownTokens.value).add(token.toLowerCase())
   body.value = before + insert + after
   closeMention()
   nextTick(() => {
@@ -191,6 +199,60 @@ function onKeyup(e: KeyboardEvent) {
   detectMention()
 }
 
+// ── 입력창 표시 레이어 ──
+// textarea 글자는 투명하게 두고 같은 글자를 뒤 레이어(mirror)에 그린다 — textarea 안에선 글자 일부만
+// 꾸밀 수 없어서. 입력 중인 @검색어 는 회색 박스, 고른 멘션은 굵게(text-shadow 로 — 실제 굵기를 바꾸면
+// 글자 폭이 달라져 커서 위치가 어긋난다).
+const knownTokens = ref(new Set<string>())
+watch(() => props.knownMentions, list => {
+  const next = new Set(knownTokens.value)
+  for (const m of list ?? []) {
+    next.add(m.identifier.toLowerCase())
+    if (m.handle) next.add(m.handle.toLowerCase())
+  }
+  knownTokens.value = next
+}, { immediate: true })
+
+const MIRROR_MENTION = /(^|\s)@([A-Za-z0-9_.가-힣-]+)/g
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+// 아는 멘션 중 가장 긴 표기 — 뒤에 영숫자가 이어지면 다른 단어(BE 규칙과 같음).
+function knownLength(word: string): number {
+  const w = word.toLowerCase()
+  let best = 0
+  for (const k of knownTokens.value) {
+    if (k.length > best && w.startsWith(k) && !/[a-z0-9]/i.test(word.charAt(k.length))) best = k.length
+  }
+  return best
+}
+const mirrorHtml = computed(() => {
+  const v = body.value
+  const marks: [number, number, string][] = []
+  const tokStart = mentionTokenStart.value
+  for (const m of v.matchAll(MIRROR_MENTION)) {
+    const s = m.index! + m[1].length
+    if (s === tokStart) continue
+    const len = knownLength(m[2])
+    if (len) marks.push([s, s + 1 + len, 'mx-mention'])
+  }
+  if (tokStart >= 0 && mentionTokenEnd.value > tokStart) marks.push([tokStart, mentionTokenEnd.value, 'mx-token'])
+  marks.sort((a, b) => a[0] - b[0])
+  let html = ''
+  let pos = 0
+  for (const [s, e, cls] of marks) {
+    if (s < pos) continue
+    html += `${escapeHtml(v.slice(pos, s))}<span class="${cls}">${escapeHtml(v.slice(s, e))}</span>`
+    pos = e
+  }
+  // 끝의 빈 줄도 높이를 갖게 폭 없는 글자를 붙인다.
+  return html + escapeHtml(v.slice(pos)) + '\u200b'
+})
+function syncMirrorScroll() {
+  if (mirrorEl.value && textareaEl.value) mirrorEl.value.scrollTop = textareaEl.value.scrollTop
+}
+watch(mirrorHtml, () => nextTick(syncMirrorScroll))
+
 function initials(name: string) {
   return name.slice(0, 2).toUpperCase()
 }
@@ -218,12 +280,20 @@ onBeforeUnmount(() => {
     </div>
     <form class="flex gap-2 items-end" @submit.prevent="onSubmit">
       <div class="relative flex-1">
+        <!-- 표시 레이어: textarea 와 같은 테두리 두께·여백·글꼴이어야 줄바꿈 위치가 같다 -->
+        <div
+          ref="mirrorEl"
+          aria-hidden="true"
+          class="mention-mirror absolute inset-0 text-sm border border-transparent rounded-lg px-3 py-2 overflow-hidden pointer-events-none whitespace-pre-wrap break-words text-zinc-800 dark:text-zinc-200"
+          v-html="mirrorHtml"
+        />
         <textarea
           ref="textareaEl"
           v-model="body"
           :placeholder="placeholder || 'Share your thoughts. Drag text from the body or steps to quote it.'"
           rows="2"
-          class="w-full text-sm bg-transparent border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 transition-colors resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-zinc-800 dark:text-zinc-200"
+          class="relative block w-full text-sm bg-transparent border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 transition-colors resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-transparent caret-zinc-800 dark:caret-zinc-200 selection:bg-emerald-500/25 selection:text-transparent"
+          @scroll="syncMirrorScroll"
           @input="detectMention"
           @keyup="onKeyup"
           @click="detectMention"
@@ -339,6 +409,11 @@ onBeforeUnmount(() => {
 .dark .mt3 { background: rgba(251, 191, 36, .17); color: #fcd34d; }
 .dark .mt4 { background: rgba(34, 211, 238, .16); color: #67e8f9; }
 .dark .mt5 { background: rgba(192, 132, 252, .17); color: #d8b4fe; }
+/* 입력창 표시 레이어 — 입력 중인 @검색어 회색 박스, 고른 멘션은 굵게 */
+.mention-mirror { --mx-ink: #18181b; --mx-box: rgba(24, 24, 27, .075); }
+.dark .mention-mirror { --mx-ink: #f4f4f5; --mx-box: rgba(255, 255, 255, .11); }
+.mx-token { color: var(--mx-ink); background: var(--mx-box); border-radius: 4px; box-shadow: 0 0 0 2px var(--mx-box); }
+.mx-mention { color: var(--mx-ink); text-shadow: .35px 0 0 var(--mx-ink), -.35px 0 0 var(--mx-ink); }
 /* 팝인 트랜지션(스프링) */
 .mention-enter-active { transition: opacity .28s ease, transform .34s cubic-bezier(.22, 1.2, .36, 1); }
 .mention-leave-active { transition: opacity .15s ease, transform .15s ease; }

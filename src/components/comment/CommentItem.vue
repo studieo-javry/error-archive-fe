@@ -124,6 +124,7 @@ const displayDate = computed(() => isEdited.value ? props.comment.editedAt! : pr
           <div v-else>
             <CommentForm
               :initial-body="comment.body"
+              :known-mentions="comment.mentionedUsers"
               :case-id="caseId"
               submit-label="Save"
               @submit="(body) => handleEdit(body)"
