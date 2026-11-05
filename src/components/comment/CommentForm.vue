@@ -28,6 +28,10 @@ const emit = defineEmits<{
 }>()
 
 const body = ref(props.initialBody ?? '')
+// textarea 에 지금 보이는 글자 그대로 — 한글 조합 중엔 v-model(body)이 조합이 끝날 때까지 갱신되지 않아,
+// 글자가 투명한 입력창에선 조합 중인 글자가 안 보였다. 표시 레이어·멘션 감지는 이 값을 쓴다.
+const draft = ref(body.value)
+watch(body, v => { draft.value = v })
 const textareaEl = ref<HTMLTextAreaElement | null>(null)
 const mirrorEl = ref<HTMLElement | null>(null)
 
@@ -122,7 +126,7 @@ function detectMention() {
   const el = textareaEl.value
   if (!el || props.caseId == null) return
   const caret = el.selectionStart ?? 0
-  const upto = body.value.slice(0, caret)
+  const upto = el.value.slice(0, caret)
   const m = upto.match(MENTION_RE)
   if (!m) { closeMention(); return }
   const q = m[1] // '@' 뒤 입력값(빈 문자열 가능)
@@ -149,15 +153,21 @@ function detectMention() {
   }, 140)
 }
 
+function onInput(e: Event) {
+  draft.value = (e.target as HTMLTextAreaElement).value
+  detectMention()
+}
+
 function applyMention(idx: number) {
   const el = textareaEl.value
   const item = mentionItems.value[idx]
   if (!el || !item || mentionTokenStart.value < 0) return
-  const caret = el.selectionStart ?? body.value.length
+  const caret = el.selectionStart ?? el.value.length
   // handle 을 삽입(BE 가 @handle 우선 해석). handle 이 없으면 displayName 으로 폴백.
   const token = item.handle ?? item.displayName
-  const before = body.value.slice(0, mentionTokenStart.value)
-  const after = body.value.slice(caret)
+  // body 가 아니라 화면의 값 — 한글 검색어(@홍길)를 조합 중에 골라도 잘리지 않게.
+  const before = el.value.slice(0, mentionTokenStart.value)
+  const after = el.value.slice(caret)
   const insert = `@${token} `
   knownTokens.value = new Set(knownTokens.value).add(token.toLowerCase())
   body.value = before + insert + after
@@ -227,7 +237,7 @@ function knownLength(word: string): number {
   return best
 }
 const mirrorHtml = computed(() => {
-  const v = body.value
+  const v = draft.value
   const marks: [number, number, string][] = []
   const tokStart = mentionTokenStart.value
   for (const m of v.matchAll(MIRROR_MENTION)) {
@@ -294,7 +304,7 @@ onBeforeUnmount(() => {
           rows="2"
           class="relative block w-full text-sm bg-transparent border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 transition-colors resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-transparent caret-zinc-800 dark:caret-zinc-200 selection:bg-emerald-500/25 selection:text-transparent"
           @scroll="syncMirrorScroll"
-          @input="detectMention"
+          @input="onInput"
           @keyup="onKeyup"
           @click="detectMention"
           @keydown="onKeydown"
