@@ -4,8 +4,11 @@ import hljs from 'highlight.js'
 import { TASK_LINE } from '@/utils/markdownTasks'
 import { collectRefKeys, linkifyRefs } from '@/utils/githubRefs'
 import { useGithubRefs } from '@/composables/useGithubRefs'
+import { linkifyMentions } from '@/utils/mentions'
+import type { MentionedUser } from '@/types/error'
 import '@/styles/markdown-task-list.css'
 import '@/styles/github-reference.css'
+import '@/styles/mention.css'
 
 const props = defineProps<{
   content: string
@@ -19,6 +22,10 @@ const props = defineProps<{
    * 제공자(provideGithubRefs)가 없는 화면에선 꺼진다.
    */
   githubRefs?: boolean
+  /** 이름이 확인된 멘션 — 본문의 @표기를 굵은 이름 링크로. 댓글에서만 준다. */
+  mentions?: MentionedUser[]
+  /** 지금 보는 사람 — 나를 멘션한 곳만 글자색을 바꾼다. */
+  viewerUserId?: number | null
 }>()
 
 const ghRefs = props.githubRefs ? useGithubRefs() : null
@@ -119,7 +126,8 @@ const rendered = computed(() => {
   flush()
   html = out.join('')
 
-  return html.replace(SENTINEL, (_m, i: string) => blocks[Number(i)] ?? '')
+  html = html.replace(SENTINEL, (_m, i: string) => blocks[Number(i)] ?? '')
+  return props.mentions?.length ? linkifyMentions(html, props.mentions, props.viewerUserId ?? null) : html
 })
 
 function onClick(e: MouseEvent) {
