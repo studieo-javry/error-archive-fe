@@ -61,6 +61,41 @@ function positionPill() {
 }
 watch([mentionIndex, mentionItems], () => nextTick(positionPill))
 
+// 드롭다운은 body 로 Teleport 한 fixed 레이어 — 페이지 스크롤 영역의 높이에 끼어들지 않게.
+// textarea 아래 absolute 로 붙이면 맨 아래 댓글창에서 후보 수가 바뀔 때마다 스크롤 영역이
+// 늘었다 줄며 화면이 혼자 움직였다. 아래 공간이 모자라면 위로 연다.
+const DD_MAX_H = 256 // .mention-dd 의 max-height(16rem)
+const DD_W = 288 // .mention-dd 의 width(18rem)
+const DD_GAP = 6
+const ddUp = ref(false)
+const ddStyle = ref<Record<string, string>>({})
+function positionDropdown() {
+  const el = textareaEl.value
+  if (!el) return
+  const r = el.getBoundingClientRect()
+  const vh = window.innerHeight
+  const below = vh - r.bottom - DD_GAP
+  const above = r.top - DD_GAP
+  ddUp.value = below < DD_MAX_H && above > below
+  const room = Math.max(ddUp.value ? above : below, 0) - 8
+  const left = Math.max(8, Math.min(r.left, window.innerWidth - DD_W - 8))
+  ddStyle.value = {
+    left: `${left}px`,
+    maxHeight: `${Math.min(DD_MAX_H, room)}px`,
+    ...(ddUp.value ? { bottom: `${vh - r.top + DD_GAP}px` } : { top: `${r.bottom + DD_GAP}px` }),
+  }
+}
+// 열려 있는 동안엔 스크롤(안쪽 스크롤 영역 포함 → capture)·리사이즈에 위치를 따라간다.
+watch(mentionOpen, open => {
+  if (open) {
+    window.addEventListener('scroll', positionDropdown, true)
+    window.addEventListener('resize', positionDropdown)
+  } else {
+    window.removeEventListener('scroll', positionDropdown, true)
+    window.removeEventListener('resize', positionDropdown)
+  }
+})
+
 // 아바타 폴백 톤(이름 기반 안정적 선택) — 밤티한 그라데이션 대신 소프트 틴트.
 function toneClass(u: MentionCandidate): string {
   const key = u.handle ?? u.displayName ?? ''
@@ -98,6 +133,7 @@ function detectMention() {
       mentionItems.value = data
       mentionIndex.value = 0
       mentionQuery.value = q
+      positionDropdown()
       // 빈 검색어에 후보가 없어도 연다 — 안 열면 멘션 기능이 없는 것처럼 보여 검색 안내를 띄운다.
       mentionOpen.value = true
     } catch {
@@ -164,7 +200,11 @@ function onBlur() {
   setTimeout(closeMention, 120)
 }
 
-onBeforeUnmount(() => { if (fetchTimer) clearTimeout(fetchTimer) })
+onBeforeUnmount(() => {
+  if (fetchTimer) clearTimeout(fetchTimer)
+  window.removeEventListener('scroll', positionDropdown, true)
+  window.removeEventListener('resize', positionDropdown)
+})
 </script>
 
 <template>
@@ -192,8 +232,9 @@ onBeforeUnmount(() => { if (fetchTimer) clearTimeout(fetchTimer) })
         />
 
         <!-- 멘션 드롭다운 (Glass — 반투명 blur + 미끄러지는 하이라이트 + 소프트 아바타) -->
+        <Teleport to="body">
         <Transition name="mention">
-          <div v-if="mentionOpen" class="mention-dd">
+          <div v-if="mentionOpen" class="mention-dd" :class="{ up: ddUp }" :style="ddStyle">
             <p v-if="mentionItems.length === 0" class="mention-empty">{{ mentionQuery ? '매칭되는 사용자 없음' : '이름을 입력해 검색하세요' }}</p>
             <div v-else ref="mentionListEl" class="mention-list">
               <div class="mention-pill" :style="{ transform: pillTransform, height: pillHeight + 'px' }" />
@@ -215,6 +256,7 @@ onBeforeUnmount(() => { if (fetchTimer) clearTimeout(fetchTimer) })
             </div>
           </div>
         </Transition>
+        </Teleport>
       </div>
 
       <div class="flex items-center gap-1.5 pb-1">
@@ -243,7 +285,7 @@ onBeforeUnmount(() => { if (fetchTimer) clearTimeout(fetchTimer) })
   --m-name: #52525b;
   --m-faint: #a1a1aa;
   --m-accent-ink: #047857;
-  position: absolute; z-index: 20; left: 0; top: 100%; margin-top: 6px;
+  position: fixed; z-index: 60;
   width: 18rem; max-height: 16rem; overflow-y: auto;
   background: var(--m-surface);
   -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5);
@@ -302,6 +344,10 @@ onBeforeUnmount(() => { if (fetchTimer) clearTimeout(fetchTimer) })
 .mention-leave-active { transition: opacity .15s ease, transform .15s ease; }
 .mention-enter-from { opacity: 0; transform: translateY(8px) scale(.96); }
 .mention-leave-to { opacity: 0; transform: translateY(4px) scale(.98); }
+/* 위로 열릴 땐 방향을 뒤집어 입력창 쪽으로 다가오게 */
+.mention-dd.up { transform-origin: bottom left; }
+.mention-dd.up.mention-enter-from { transform: translateY(-8px) scale(.96); }
+.mention-dd.up.mention-leave-to { transform: translateY(-4px) scale(.98); }
 @media (prefers-reduced-motion: reduce) {
   .mention-pill, .mrow.on .mav, .mname { transition: none; animation: none; }
 }
