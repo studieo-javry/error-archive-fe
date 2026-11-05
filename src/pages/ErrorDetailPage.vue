@@ -12,6 +12,7 @@ import { solutionApi } from '@/services/solutionApi'
 import { commentApi } from '@/services/commentApi'
 import type { ErrorCaseDetail, Step, Solution, Comment, CommentAuthor } from '@/types/error'
 import ErrorStatusBadge from '@/components/error/ErrorStatusBadge.vue'
+import ExampleCaseGuide from '@/components/error/ExampleCaseGuide.vue'
 import SeverityIndicator from '@/components/error/SeverityIndicator.vue'
 import TimelineList from '@/components/timeline/TimelineList.vue'
 import StepForm, { type StepFormValues } from '@/components/timeline/StepForm.vue'
@@ -687,6 +688,8 @@ onUnmounted(() => {
         >Delete</button>
       </div>
     </div>
+
+    <ExampleCaseGuide v-if="errorCase.demo && !authStore.isGuest" />
 
     <div class="space-y-10 mb-12" data-tour="context">
       <div v-if="errorCase.description" data-quote-context>
