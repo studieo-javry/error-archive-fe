@@ -66,6 +66,8 @@ export interface ErrorCaseDetail {
   watchedByMe?: boolean
   /** "나도 겪었어요"(me-too) 상태 — 카운트 · 본인 여부 · 누른 사용자 id. */
   meToo?: MeTooResponse
+  /** 데모 시드가 만든 케이스 — "데모" 배지. */
+  demo?: boolean
 }
 
 /** me-too 토글/조회 응답 — POST/DELETE /error-cases/{id}/me-too 및 detail 의 meToo. */
@@ -90,6 +92,8 @@ export interface ErrorCaseSummary {
   exceptionClass: string | null
   createdAt: string
   occurredAt: string | null
+  /** 데모 시드가 만든 케이스 — "데모" 배지. */
+  demo?: boolean
   author?: {
     userId: number
     displayName: string
