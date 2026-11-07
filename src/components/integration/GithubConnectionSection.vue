@@ -221,6 +221,7 @@ function toast(message: string) {
 type DialogView =
   | null
   | 'scope'
+  | 'authorize'
   | 'accounts'
   | 'repos'
   | 'confirm'
@@ -1015,7 +1016,19 @@ onMounted(async () => {
             </div>
             <p class="scope-hint"><GhIcon name="info" />같은 GitHub 계정을 여러 공간에 각각 연결할 수 있어요.</p>
           </div>
-          <div class="modal-actions"><button type="button" class="button ghost" @click="closeDialog">취소</button><button type="button" class="button primary" :disabled="starting" @click="continueToGithub">GitHub에서 계속 <GhIcon name="arrow" /></button></div>
+          <div class="modal-actions"><button type="button" class="button ghost" @click="closeDialog">취소</button><button type="button" class="button primary" @click="openDialog('authorize')">GitHub에서 계속 <GhIcon name="arrow" /></button></div>
+        </template>
+
+        <!-- GitHub 계정 확인(안내) -->
+        <template v-else-if="view === 'authorize'">
+          <div class="modal-top"><div class="row"><GhIcon name="github" /><strong>GitHub 계정 확인</strong></div><button type="button" class="icon-button" aria-label="닫기" @click="closeDialog"><GhIcon name="close" /></button></div>
+          <div class="modal-inner">
+            <div class="steps gh2-steps"><span v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" /><span :class="{ current: k === 1 }"><span class="step-num">{{ k < 1 ? '✓' : k + 1 }}</span>{{ s }}</span></span></div>
+            <h2 id="gh-dialog-title" tabindex="-1">GitHub 계정으로 계속</h2>
+            <p class="modal-intro">GitHub App은 계정당 한 번만 설치하면 됩니다.</p>
+            <p class="scope-hint"><GhIcon name="info" />이미 설치한 계정이면 다시 설치하지 않고 저장소만 고르면 돼요. 처음이라면 다음 화면에서 GitHub 설치를 진행합니다.</p>
+          </div>
+          <div class="modal-actions"><button type="button" class="button ghost" @click="openDialog('scope')">이전</button><button type="button" class="button primary" :disabled="starting" @click="continueToGithub">GitHub에서 계정 확인 <GhIcon name="arrow" /></button></div>
         </template>
 
         <!-- 계정(후보) 선택 -->
