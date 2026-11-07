@@ -27,6 +27,7 @@ watch(
 const route = useRoute()
 const isFullScreen = computed(() => !!route.meta.fullScreen)
 const isWideLayout = computed(() => !!route.meta.wideLayout)
+const isFullHeight = computed(() => !!route.meta.fullHeight)
 // Public, pre-auth pages (login / OAuth callback / shared report) render WITHOUT the app chrome.
 // The sidebar/header eagerly call authenticated APIs (e.g. /workspaces), which 401 while logged
 // out — so they must not mount on public routes.
@@ -50,7 +51,11 @@ const isChromeless = computed(() => isPublic.value || isOptionalLoggedOut.value)
       <!-- 게스트 가이드는 본문 오른쪽 컬럼으로 붙는다(목업 .fe-workarea) — 좁은 화면에선 하단 고정 -->
       <div class="fe-workarea">
         <main class="flex-1 overflow-y-auto">
-          <div v-if="isWideLayout" class="h-full px-6 pt-10 pb-12">
+          <!-- full-height: 설정처럼 자체 세로 스크롤을 갖는 화면은 래퍼 패딩 없이 main 높이를 꽉 채운다 -->
+          <div v-if="isFullHeight" class="h-full">
+            <router-view />
+          </div>
+          <div v-else-if="isWideLayout" class="h-full px-6 pt-10 pb-12">
             <router-view />
           </div>
           <div v-else class="max-w-5xl mx-auto p-10 pb-32">
