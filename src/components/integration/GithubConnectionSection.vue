@@ -666,7 +666,7 @@ onMounted(async () => {
         <h1>Integrations</h1>
         <p>개발 도구와 연결하고, 에러 기록의 맥락을 이어가세요.</p>
       </div>
-      <div class="heading-end"><span class="pill">Workspace &amp; Personal</span></div>
+      <div class="heading-end !mt-0"><span class="set-chip bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Workspace &amp; Personal</span></div>
     </div>
 
     <!-- 게스트 / 기능 off -->
@@ -707,7 +707,7 @@ onMounted(async () => {
 
       <div class="section-heading">
         <h2>연결 목록 <span>{{ loaded ? connections.length : '—' }}</span></h2>
-        <button type="button" class="text-button" :disabled="busy" @click="refreshList(true)"><GhIcon name="refresh" />목록 새로고침</button>
+        <button type="button" class="text-button" :disabled="busy" @click="refreshList(true)"><GhIcon name="refresh" class="sm" />목록 새로고침</button>
       </div>
 
       <!-- 범위 필터 -->
@@ -968,7 +968,7 @@ onMounted(async () => {
 
         <div class="note">
           <GhIcon name="info" />
-          <span>GitHub 로그인 계정과 저장소 연동은 별도로 관리됩니다.<br />로그인에 사용하는 계정은 <button type="button" class="text-button" @click="openConnections">Connections</button>에서 확인할 수 있어요.</span>
+          <span>GitHub 로그인 계정과 저장소 연동은 별도로 관리됩니다.<br />로그인에 사용하는 계정은 <button type="button" class="text-button" style="font-size:inherit" @click="openConnections">Connections</button>에서 확인할 수 있어요.</span>
         </div>
         <div class="gh2-bottom-note"><GhIcon name="repo" />이 공간의 저장소는 Issue·PR·CI 근거 연결과 본문 # 자동완성에 사용됩니다.</div>
       </template>
