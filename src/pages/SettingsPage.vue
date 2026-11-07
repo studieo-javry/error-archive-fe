@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/composables/useAuth'
 import { useTheme } from '@/composables/useTheme'
 import { formatAbsolute } from '@/utils/timeAgo'
-import GithubIntegrationSection from '@/components/integration/GithubIntegrationSection.vue'
+import GithubConnectionSection from '@/components/integration/GithubConnectionSection.vue'
 import GhIcon from '@/components/integration/GhIcon.vue'
 import '@/styles/github-integration.css'
 import type { NotificationSettings } from '@/types/notification'
@@ -545,7 +545,7 @@ async function restoreAccount() {
 
         <!-- ═══ INTEGRATIONS ═══ -->
         <section v-if="activeTab === 'integrations'">
-          <GithubIntegrationSection @open-connections="activeTab = 'connections'" />
+          <GithubConnectionSection @open-connections="activeTab = 'connections'" />
         </section>
 
         <!-- ═══ SESSIONS ═══ -->
