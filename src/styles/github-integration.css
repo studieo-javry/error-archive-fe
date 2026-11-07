@@ -195,3 +195,79 @@
 .gh-list-error-full .button{margin-top:22px}
 html.dark .gh-list-error{background:#302719;border-color:#63491b}
 @media(max-width:600px){.gh-list-error-inline{flex-wrap:wrap;padding:15px}.gh-list-error-inline .button{width:100%;margin:3px 0 0}.gh-list-error-full{padding:35px 18px}}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   GitHub 멀티-공간 연결(conditional_layout 목업 그대로) — gh2 추가 컨트롤
+   출처: error_archive_github_multiscope_conditional_layout.html
+   ═══════════════════════════════════════════════════════════════════════ */
+/* Added controls use the existing FE integration palette, spacing and component styles. */
+
+/* Shared compact master/detail view: overview tabs always; individual scopes when 2+ connections. */
+.gh2 .gh2-scope-toolbar{align-items:center;gap:5px;flex-wrap:wrap}
+.gh2 .gh2-workspace-select{display:flex;align-items:center;gap:7px;position:relative;margin-left:auto;padding:0 8px 0 10px;min-height:32px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--muted)}
+.gh2 .gh2-workspace-select>.icon{width:13px;height:13px;flex:none}
+.gh2 .gh2-workspace-select>.icon:last-child{transform:rotate(90deg);pointer-events:none;width:12px;height:12px}
+.gh2 .gh2-workspace-select select{font:500 11px Inter,'Noto Sans KR',sans-serif;border:0;outline:0;color:var(--ink);background:transparent;appearance:none;max-width:180px;min-width:125px;padding:6px 0;cursor:pointer;overflow:hidden;text-overflow:ellipsis}
+.gh2 .gh2-workspace-select:focus-within{outline:2px solid var(--green);outline-offset:2px}
+.gh2 .gh2-compact{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:17px}
+.gh2 .gh2-compact-top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding:20px 22px 17px}
+.gh2 .gh2-compact-kicker{font-size:9px;letter-spacing:1px;color:var(--soft);font-weight:600;margin-bottom:6px}
+.gh2 .gh2-compact-top h3{font-size:14px;font-weight:600;display:flex;gap:8px;align-items:center;color:var(--ink)}
+.gh2 .gh2-count-pill{border-radius:20px;background:var(--hover);color:var(--muted);font-size:10px;font-weight:500;padding:2px 8px}
+.gh2 .gh2-compact-top p{font-size:11px;color:var(--muted);line-height:1.7;margin-top:6px}
+.gh2 .gh2-compact-totals{display:flex;align-items:center;flex-wrap:wrap;gap:12px;white-space:nowrap;color:var(--muted);font-size:11px;padding-bottom:2px}
+.gh2 .gh2-compact-totals span{display:flex;align-items:center;gap:5px}.gh2 .gh2-compact-totals .icon{width:14px;height:14px;color:var(--soft)}
+.gh2 .gh2-compact-search-wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 22px 14px}
+.gh2 .gh2-compact-search{width:290px;max-width:100%;height:34px;border:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:7px;background:var(--surface)}
+.gh2 .gh2-compact-search:focus-within{border-color:var(--green)}
+.gh2 .gh2-compact-search>.icon{color:var(--soft);width:14px;height:14px;flex:none}
+.gh2 .gh2-compact-search input{width:100%;min-width:0;font:400 11px Inter,'Noto Sans KR',sans-serif;color:var(--ink);background:transparent;outline:0;border:0;padding:6px 0}
+.gh2 .gh2-compact-search input::placeholder{color:var(--soft)}
+.gh2 .gh2-compact-result-count{color:var(--soft);font-size:10px;white-space:nowrap}
+.gh2 .gh2-compact-columns,.gh2 .gh2-compact-row{display:grid;grid-template-columns:minmax(160px,1.3fr) minmax(150px,1.35fr) minmax(90px,.7fr) minmax(105px,.8fr) minmax(70px,.42fr);align-items:center;gap:13px}
+.gh2 .gh2-compact-columns{padding:9px 22px;background:var(--hover);border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--soft);font-size:10px;font-weight:500}
+.gh2 .gh2-compact-item+.gh2-compact-item{border-top:1px solid var(--line)}
+.gh2 .gh2-compact-row{width:100%;border:0;background:var(--surface);padding:13px 22px;text-align:left;color:var(--ink);cursor:pointer;font:inherit;min-height:68px;transition:background .12s}
+.gh2 .gh2-compact-row:hover,.gh2 .gh2-compact-row.is-open{background:var(--hover)}
+.gh2 .gh2-compact-row:focus-visible{outline:2px solid var(--green);outline-offset:-3px}
+.gh2 .gh2-compact-space,.gh2 .gh2-compact-account{display:flex;align-items:center;gap:9px;min-width:0}
+.gh2 .gh2-compact-space-icon,.gh2 .gh2-compact-account-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;flex:none;background:var(--hover);color:var(--muted)}
+.gh2 .gh2-compact-space-icon .icon,.gh2 .gh2-compact-account-icon .icon{width:15px;height:15px}
+.gh2 .gh2-compact-row.is-open .gh2-compact-space-icon{background:var(--green-bg);color:var(--green)}
+.gh2 .gh2-compact-text{display:flex;flex-direction:column;gap:4px;min-width:0}
+.gh2 .gh2-compact-text strong{font-weight:600;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gh2 .gh2-compact-text small,.gh2 .gh2-compact-repo small{font-size:10px;color:var(--soft);font-weight:400}
+.gh2 .gh2-compact-repo{display:flex;flex-direction:column;gap:3px}.gh2 .gh2-compact-repo strong{font-size:11px;font-weight:600}
+.gh2 .gh2-compact-status{display:inline-flex;align-items:center;gap:7px;font-size:10px;white-space:nowrap;font-weight:500}
+.gh2 .gh2-compact-status.good{color:var(--green)}.gh2 .gh2-compact-status.warn{color:var(--amber)}
+.gh2 .gh2-compact-status .dot{width:6px;height:6px;border-radius:100%;background:currentColor;flex:none}
+.gh2 .gh2-compact-open{display:flex;justify-content:flex-end;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.gh2 .gh2-compact-open .icon{width:12px;height:12px;transform:rotate(90deg);transition:transform .12s}.gh2 .is-open .gh2-compact-open .icon{transform:rotate(-90deg)}
+.gh2 .gh2-compact-detail{padding:10px 16px 16px;background:var(--hover);border-top:1px solid var(--line)}
+.gh2 .gh2-compact-detail-title{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 7px 12px;font-size:11px}.gh2 .gh2-compact-detail-title strong{font-weight:600}.gh2 .gh2-compact-detail-title span{font-size:10px;color:var(--muted)}
+.gh2 .gh2-compact-detail .installation{margin:0;box-shadow:none}
+.gh2 .gh2-compact-no-results{text-align:center;padding:35px 20px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:7px}.gh2 .gh2-compact-no-results .icon{width:20px;height:20px;color:var(--soft)}.gh2 .gh2-compact-no-results strong{font-size:12px;color:var(--ink)}.gh2 .gh2-compact-no-results p{font-size:11px}
+.gh2 .gh2-compact-pagination{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:12px 22px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}
+.gh2 .gh2-compact-pagination>div{display:flex;align-items:center;gap:5px}.gh2 .gh2-compact-pagination .button{min-height:29px;font-size:10px;padding:4px 9px}.gh2 .gh2-compact-pagination .button:disabled{opacity:.4;cursor:default}
+.gh2 .gh2-page-ellipsis{display:inline-flex;padding:0 4px;color:var(--soft);font-size:11px}.gh2 .gh2-page-number{border:1px solid transparent;border-radius:7px;background:transparent;min-width:27px;min-height:29px;color:var(--muted);font:500 10px Inter,sans-serif;cursor:pointer}.gh2 .gh2-page-number:hover{background:var(--hover)}.gh2 .gh2-page-number.current{border-color:var(--line);background:var(--hover);color:var(--ink)}
+@media(max-width:980px){.gh2 .gh2-compact-columns,.gh2 .gh2-compact-row{grid-template-columns:minmax(130px,1.1fr) minmax(120px,1fr) minmax(68px,.5fr) minmax(82px,.6fr) minmax(42px,.3fr);gap:7px}.gh2 .gh2-compact-columns,.gh2 .gh2-compact-row{padding-left:14px;padding-right:14px}.gh2 .gh2-compact-open{font-size:0}.gh2 .gh2-compact-open .icon{width:14px;height:14px}}
+@media(max-width:700px){.gh2 .gh2-scope-toolbar{gap:5px}.gh2 .gh2-workspace-select{margin-left:0;min-width:100%;justify-content:space-between}.gh2 .gh2-workspace-select select{flex:1;max-width:none}.gh2 .gh2-compact-top{padding:16px 15px 10px;align-items:flex-start;flex-direction:column;gap:12px}.gh2 .gh2-compact-top p{font-size:10px}.gh2 .gh2-compact-totals{font-size:10px;gap:9px}.gh2 .gh2-compact-search-wrap{padding:0 15px 12px}.gh2 .gh2-compact-search{width:100%}.gh2 .gh2-compact-result-count{display:none}.gh2 .gh2-compact-columns{display:none}.gh2 .gh2-compact-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 24px;grid-template-rows:auto auto;gap:9px 10px;min-height:80px;padding:13px 15px}.gh2 .gh2-compact-space{grid-column:1;grid-row:1}.gh2 .gh2-compact-account{grid-column:2;grid-row:1}.gh2 .gh2-compact-repo{grid-column:1;grid-row:2;padding-left:39px}.gh2 .gh2-compact-repo small{display:none}.gh2 .gh2-compact-status{grid-column:2;grid-row:2}.gh2 .gh2-compact-open{grid-column:3;grid-row:1 / span 2}.gh2 .gh2-compact-space-icon,.gh2 .gh2-compact-account-icon{width:27px;height:27px}.gh2 .gh2-compact-text strong{font-size:11px}.gh2 .gh2-compact-detail{padding:8px}.gh2 .gh2-compact-detail-title{align-items:flex-start;flex-wrap:wrap;padding:5px 8px 10px}.gh2 .gh2-compact-detail-title span{font-size:9px}.gh2 .gh2-compact-pagination{padding:12px 13px;justify-content:center}.gh2 .gh2-compact-pagination>span{width:100%;text-align:center}}
+@media(max-width:385px){.gh2 .gh2-compact-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 15px;gap:8px 4px}.gh2 .gh2-compact-space,.gh2 .gh2-compact-account{gap:5px}.gh2 .gh2-compact-text strong{font-size:10px}.gh2 .gh2-compact-text small{font-size:9px}.gh2 .gh2-compact-repo{padding-left:32px}}
+
+.gh2 .service-desc{max-width:480px}.gh2 .page-heading .pill{background:#fffbeb;color:#a16207;border:0}.dark .gh2 .page-heading .pill{background:#302719;color:#fbbf24}
+.gh2 .account-name,.gh2 .service-name,.gh2 .section-heading h2,.gh2 .repository-head h3{font-weight:600}.gh2 .modal-inner h2,.gh2 .status-view h2{font-weight:600}
+.gh2 .gh2-footer{flex-wrap:wrap;gap:10px}.gh2 .gh2-actions{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.gh2 .gh2-muted-action{color:var(--muted)}
+.gh2 .gh2-install-settings{display:flex;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid var(--line);padding:11px 22px;font-size:10px;color:var(--soft)}.gh2 .gh2-install-settings .text-button{font-size:10px;color:var(--muted)}
+.gh2 .install-meta strong{font-weight:500;color:var(--ink)}.gh2 .gh2-bottom-note{margin-top:20px;padding-top:17px;border-top:1px solid var(--line);display:flex;align-items:flex-start;gap:8px;color:var(--soft);font-size:11px;line-height:1.8}
+.gh2 .gh2-revoked .repo-name{font-weight:400;color:var(--muted)}.gh2 .gh2-options{margin-top:20px}.gh2 .gh2-account-option{border:1px solid var(--line);border-radius:11px;padding:16px;display:flex;align-items:center;gap:12px;margin-top:10px}.gh2 .gh2-account-option.chosen{background:var(--green-bg);border-color:var(--green)}.gh2 .gh2-account-option strong{font-size:13px;font-weight:500}.gh2 .gh2-account-option p{font-size:10px;color:var(--muted);margin-top:3px}.gh2 .gh2-account-option .pill{margin-top:6px}.gh2 .gh2-account-option input{margin-left:auto}.gh2 .gh2-account-option:has(input:disabled){opacity:.58}
+.gh2 .gh2-new-account{display:flex;flex-direction:column;gap:7px;align-items:flex-start;padding-top:20px;margin-top:20px;border-top:1px solid var(--line)}.gh2 .gh2-new-account>span{font-size:10px;color:var(--soft)}
+.gh2 .gh2-context{display:flex;align-items:center;gap:10px;margin-top:17px;font-size:12px}.gh2 .gh2-context .icon{width:15px;height:15px}.gh2 .gh2-select-head{display:flex;align-items:center;justify-content:space-between;margin:23px 0 10px;font-size:11px;color:var(--muted)}
+.gh2 .gh2-pick-list{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-top:10px}.gh2 .gh2-pick-row{padding:14px 15px;display:flex;align-items:center;gap:11px;cursor:pointer;min-height:52px}.gh2 .gh2-pick-row+.gh2-pick-row{border-top:1px solid var(--line)}.gh2 .gh2-pick-row:has(input:checked){background:color-mix(in srgb,var(--green-bg) 55%,var(--surface))}.gh2 .gh2-pick-row>.icon{color:var(--soft)}.gh2 .gh2-pick-row .grow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.gh2 .gh2-pick-row strong{font-size:12px;font-weight:500;overflow-wrap:anywhere}.gh2 .gh2-pick-row .pill{font-size:9px}.gh2 .gh2-pick-row input{margin-left:5px}
+.gh2 .gh2-share-note{margin:20px 0 0}.gh2 .gh2-change-note{font-size:11px;color:var(--amber);margin-top:12px}.gh2 .gh2-confirm-repos{display:flex;flex-direction:column;gap:10px;margin:20px 0;font-size:12px}.gh2 .gh2-confirm-repos>span{display:flex;align-items:center;gap:8px}.gh2 .gh2-confirm-repos .icon{color:var(--soft)}.gh2 .gh2-success-note{margin:18px 0 0;text-align:left}
+.gh2 .gh2-impact{margin-top:22px;border:1px solid var(--line);border-radius:11px;padding:17px;display:flex;flex-direction:column;gap:13px;font-size:11px;color:var(--muted);line-height:1.8}.gh2 .gh2-impact>div{display:flex;gap:9px;align-items:flex-start}.gh2 .gh2-impact .icon{margin-top:2px;color:var(--green)}
+.gh2 .gh2-simulation{background:var(--hover);border-bottom:1px solid var(--line);padding:10px 22px;color:var(--muted);font-size:10px;display:flex;align-items:center;gap:8px}.gh2 .gh2-label{font-size:12px;font-weight:500;margin:20px 0 8px}.gh2 .gh2-space-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.gh2 .gh2-danger-zone{display:flex;justify-content:space-between;align-items:center;gap:15px;padding-top:18px;margin-top:22px;border-top:1px solid var(--line)}.gh2 .gh2-danger-zone strong{font-size:12px;font-weight:500}.gh2 .gh2-danger-zone p{font-size:10px;color:var(--muted);margin-top:4px}.gh2 .gh2-danger-zone .button{font-size:11px}
+.gh2 .gh2-about-item{display:flex;gap:13px;margin-top:24px}.gh2 .gh2-about-item>.icon{color:var(--green);margin-top:2px}.gh2 .gh2-about-item strong{font-size:13px;font-weight:500}.gh2 .gh2-about-item p{font-size:11px;line-height:1.9;color:var(--muted);margin-top:4px}.gh2 .gh2-steps{white-space:nowrap;justify-content:space-between;font-size:10px;gap:4px}.gh2 .gh2-steps>span{display:flex;align-items:center;gap:1px}.gh2 .gh2-steps .step-num{flex:none}
+.gh2 dialog{max-height:calc(100dvh - 32px)}.gh2 .text-button:disabled{color:var(--soft);opacity:.6;cursor:not-allowed;text-decoration:none}.gh2 .modal-actions{position:sticky;bottom:0;z-index:2}.gh2 .modal-actions .small{max-width:240px;line-height:1.7}
+#app{padding-bottom:calc(var(--gh2-harness-height,100px) + 10px)}#harness{gap:8px 13px;padding:9px 16px;max-height:30vh;overflow:auto}#harness .note{font-size:10px}
+@media(max-width:700px){.gh2 .gh2-install-settings{padding:11px 17px;align-items:flex-start;flex-wrap:wrap}.gh2 .gh2-install-settings>span{max-width:100%}.gh2 .gh2-actions{gap:13px}.gh2 .gh2-account-option{padding:13px 12px;gap:9px}.gh2 .gh2-account-option p{font-size:10px}.gh2 .gh2-pick-row{padding:13px 12px}.gh2 .gh2-pick-row strong{font-size:11px}.gh2 .gh2-pick-row .repo-owner{display:none}.gh2 .gh2-simulation{padding:10px 17px;line-height:1.7}.gh2 .gh2-steps{font-size:9px}.gh2 .gh2-danger-zone{align-items:flex-start}.gh2 .gh2-danger-zone p{max-width:180px;line-height:1.7}.gh2 .modal-actions{padding:14px 19px}.gh2 .modal-inner{padding:22px}.gh2 .gh2-bottom-note{font-size:10px}#harness{font-size:10px;padding:8px 10px;gap:7px 9px}#harness .note{width:100%;margin:0}.gh2 .modal-actions .small{max-width:160px;font-size:10px}}
+@media(max-width:380px){.gh2 .gh2-steps .step-num{width:14px;height:14px;margin-right:2px}.gh2 .gh2-steps>.icon{width:8px;height:8px}.gh2 .modal-inner{padding:20px 17px}.gh2 .gh2-actions{gap:9px}.gh2 .gh2-actions .text-button{font-size:10px}.gh2 .modal-inner h2{font-size:19px}}
