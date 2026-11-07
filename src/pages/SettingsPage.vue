@@ -274,7 +274,7 @@ async function restoreAccount() {
 </script>
 
 <template>
-  <div class="flex h-full -m-6 max-w-6xl mx-auto w-full">
+  <div class="flex h-full max-w-6xl mx-auto w-full">
     <!-- Toast -->
     <Teleport to="body">
       <div
@@ -315,7 +315,7 @@ async function restoreAccount() {
     </aside>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-10 pb-32">
+    <div class="flex-1 overflow-y-auto p-10 pb-12">
       <!-- 모든 탭 공통 폭: 섹션마다 max-w 를 따로 주면 탭 전환 시 박스 오른쪽 끝이 들쭉날쭉해짐 -->
       <div class="max-w-3xl">
 
