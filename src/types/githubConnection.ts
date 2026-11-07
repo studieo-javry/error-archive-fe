@@ -46,6 +46,9 @@ export interface GithubConnectionOptions {
 
 export type GithubConnectionStatus = 'ACTIVE' | 'DISCONNECTED'
 
+/** GitHub 설치 상태 — SUSPENDED(일시 중지)·DELETED(삭제, 재연결 필요) */
+export type GithubInstallationStatus = 'ACTIVE' | 'SUSPENDED' | 'DELETED'
+
 /** 공간 연결(관리 목록 1건) */
 export interface GithubConnection {
   connectionId: number
@@ -55,6 +58,8 @@ export interface GithubConnection {
   /** null = 개인 연결 */
   workspaceId: number | null
   status: GithubConnectionStatus
+  /** GitHub 설치 상태(웹훅으로 추적). SUSPENDED/DELETED 면 이 설치를 쓰는 모든 공간의 동기화 중단 */
+  installationStatus: GithubInstallationStatus
   connectedByUserId: number
   /** 이 공간에서 사용 선택한 레포 */
   selectedRepositories: GithubRepositoryRef[]

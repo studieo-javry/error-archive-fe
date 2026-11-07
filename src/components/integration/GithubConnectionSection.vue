@@ -89,12 +89,24 @@ function revokedCount(conn: GithubConnection): number {
   return conn.selectedRepositories.length - usableRepos(conn).length
 }
 function statusText(conn: GithubConnection): string {
+  if (conn.installationStatus === 'SUSPENDED') return '일시 중지'
+  if (conn.installationStatus === 'DELETED') return '재연결 필요'
   if (revokedCount(conn)) return '접근 변경'
   if (!conn.selectedRepositories.length) return '저장소 미선택'
   return '연결됨'
 }
 function isWarnConn(conn: GithubConnection): boolean {
-  return !!revokedCount(conn) || !conn.selectedRepositories.length
+  return conn.installationStatus !== 'ACTIVE' || !!revokedCount(conn) || !conn.selectedRepositories.length
+}
+/** 카드 상단 알림 문구 — 설치 상태/접근 변경에 따라. 없으면 '' */
+function connNotice(conn: GithubConnection): string {
+  if (conn.installationStatus === 'SUSPENDED')
+    return 'GitHub에서 앱 사용이 일시 중지되었습니다. 이 설치를 사용하는 모든 공간의 동기화가 중단됩니다.'
+  if (conn.installationStatus === 'DELETED')
+    return 'GitHub에서 앱 설치가 삭제되었습니다. 기존 Case 기록은 유지되며, 다시 연결하려면 설치와 저장소 선택이 필요합니다.'
+  const revoked = revokedCount(conn)
+  if (revoked) return `선택한 저장소 중 ${revoked}개의 GitHub 접근 권한이 사라졌습니다. 접근 가능한 나머지 저장소는 계속 사용할 수 있어요.`
+  return ''
 }
 function repoUrl(fullName: string): string {
   return 'https://github.com/' + fullName.split('/').map(encodeURIComponent).join('/')
@@ -549,6 +561,25 @@ async function installNewAccount() {
   }
 }
 
+/** DELETED 설치를 이 공간에 다시 연결 — GitHub 설치(또는 인가)로 이동. 복귀하면 설치 콜백이 저장소 선택·확인 흐름을 탄다. */
+async function reinstall(conn: GithubConnection) {
+  if (!canScope(spaceKey(conn))) return
+  try {
+    const { data } = await githubConnectionApi.getConnectionOptions(conn.workspaceId)
+    if (data.installUrl) {
+      window.location.assign(data.installUrl)
+      return
+    }
+    if (data.authorizeUrl) {
+      window.location.assign(data.authorizeUrl)
+      return
+    }
+    callbackError('unavailable')
+  } catch (e) {
+    callbackError(errorKind(e))
+  }
+}
+
 // ── 에러 ──
 function callbackError(kind: ErrorKind) {
   errorView.value = kind
@@ -812,8 +843,8 @@ onMounted(async () => {
                         <span class="meta-divider"></span><span class="date">{{ connectedDate(c.connectedAt) }} 연결</span>
                       </div>
                     </div>
-                    <div v-if="revokedCount(c)" class="notice amber">
-                      <GhIcon name="info" /><div>선택한 저장소 중 {{ revokedCount(c) }}개의 GitHub 접근 권한이 사라졌습니다. 접근 가능한 나머지 저장소는 계속 사용할 수 있어요.</div>
+                    <div v-if="connNotice(c)" class="notice amber">
+                      <GhIcon name="info" /><div>{{ connNotice(c) }}</div>
                     </div>
                     <div class="repository-area">
                       <div class="repository-head">
@@ -854,7 +885,7 @@ onMounted(async () => {
                     </div>
                     <div class="gh2-install-settings">
                       <span>{{ connections.filter(x => x.installationId === c.installationId).length > 1 ? '다른 공간에서도 이 GitHub 설치를 사용하고 있어요.' : 'GitHub가 앱에 허용한 접근 범위를 관리합니다.' }}</span>
-                      <a class="text-button" :href="manageUrl(c)" target="_blank" rel="noopener noreferrer">GitHub 설치 설정 <GhIcon name="external" /></a>
+                      <button v-if="c.installationStatus === 'DELETED'" type="button" class="text-button" :disabled="!canScope(spaceKey(c))" @click="reinstall(c)">이 공간에 다시 연결 <GhIcon name="external" /></button><a v-else class="text-button" :href="manageUrl(c)" target="_blank" rel="noopener noreferrer">GitHub 설치 설정 <GhIcon name="external" /></a>
                     </div>
                   </article>
                 </div>
@@ -895,8 +926,8 @@ onMounted(async () => {
               <span class="meta-divider"></span><span class="date">{{ connectedDate(c.connectedAt) }} 연결</span>
             </div>
           </div>
-          <div v-if="revokedCount(c)" class="notice amber">
-            <GhIcon name="info" /><div>선택한 저장소 중 {{ revokedCount(c) }}개의 GitHub 접근 권한이 사라졌습니다. 접근 가능한 나머지 저장소는 계속 사용할 수 있어요.</div>
+          <div v-if="connNotice(c)" class="notice amber">
+            <GhIcon name="info" /><div>{{ connNotice(c) }}</div>
           </div>
           <div class="repository-area">
             <div class="repository-head">
@@ -935,7 +966,7 @@ onMounted(async () => {
           </div>
           <div class="gh2-install-settings">
             <span>{{ connections.filter(x => x.installationId === c.installationId).length > 1 ? '다른 공간에서도 이 GitHub 설치를 사용하고 있어요.' : 'GitHub가 앱에 허용한 접근 범위를 관리합니다.' }}</span>
-            <a class="text-button" :href="manageUrl(c)" target="_blank" rel="noopener noreferrer">GitHub 설치 설정 <GhIcon name="external" /></a>
+            <button v-if="c.installationStatus === 'DELETED'" type="button" class="text-button" :disabled="!canScope(spaceKey(c))" @click="reinstall(c)">이 공간에 다시 연결 <GhIcon name="external" /></button><a v-else class="text-button" :href="manageUrl(c)" target="_blank" rel="noopener noreferrer">GitHub 설치 설정 <GhIcon name="external" /></a>
           </div>
         </article>
 
