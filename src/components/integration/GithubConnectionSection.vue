@@ -22,7 +22,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { isAxiosError } from 'axios'
 import GhIcon from './GhIcon.vue'
 import { githubConnectionApi } from '@/services/githubConnectionApi'
-import { githubIntegrationApi } from '@/services/githubIntegrationApi'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamStore } from '@/stores/teamStore'
 import { useAuth } from '@/composables/useAuth'
@@ -222,6 +221,7 @@ function toast(message: string) {
 type DialogView =
   | null
   | 'scope'
+  | 'authorize'
   | 'accounts'
   | 'repos'
   | 'confirm'
@@ -594,36 +594,8 @@ async function handleCallback() {
   handledCodes.add(code)
 
   const id = ++operation
-  // Flow B — 새 설치 완료(installation_id 동봉).
-  if (installationId) {
-    openDialog('progress')
-    try {
-      const { data } = await githubIntegrationApi.completeInstallation({ installationId, code, state })
-      if (id !== operation) return
-      await loadConnections()
-      if (id !== operation) return
-      filter.value = data.workspaceId === null ? 'personal' : `ws:${data.workspaceId}`
-      draft.value = {
-        scope: data.workspaceId === null ? 'personal' : `ws:${data.workspaceId}`,
-        connectionId: null,
-        installationId: data.installationId,
-        accountLogin: data.accountLogin,
-        candidateToken: null,
-        version: null,
-        available: [],
-        selected: data.repositories.map(r => r.repoId),
-        shareable: true,
-        updated: false,
-      }
-      openDialog('success')
-    } catch (e) {
-      if (id !== operation) return
-      callbackError(errorKind(e))
-    }
-    return
-  }
-
-  // Flow A — OAuth 후보 조회.
+  // 신규 설치 콜백(installation_id 동봉)도, 기존 설치 OAuth 콜백도 모두 후보 흐름으로 처리한다.
+  // 설치 직후에도 "이 공간에 쓸 저장소 선택 → 연결 확인" 단계를 거친다(전체 grant 자동 연결 X).
   openDialog('progress')
   try {
     const { data } = await githubConnectionApi.getCandidates(code, state)
@@ -640,7 +612,17 @@ async function handleCallback() {
       shareable: true,
       updated: false,
     }
-    openAccounts(data.candidates)
+    // 방금 설치한 계정(installation_id 일치)이 있으면 자동 선택 후 저장소 선택 단계로 바로 보낸다.
+    const justInstalled = installationId
+      ? data.candidates.find(c => c.installationId === installationId)
+      : undefined
+    if (justInstalled && candidateShareable(justInstalled)) {
+      candidates.value = data.candidates
+      pickCandidate(justInstalled)
+      toRepos()
+    } else {
+      openAccounts(data.candidates)
+    }
   } catch (e) {
     if (id !== operation) return
     callbackError(errorKind(e))
@@ -1034,7 +1016,19 @@ onMounted(async () => {
             </div>
             <p class="scope-hint"><GhIcon name="info" />같은 GitHub 계정을 여러 공간에 각각 연결할 수 있어요.</p>
           </div>
-          <div class="modal-actions"><button type="button" class="button ghost" @click="closeDialog">취소</button><button type="button" class="button primary" :disabled="starting" @click="continueToGithub">GitHub에서 계속 <GhIcon name="arrow" /></button></div>
+          <div class="modal-actions"><button type="button" class="button ghost" @click="closeDialog">취소</button><button type="button" class="button primary" @click="openDialog('authorize')">GitHub에서 계속 <GhIcon name="arrow" /></button></div>
+        </template>
+
+        <!-- GitHub 계정 확인(안내) -->
+        <template v-else-if="view === 'authorize'">
+          <div class="modal-top"><div class="row"><GhIcon name="github" /><strong>GitHub 계정 확인</strong></div><button type="button" class="icon-button" aria-label="닫기" @click="closeDialog"><GhIcon name="close" /></button></div>
+          <div class="modal-inner">
+            <div class="steps gh2-steps"><span v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" /><span :class="{ current: k === 1 }"><span class="step-num">{{ k < 1 ? '✓' : k + 1 }}</span>{{ s }}</span></span></div>
+            <h2 id="gh-dialog-title" tabindex="-1">GitHub 계정으로 계속</h2>
+            <p class="modal-intro">GitHub App은 계정당 한 번만 설치하면 됩니다.</p>
+            <p class="scope-hint"><GhIcon name="info" />이미 설치한 계정이면 다시 설치하지 않고 저장소만 고르면 돼요. 처음이라면 다음 화면에서 GitHub 설치를 진행합니다.</p>
+          </div>
+          <div class="modal-actions"><button type="button" class="button ghost" @click="openDialog('scope')">이전</button><button type="button" class="button primary" :disabled="starting" @click="continueToGithub">GitHub에서 계정 확인 <GhIcon name="arrow" /></button></div>
         </template>
 
         <!-- 계정(후보) 선택 -->
