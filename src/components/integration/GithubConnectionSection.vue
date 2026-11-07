@@ -22,7 +22,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { isAxiosError } from 'axios'
 import GhIcon from './GhIcon.vue'
 import { githubConnectionApi } from '@/services/githubConnectionApi'
-import { githubIntegrationApi } from '@/services/githubIntegrationApi'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamStore } from '@/stores/teamStore'
 import { useAuth } from '@/composables/useAuth'
@@ -594,36 +593,8 @@ async function handleCallback() {
   handledCodes.add(code)
 
   const id = ++operation
-  // Flow B — 새 설치 완료(installation_id 동봉).
-  if (installationId) {
-    openDialog('progress')
-    try {
-      const { data } = await githubIntegrationApi.completeInstallation({ installationId, code, state })
-      if (id !== operation) return
-      await loadConnections()
-      if (id !== operation) return
-      filter.value = data.workspaceId === null ? 'personal' : `ws:${data.workspaceId}`
-      draft.value = {
-        scope: data.workspaceId === null ? 'personal' : `ws:${data.workspaceId}`,
-        connectionId: null,
-        installationId: data.installationId,
-        accountLogin: data.accountLogin,
-        candidateToken: null,
-        version: null,
-        available: [],
-        selected: data.repositories.map(r => r.repoId),
-        shareable: true,
-        updated: false,
-      }
-      openDialog('success')
-    } catch (e) {
-      if (id !== operation) return
-      callbackError(errorKind(e))
-    }
-    return
-  }
-
-  // Flow A — OAuth 후보 조회.
+  // 신규 설치 콜백(installation_id 동봉)도, 기존 설치 OAuth 콜백도 모두 후보 흐름으로 처리한다.
+  // 설치 직후에도 "이 공간에 쓸 저장소 선택 → 연결 확인" 단계를 거친다(전체 grant 자동 연결 X).
   openDialog('progress')
   try {
     const { data } = await githubConnectionApi.getCandidates(code, state)
@@ -640,7 +611,17 @@ async function handleCallback() {
       shareable: true,
       updated: false,
     }
-    openAccounts(data.candidates)
+    // 방금 설치한 계정(installation_id 일치)이 있으면 자동 선택 후 저장소 선택 단계로 바로 보낸다.
+    const justInstalled = installationId
+      ? data.candidates.find(c => c.installationId === installationId)
+      : undefined
+    if (justInstalled && candidateShareable(justInstalled)) {
+      candidates.value = data.candidates
+      pickCandidate(justInstalled)
+      toRepos()
+    } else {
+      openAccounts(data.candidates)
+    }
   } catch (e) {
     if (id !== operation) return
     callbackError(errorKind(e))
