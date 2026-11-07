@@ -96,7 +96,8 @@ function statusText(conn: GithubConnection): string {
   return '연결됨'
 }
 function isWarnConn(conn: GithubConnection): boolean {
-  return conn.installationStatus !== 'ACTIVE' || !!revokedCount(conn) || !conn.selectedRepositories.length
+  // installationStatus 미수신(BE 미배포)이면 undefined → ACTIVE 로 취급(명시적 SUSPENDED/DELETED 만 경고)
+  return conn.installationStatus === 'SUSPENDED' || conn.installationStatus === 'DELETED' || !!revokedCount(conn) || !conn.selectedRepositories.length
 }
 /** 카드 상단 알림 문구 — 설치 상태/접근 변경에 따라. 없으면 '' */
 function connNotice(conn: GithubConnection): string {
