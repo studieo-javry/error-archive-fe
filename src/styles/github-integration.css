@@ -282,3 +282,33 @@ html.dark .gh-list-error{background:#302719;border-color:#63491b}
 .gh2 .gh2-steps .gh2-sep{width:13px;height:13px;flex:none;color:var(--soft);opacity:.75}
 @media(max-width:700px){.gh2 .gh2-steps{font-size:10px;margin-bottom:24px}.gh2 .gh2-steps .step-num{width:19px;height:19px;margin-right:6px;font-size:10px}}
 @media(max-width:380px){.gh2 .gh2-steps{font-size:9px}.gh2 .gh2-steps .step-num{width:17px;height:17px;margin-right:4px}}
+
+/* ── 인증 유지(remember) 설정 — 목업 remember-setting 이식(FE 토큰·라이트/다크) ── */
+.gh2 .modal-inner h2{margin:0 0 12px}
+.gh2 .gh2-desc{display:flex;gap:9px;align-items:flex-start;color:var(--muted);font-size:12.5px;line-height:1.76;margin:13px 0 0}
+.gh2 .gh2-desc .icon{width:16px;height:16px;flex:none;margin-top:3px;color:var(--soft)}
+.gh2 .gh2-remember-setting{margin-top:28px;padding-top:24px;border-top:1px solid var(--line)}
+.gh2 .gh2-option-label{display:block;margin-bottom:13px;font-size:11px;font-weight:600;letter-spacing:.075em;text-transform:uppercase;color:var(--soft)}
+.gh2 .gh2-selection{display:flex;align-items:flex-start;gap:13px;width:100%;cursor:pointer}
+.gh2 .gh2-selection input{appearance:none;-webkit-appearance:none;flex:none;width:20px;height:20px;margin:1px 0 0;border:1.5px solid var(--line-strong);border-radius:5px;background:transparent;display:grid;place-items:center;transition:background .14s,border-color .14s}
+.gh2 .gh2-selection input:hover{border-color:var(--muted)}
+.gh2 .gh2-selection input::after{content:"";width:10px;height:6px;border-left:2px solid transparent;border-bottom:2px solid transparent;transform:translateY(-1px) rotate(-45deg)}
+.gh2 .gh2-selection input:checked{background:var(--green);border-color:var(--green)}
+.gh2 .gh2-selection input:checked::after{border-color:#fff}
+.gh2 .gh2-setting-main{min-width:0;flex:1}
+.gh2 .gh2-setting-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap;line-height:1.45}
+.gh2 .gh2-setting-title{font-size:15px;font-weight:600;letter-spacing:-.017em;color:var(--ink)}
+.gh2 .gh2-optional{font-size:10px;font-weight:500;color:var(--muted);border:1px solid var(--line-strong);border-radius:5px;padding:3px 6px}
+.gh2 .gh2-setting-desc{display:block;margin-top:8px;font-size:12.5px;line-height:1.75;color:var(--muted);max-width:590px}
+.gh2 .gh2-setting-supplement{display:flex;align-items:center;gap:8px;margin:13px 0 0 33px;font-size:12px;color:var(--soft)}
+.gh2 .gh2-setting-supplement .icon{width:14px;height:14px;flex:none;color:var(--soft)}
+.gh2 .gh2-inline-details{margin:14px 0 0 33px;font-size:12px}
+.gh2 .gh2-inline-details summary{display:inline-flex;align-items:center;gap:7px;min-height:28px;cursor:pointer;color:var(--green);font-weight:500;list-style:none}
+.gh2 .gh2-inline-details summary::-webkit-details-marker{display:none}
+.gh2 .gh2-inline-details summary:hover{color:var(--green-hover);text-decoration:underline;text-underline-offset:3px}
+.gh2 .gh2-inline-details .gh2-chev{width:14px;height:14px;transition:transform .18s}
+.gh2 .gh2-inline-details[open] summary .gh2-chev{transform:rotate(180deg)}
+.gh2 .gh2-details-content{margin-top:10px;max-width:605px;padding-left:14px;border-left:2px solid var(--green-line);color:var(--muted);line-height:1.8;font-size:12px}
+.gh2 .gh2-details-content p{margin:0 0 8px}
+.gh2 .gh2-details-content p:last-child{margin:0}
+@media(max-width:700px){.gh2 .gh2-setting-title{font-size:14px}.gh2 .gh2-setting-desc,.gh2 .gh2-desc{font-size:12px}.gh2 .gh2-setting-supplement,.gh2 .gh2-inline-details{margin-left:33px}}
