@@ -1035,7 +1035,7 @@ onMounted(async () => {
         <template v-if="view === 'scope'">
           <div class="modal-top"><div class="row"><GhIcon name="github" /><strong>GitHub 연결</strong></div><button type="button" class="icon-button" aria-label="닫기" @click="closeDialog"><GhIcon name="close" /></button></div>
           <div class="modal-inner">
-            <div class="steps gh2-steps"><span v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" /><span :class="{ current: k === 0 }"><span class="step-num">{{ k < 0 ? '✓' : k + 1 }}</span>{{ s }}</span></span></div>
+            <div class="steps gh2-steps"><template v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" class="gh2-sep" /><span class="gh2-step" :class="{ current: k === 0 }"><span class="step-num">{{ k < 0 ? '✓' : k + 1 }}</span>{{ s }}</span></template></div>
             <h2 id="gh-dialog-title" tabindex="-1">어디에 연결할까요?</h2>
             <p class="modal-intro">이 연결에서 사용할 공간을 선택하세요.</p>
             <div class="gh2-options">
@@ -1059,7 +1059,7 @@ onMounted(async () => {
         <template v-else-if="view === 'authorize'">
           <div class="modal-top"><div class="row"><GhIcon name="github" /><strong>GitHub 계정 확인</strong></div><button type="button" class="icon-button" aria-label="닫기" @click="closeDialog"><GhIcon name="close" /></button></div>
           <div class="modal-inner">
-            <div class="steps gh2-steps"><span v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" /><span :class="{ current: k === 1 }"><span class="step-num">{{ k < 1 ? '✓' : k + 1 }}</span>{{ s }}</span></span></div>
+            <div class="steps gh2-steps"><template v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" class="gh2-sep" /><span class="gh2-step" :class="{ current: k === 1 }"><span class="step-num">{{ k < 1 ? '✓' : k + 1 }}</span>{{ s }}</span></template></div>
             <h2 id="gh-dialog-title" tabindex="-1">GitHub 계정으로 계속</h2>
             <p class="modal-intro">GitHub App은 계정당 한 번만 설치하면 됩니다.</p>
             <p class="scope-hint"><GhIcon name="info" />이미 설치한 계정이면 다시 설치하지 않고 저장소만 고르면 돼요. 처음이라면 다음 화면에서 GitHub 설치를 진행합니다.</p>
@@ -1071,7 +1071,7 @@ onMounted(async () => {
         <template v-else-if="view === 'accounts'">
           <div class="modal-top"><div class="row"><GhIcon name="github" /><strong>GitHub 계정 선택</strong></div><button type="button" class="icon-button" aria-label="닫기" @click="closeDialog"><GhIcon name="close" /></button></div>
           <div class="modal-inner">
-            <div class="steps gh2-steps"><span v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" /><span :class="{ current: k === 1 }"><span class="step-num">{{ k < 1 ? '✓' : k + 1 }}</span>{{ s }}</span></span></div>
+            <div class="steps gh2-steps"><template v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" class="gh2-sep" /><span class="gh2-step" :class="{ current: k === 1 }"><span class="step-num">{{ k < 1 ? '✓' : k + 1 }}</span>{{ s }}</span></template></div>
             <h2 id="gh-dialog-title" tabindex="-1">연결할 설치 선택</h2>
             <p class="modal-intro">GitHub 인가로 불러온, <strong>{{ draftScopeLabel }}</strong>에 연결 가능한 설치입니다.</p>
             <div v-if="candidates.length" class="gh2-options">
@@ -1097,7 +1097,7 @@ onMounted(async () => {
         <template v-else-if="view === 'repos'">
           <div class="modal-top"><div class="row"><GhIcon name="github" /><strong>{{ draft.connectionId ? '이 공간의 저장소 변경' : '사용할 저장소 선택' }}</strong></div><button type="button" class="icon-button" aria-label="닫기" @click="closeDialog"><GhIcon name="close" /></button></div>
           <div class="modal-inner">
-            <div v-if="!draft.connectionId" class="steps gh2-steps"><span v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" /><span :class="{ current: k === 2 }"><span class="step-num">{{ k < 2 ? '✓' : k + 1 }}</span>{{ s }}</span></span></div>
+            <div v-if="!draft.connectionId" class="steps gh2-steps"><template v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" class="gh2-sep" /><span class="gh2-step" :class="{ current: k === 2 }"><span class="step-num">{{ k < 2 ? '✓' : k + 1 }}</span>{{ s }}</span></template></div>
             <h2 id="gh-dialog-title" tabindex="-1">{{ draftScopeLabel }}에서 사용할 저장소</h2>
             <p class="modal-intro">{{ dialogInstallLabel }}에서 GitHub가 접근을 허용한 저장소 중 선택하세요.</p>
             <div v-if="!draft.connectionId" class="gh2-context"><span class="row"><GhIcon :name="draft.scope === 'personal' ? 'user' : 'users'" /><strong>{{ draftScopeLabel }}</strong></span><span class="pill">{{ draft.scope === 'personal' ? 'Personal' : 'Workspace' }}</span></div>
@@ -1128,7 +1128,7 @@ onMounted(async () => {
         <template v-else-if="view === 'confirm'">
           <div class="modal-top"><div class="row"><GhIcon name="github" /><strong>연결 확인</strong></div><button type="button" class="icon-button" aria-label="닫기" @click="closeDialog"><GhIcon name="close" /></button></div>
           <div class="modal-inner">
-            <div v-if="!draft.connectionId" class="steps gh2-steps"><span v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" /><span :class="{ current: k === 3 }"><span class="step-num">{{ k < 3 ? '✓' : k + 1 }}</span>{{ s }}</span></span></div>
+            <div v-if="!draft.connectionId" class="steps gh2-steps"><template v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" class="gh2-sep" /><span class="gh2-step" :class="{ current: k === 3 }"><span class="step-num">{{ k < 3 ? '✓' : k + 1 }}</span>{{ s }}</span></template></div>
             <h2 id="gh-dialog-title" tabindex="-1">{{ draft.connectionId ? '저장소 선택을 변경할까요?' : '이 공간에 연결할까요?' }}</h2>
             <p class="modal-intro">아래 공간과 저장소를 확인해 주세요.</p>
             <dl class="success-detail"><dt>GitHub 계정</dt><dd>{{ dialogInstallLabel }}</dd><dt>연결 공간</dt><dd>{{ draftScopeLabel }}</dd><dt>선택한 저장소</dt><dd>{{ draft.selected.length }}개</dd></dl>
