@@ -31,6 +31,7 @@
 .gh-int .pill{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);padding:2px 7px;border-radius:5px;font-size:10px;font-weight:500;color:var(--muted);white-space:nowrap;line-height:1.6}
 .gh-int .pill.green{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
 .gh-int .pill.amber{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}
+.gh-int .pill.red{background:var(--red-bg);border-color:var(--red-line);color:var(--red)}
 .gh-int .dot{width:5px;height:5px;background:currentColor;border-radius:50%}
 .gh-int .button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);border-radius:10px;padding:8px 13px;font-size:12px;font-weight:500;white-space:nowrap;min-height:36px;transition:background .15s,border-color .15s}
 .gh-int .button:hover{background:var(--hover)}
@@ -239,7 +240,7 @@ html.dark .gh-list-error{background:#302719;border-color:#63491b}
 .gh2 .gh2-compact-text small,.gh2 .gh2-compact-repo small{font-size:10px;color:var(--soft);font-weight:400}
 .gh2 .gh2-compact-repo{display:flex;flex-direction:column;gap:3px}.gh2 .gh2-compact-repo strong{font-size:11px;font-weight:600}
 .gh2 .gh2-compact-status{display:inline-flex;align-items:center;gap:7px;font-size:10px;white-space:nowrap;font-weight:500}
-.gh2 .gh2-compact-status.good{color:var(--green)}.gh2 .gh2-compact-status.warn{color:var(--amber)}
+.gh2 .gh2-compact-status.good{color:var(--green)}.gh2 .gh2-compact-status.warn{color:var(--amber)}.gh2 .gh2-compact-status.danger{color:var(--red)}
 .gh2 .gh2-compact-status .dot{width:6px;height:6px;border-radius:100%;background:currentColor;flex:none}
 .gh2 .gh2-compact-open{display:flex;justify-content:flex-end;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
 .gh2 .gh2-compact-open .icon{width:12px;height:12px;transform:rotate(90deg);transition:transform .12s}.gh2 .is-open .gh2-compact-open .icon{transform:rotate(-90deg)}

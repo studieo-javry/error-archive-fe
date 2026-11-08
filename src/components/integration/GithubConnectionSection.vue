@@ -99,6 +99,10 @@ function isWarnConn(conn: GithubConnection): boolean {
   // installationStatus 미수신(BE 미배포)이면 undefined → ACTIVE 로 취급(명시적 SUSPENDED/DELETED 만 경고)
   return conn.installationStatus === 'SUSPENDED' || conn.installationStatus === 'DELETED' || !!revokedCount(conn) || !conn.selectedRepositories.length
 }
+/** 조치 필요(빨강) — 설치가 삭제돼 재연결해야만 복구되는 상태. 일시 중지·접근 변경은 자동/부분 복구라 warn(앰버) 유지. */
+function isDangerConn(conn: GithubConnection): boolean {
+  return conn.installationStatus === 'DELETED'
+}
 /** 카드 상단 알림 문구 — 설치 상태/접근 변경에 따라. 없으면 '' */
 function connNotice(conn: GithubConnection): string {
   if (conn.installationStatus === 'SUSPENDED')
@@ -824,7 +828,7 @@ onMounted(async () => {
                     <strong>{{ c.selectedRepositories.length }}개</strong>
                     <small>{{ revokedCount(c) ? `${revokedCount(c)}개 접근 해제` : '저장소 선택' }}</small>
                   </span>
-                  <span class="gh2-compact-status" :class="isWarnConn(c) ? 'warn' : 'good'"><span class="dot"></span>{{ statusText(c) }}</span>
+                  <span class="gh2-compact-status" :class="isDangerConn(c) ? 'danger' : isWarnConn(c) ? 'warn' : 'good'"><span class="dot"></span>{{ statusText(c) }}</span>
                   <span class="gh2-compact-open">{{ expandedId === c.connectionId ? '접기' : '상세' }} <GhIcon name="chevron" /></span>
                 </button>
                 <div v-if="expandedId === c.connectionId" class="gh2-compact-detail">
@@ -837,14 +841,14 @@ onMounted(async () => {
                       <div class="row">
                         <div class="account-icon"><GhIcon :name="c.accountType === 'Organization' ? 'building' : 'user'" /></div>
                         <div class="grow"><h3 class="account-name">{{ c.accountLogin }}</h3><p class="account-type">GitHub {{ c.accountType === 'Organization' ? 'Organization' : 'Personal account' }}</p></div>
-                        <span class="pill" :class="isWarnConn(c) ? 'amber' : 'green'"><span class="dot"></span>{{ statusText(c) }}</span>
+                        <span class="pill" :class="isDangerConn(c) ? 'red' : isWarnConn(c) ? 'amber' : 'green'"><span class="dot"></span>{{ statusText(c) }}</span>
                       </div>
                       <div class="install-meta">
                         <span class="row"><GhIcon :name="c.workspaceId === null ? 'user' : 'users'" /><strong>{{ scopeLabel(spaceKey(c)) }}</strong></span><span class="pill">{{ c.workspaceId === null ? 'Personal' : 'Workspace' }}</span>
                         <span class="meta-divider"></span><span class="date">{{ connectedDate(c.connectedAt) }} 연결</span>
                       </div>
                     </div>
-                    <div v-if="connNotice(c)" class="notice amber">
+                    <div v-if="connNotice(c)" class="notice" :class="isDangerConn(c) ? 'red' : 'amber'">
                       <GhIcon name="info" /><div>{{ connNotice(c) }}</div>
                     </div>
                     <div class="repository-area">
@@ -920,14 +924,14 @@ onMounted(async () => {
             <div class="row">
               <div class="account-icon"><GhIcon :name="c.accountType === 'Organization' ? 'building' : 'user'" /></div>
               <div class="grow"><h3 class="account-name">{{ c.accountLogin }}</h3><p class="account-type">GitHub {{ c.accountType === 'Organization' ? 'Organization' : 'Personal account' }}</p></div>
-              <span class="pill" :class="isWarnConn(c) ? 'amber' : 'green'"><span class="dot"></span>{{ statusText(c) }}</span>
+              <span class="pill" :class="isDangerConn(c) ? 'red' : isWarnConn(c) ? 'amber' : 'green'"><span class="dot"></span>{{ statusText(c) }}</span>
             </div>
             <div class="install-meta">
               <span class="row"><GhIcon :name="c.workspaceId === null ? 'user' : 'users'" /><strong>{{ scopeLabel(spaceKey(c)) }}</strong></span><span class="pill">{{ c.workspaceId === null ? 'Personal' : 'Workspace' }}</span>
               <span class="meta-divider"></span><span class="date">{{ connectedDate(c.connectedAt) }} 연결</span>
             </div>
           </div>
-          <div v-if="connNotice(c)" class="notice amber">
+          <div v-if="connNotice(c)" class="notice" :class="isDangerConn(c) ? 'red' : 'amber'">
             <GhIcon name="info" /><div>{{ connNotice(c) }}</div>
           </div>
           <div class="repository-area">
