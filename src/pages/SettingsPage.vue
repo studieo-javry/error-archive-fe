@@ -287,7 +287,7 @@ async function restoreAccount() {
     </Teleport>
 
     <!-- Sub Navigation -->
-    <aside class="w-60 border-r border-zinc-200 dark:border-zinc-800 p-6 overflow-y-auto shrink-0">
+    <aside class="w-60 border-r border-zinc-200 dark:border-zinc-800 p-6 overflow-y-auto no-scrollbar shrink-0">
       <div class="mb-8">
         <h3 class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3 px-2">My Account</h3>
         <button class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors" :class="activeTab === 'profile' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100'" @click="activeTab = 'profile'">Profile</button>
@@ -315,7 +315,7 @@ async function restoreAccount() {
     </aside>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-10 pb-12">
+    <div class="flex-1 overflow-y-auto no-scrollbar p-10 pb-12">
       <!-- 모든 탭 공통 폭: 섹션마다 max-w 를 따로 주면 탭 전환 시 박스 오른쪽 끝이 들쭉날쭉해짐 -->
       <div class="max-w-3xl">
 

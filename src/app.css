@@ -29,11 +29,13 @@ body {
 }
 
 /* Main scroll area: scrollbar fully hidden (rail + thumb); scrolling still works. */
-main {
+main,
+.no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-main::-webkit-scrollbar {
+main::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
