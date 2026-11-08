@@ -273,12 +273,5 @@ html.dark .gh-list-error{background:#302719;border-color:#63491b}
 @media(max-width:700px){.gh2 .gh2-install-settings{padding:11px 17px;align-items:flex-start;flex-wrap:wrap}.gh2 .gh2-install-settings>span{max-width:100%}.gh2 .gh2-actions{gap:13px}.gh2 .gh2-account-option{padding:13px 12px;gap:9px}.gh2 .gh2-account-option p{font-size:10px}.gh2 .gh2-pick-row{padding:13px 12px}.gh2 .gh2-pick-row strong{font-size:11px}.gh2 .gh2-pick-row .repo-owner{display:none}.gh2 .gh2-simulation{padding:10px 17px;line-height:1.7}.gh2 .gh2-steps{font-size:9px}.gh2 .gh2-danger-zone{align-items:flex-start}.gh2 .gh2-danger-zone p{max-width:180px;line-height:1.7}.gh2 .modal-actions{padding:14px 19px}.gh2 .modal-inner{padding:22px}.gh2 .gh2-bottom-note{font-size:10px}.gh2 .modal-actions .small{max-width:160px;font-size:10px}}
 @media(max-width:380px){.gh2 .gh2-steps .step-num{width:14px;height:14px;margin-right:2px}.gh2 .gh2-steps>.icon{width:8px;height:8px}.gh2 .modal-inner{padding:20px 17px}.gh2 .gh2-actions{gap:9px}.gh2 .gh2-actions .text-button{font-size:10px}.gh2 .modal-inner h2{font-size:19px}}
 
-/* ── 스텝바 — 목업 step 디자인(원형 dot·현재=녹색). 구분자(›)는 독립 형제로 분리해 space-between 이 각 단계 사이 정중앙 배치. 전 단계 공통 ── */
-.gh2 .gh2-steps{justify-content:space-between;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:var(--soft);margin-bottom:30px}
-.gh2 .gh2-steps .gh2-step{display:inline-flex;align-items:center;flex:none}
-.gh2 .gh2-steps .step-num{width:22px;height:22px;flex:none;margin-right:8px;border-radius:50%;background:var(--hover);color:var(--soft);font-size:11px;font-weight:600}
-.gh2 .gh2-steps .current{color:var(--green);font-weight:600}
-.gh2 .gh2-steps .current .step-num{background:var(--green-bg);color:var(--green)}
-.gh2 .gh2-steps .gh2-sep{width:13px;height:13px;flex:none;color:var(--soft);opacity:.75}
-@media(max-width:700px){.gh2 .gh2-steps{font-size:10px;margin-bottom:24px}.gh2 .gh2-steps .step-num{width:19px;height:19px;margin-right:6px;font-size:10px}}
-@media(max-width:380px){.gh2 .gh2-steps{font-size:9px}.gh2 .gh2-steps .step-num{width:17px;height:17px;margin-right:4px}}
+/* ── 스텝바 — 구분자(›)만 독립 형제로 분리해 space-between 이 각 단계 사이 정중앙에 배치(원래 크기·색 유지) ── */
+.gh2 .gh2-steps .gh2-step{display:inline-flex;align-items:center}
