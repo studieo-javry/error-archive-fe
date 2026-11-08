@@ -13,10 +13,15 @@
  * <html> element itself had none — so overscroll (rubber-band) past the top/bottom exposed the
  * browser's default white canvas as bands. Paint <html> with the app-shell background so the
  * overscroll area matches the theme instead. color-scheme also themes native scrollbar/overscroll.
+ *
+ * overscroll-behavior: none kills the elastic rubber-band / pull-to-refresh entirely, so trackpad
+ * overscroll past the top or bottom shows no band at all (what most apps do). Set on the root (viewport
+ * bounce) and below on every scroll container (their own bounce + scroll chaining to the viewport).
  */
 html {
   background-color: #f7f7f5;
   color-scheme: light;
+  overscroll-behavior: none;
 }
 html.dark {
   background-color: #18181b;
@@ -26,13 +31,15 @@ html.dark {
 body {
   font-family: var(--font-sans);
   transition: background-color 0.3s, color 0.3s;
+  overscroll-behavior: none;
 }
 
-/* Main scroll area: scrollbar fully hidden (rail + thumb); scrolling still works. */
+/* Main scroll area: scrollbar fully hidden (rail + thumb); scrolling still works. No bounce/chaining. */
 main,
 .no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
+  overscroll-behavior: none;
 }
 main::-webkit-scrollbar,
 .no-scrollbar::-webkit-scrollbar {
