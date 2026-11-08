@@ -8,6 +8,21 @@
   --font-serif: "Fraunces", "Nanum Myeongjo", "Noto Serif KR", serif;
 }
 
+/*
+ * Root/canvas background. The app shell paints its own background on inner wrappers, but the
+ * <html> element itself had none — so overscroll (rubber-band) past the top/bottom exposed the
+ * browser's default white canvas as bands. Paint <html> with the app-shell background so the
+ * overscroll area matches the theme instead. color-scheme also themes native scrollbar/overscroll.
+ */
+html {
+  background-color: #f7f7f5;
+  color-scheme: light;
+}
+html.dark {
+  background-color: #18181b;
+  color-scheme: dark;
+}
+
 body {
   font-family: var(--font-sans);
   transition: background-color 0.3s, color 0.3s;
