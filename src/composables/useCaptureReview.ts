@@ -243,3 +243,6 @@ export function useCaptureReview(detail: Ref<CaptureDetail | null>) {
     rebaseRevision,
   }
 }
+
+/** 검토 컴포넌트에 내려주는 리뷰 컨텍스트(useCaptureReview 반환). */
+export type CaptureReview = ReturnType<typeof useCaptureReview>
