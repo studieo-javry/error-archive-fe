@@ -54,6 +54,11 @@ async function load() {
 }
 onMounted(load)
 
+async function refresh() {
+  await load()
+  if (!loadError.value) toast('연결 목록을 새로고침했어요.')
+}
+
 function koDate(iso: string): string {
   return new Date(iso).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
@@ -159,7 +164,7 @@ error-archive-agent connect-project /path/to/project`,
 
     <div class="row between">
       <h3>내 연결 <span class="muted">{{ connections.length }}</span></h3>
-      <button type="button" class="btn ghost small" @click="load"><CapIcon name="refresh" />목록 새로고침</button>
+      <button type="button" class="btn ghost small" @click="refresh"><CapIcon name="refresh" />목록 새로고침</button>
     </div>
 
     <template v-if="loading">

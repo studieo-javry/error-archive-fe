@@ -22,8 +22,9 @@ export function mountDemoPanel() {
 
   const bar = document.createElement('div')
   bar.id = 'cap-demo-panel'
+  // 우하단 고정 — 하단 중앙에 뜨는 토스트를 가리지 않도록.
   bar.style.cssText = [
-    'position:fixed', 'left:50%', 'transform:translateX(-50%)', 'bottom:16px', 'z-index:2147483647',
+    'position:fixed', 'right:16px', 'bottom:16px', 'z-index:2147483647',
     'display:flex', 'align-items:center', 'gap:10px', 'padding:7px 12px', 'border-radius:999px',
     'background:#18181b', 'color:#e4e4e7', 'box-shadow:0 10px 40px #0006', 'font:500 12px Inter,system-ui,sans-serif',
   ].join(';')

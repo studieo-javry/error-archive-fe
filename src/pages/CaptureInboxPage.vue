@@ -11,9 +11,11 @@ import CapIcon from '@/components/capture/CapIcon.vue'
 import { captureApi } from '@/services/captureApi'
 import type { Capture, CaptureHistoryItem, CaptureStatus } from '@/types/capture'
 import { CAPTURE_STATE_LABELS } from '@/utils/captureLabels'
+import { useCaptureToast } from '@/composables/useCaptureToast'
 
 const route = useRoute()
 const router = useRouter()
+const { toast } = useCaptureToast()
 
 type Tab = 'queue' | 'history'
 const tab = computed<Tab>(() => (route.query.tab === 'history' ? 'history' : 'queue'))
@@ -70,6 +72,7 @@ async function load() {
   loading.value = true
   loadError.value = false
   cursor.value = null
+  const started = performance.now()
   try {
     if (tab.value === 'queue') {
       const { data } = await captureApi.reviewQueue()
@@ -82,6 +85,8 @@ async function load() {
       cursor.value = data.nextCursor ?? null
       hasNext.value = data.hasNext
     }
+    // 눈에 띄게 기다린 로드(스켈레톤을 본 경우)에만 완료를 알린다 — 즉시 응답엔 소음 X.
+    if (performance.now() - started > 600) toast('기록을 불러왔어요.')
   } catch {
     loadError.value = true
   } finally {
@@ -281,6 +286,8 @@ const HISTORY_FILTERS: { value: CaptureStatus | ''; label: string }[] = [
 .cap-tools .raw:focus { border-color: var(--accent); }
 .cap-list { border-top: 1px solid var(--line); }
 .capture-row { position: relative; padding: 24px 6px 24px 0; border-bottom: 1px solid var(--line); display: flex; gap: 20px; align-items: center; }
+.capture-row::before { content: ""; position: absolute; left: -13px; top: 22px; bottom: 22px; width: 2px; background: var(--accent); opacity: 0; transition: opacity 0.2s; }
+.capture-row:hover::before { opacity: 1; }
 .capture-row .row-main { flex: 1; min-width: 0; cursor: pointer; }
 .capture-row:hover .row-title { color: var(--green); }
 .row-title { font-size: 16px; font-weight: 500; line-height: 1.6; display: block; border: 0; background: none; text-align: left; padding: 0; transition: color 0.15s; cursor: pointer; color: var(--text); }
