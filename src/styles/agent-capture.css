@@ -1,0 +1,195 @@
+/*
+ * Agent Capture 화면 전용 디자인 시스템.
+ * error_archive_agent_capture_final.html 목업의 콘텐츠 스타일을 `.cap` 루트 아래로 스코프해 포팅한다
+ * (앱 셸 .proto/.rail/.header 등은 포팅하지 않음 — 캡처 화면은 기존 AppSidebar/AppHeader 레이아웃 안에서 렌더).
+ * 다크는 앱과 동일하게 html.dark 토글을 따른다. GithubConnectionSection 의 github-integration.css 와 같은 방식.
+ */
+
+.cap {
+  --bg: #f7f7f5; --panel: #fff; --text: #18181b; --muted: #71717a; --soft: #a1a1aa;
+  --line: #e4e4e7; --hover: #f1f1f0; --green: #059669; --accent: #10b981; --tint: #ecfdf5;
+  --gt: #047857; --rose: #e11d48; --rose-bg: #fff1f2; --amber: #b45309; --amber-bg: #fffbeb;
+  --blue: #2563eb; --blue-bg: #eff6ff; --shadow: 0 18px 70px #18181b18;
+  --cap-font: Inter, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  color: var(--text);
+  font-family: var(--cap-font);
+  font-size: 14px;
+  line-height: 1.65;
+}
+html.dark .cap {
+  --bg: #18181b; --panel: #202023; --text: #e4e4e7; --muted: #a1a1aa; --soft: #71717a;
+  --line: #333338; --hover: #27272a; --green: #34d399; --accent: #10b981; --tint: #062e25;
+  --gt: #6ee7b7; --rose: #fb7185; --rose-bg: #3b1825; --amber: #fbbf24; --amber-bg: #33291c;
+  --blue: #93c5fd; --blue-bg: #1b293c; --shadow: 0 18px 70px #0006;
+}
+
+.cap *, .cap *::before, .cap *::after { box-sizing: border-box; }
+.cap h1, .cap h2, .cap h3, .cap p { margin: 0; }
+.cap h2 { font-size: 20px; font-weight: 600; line-height: 1.45; }
+.cap h3 { font-size: 14px; font-weight: 600; }
+.cap p + p { margin-top: 8px; }
+.cap svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.cap button { font: inherit; cursor: pointer; color: inherit; }
+.cap button:disabled { opacity: .4; cursor: not-allowed; }
+.cap input, .cap textarea, .cap select { font: inherit; }
+.cap button:focus-visible, .cap a:focus-visible, .cap input:focus-visible, .cap textarea:focus-visible, .cap select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.cap a { color: var(--green); text-underline-offset: 3px; }
+
+/* typography helpers */
+.cap .muted { color: var(--muted); }
+.cap .soft { color: var(--soft); }
+.cap .small { font-size: 12px; }
+.cap .tiny { font-size: 11px; }
+.cap .mono, .cap code, .cap pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.cap .serif { font-family: Fraunces, "Nanum Myeongjo", "Noto Serif KR", Georgia, serif; font-weight: 400; letter-spacing: -.025em; }
+.cap .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.cap .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); }
+
+/* layout helpers */
+.cap .row { display: flex; align-items: center; gap: 12px; }
+.cap .between { justify-content: space-between; }
+.cap .wrap { flex-wrap: wrap; }
+.cap .grow { flex: 1; min-width: 0; }
+.cap .divider { height: 1px; background: var(--line); margin: 24px 0; }
+
+/* page frame */
+.cap.page, .cap .page { max-width: 1080px; margin: 0 auto; padding: 46px 42px 80px; }
+.cap .page.wide, .cap.page.wide { max-width: 1260px; }
+.cap .page-title { font-size: 38px; line-height: 1.2; margin: 8px 0 12px; }
+.cap .subtitle { color: var(--muted); font-size: 13px; line-height: 1.8; }
+.cap .heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 30px; }
+.cap .heading-actions { display: flex; gap: 8px; padding-top: 13px; }
+
+/* buttons */
+.cap .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 15px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); font-weight: 500; font-size: 13px; line-height: 1.5; white-space: nowrap; text-decoration: none; transition: background .15s; }
+.cap .btn:hover { background: var(--hover); }
+.cap .btn.primary { background: #059669; border-color: #059669; color: #fff; }
+.cap .btn.primary:hover { background: #047857; }
+.cap .btn.danger { background: var(--rose-bg); border-color: transparent; color: var(--rose); }
+.cap .btn.ghost { background: transparent; border-color: transparent; padding: 7px 8px; color: var(--muted); }
+.cap .btn.small { font-size: 12px; padding: 6px 10px; }
+.cap .btn svg { width: 16px; height: 16px; }
+.cap .text-btn { border: 0; background: transparent; padding: 0; color: var(--green); font-size: 12px; }
+.cap .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); }
+.cap .iconbtn:hover { background: var(--hover); color: var(--text); }
+
+/* badges */
+.cap .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; line-height: 1.5; padding: 3px 8px; border-radius: 6px; white-space: nowrap; background: var(--hover); color: var(--muted); }
+.cap .badge svg { width: 12px; height: 12px; }
+.cap .badge.green { background: var(--tint); color: var(--gt); }
+.cap .badge.amber { background: var(--amber-bg); color: var(--amber); }
+.cap .badge.rose { background: var(--rose-bg); color: var(--rose); }
+.cap .badge.blue { background: var(--blue-bg); color: var(--blue); }
+
+/* cards / notices / callout / accordion */
+.cap .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+.cap .notice { border-radius: 9px; padding: 14px 16px; background: var(--blue-bg); color: var(--blue); font-size: 12px; line-height: 1.8; }
+.cap .notice.amber { background: var(--amber-bg); color: var(--amber); }
+.cap .notice.green { background: var(--tint); color: var(--gt); }
+.cap .notice.rose { background: var(--rose-bg); color: var(--rose); }
+.cap .notice.neutral { background: var(--hover); color: var(--muted); }
+.cap .notice .btn { margin-top: 10px; }
+.cap .callout { border-left: 2px solid var(--accent); padding: 2px 0 2px 15px; margin-top: 16px; }
+.cap .accordion { border-bottom: 1px solid var(--line); padding: 16px 0; }
+.cap .accordion summary { cursor: pointer; font-weight: 500; font-size: 13px; }
+.cap .accordion p { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+/* intro banner */
+.cap .intro { display: flex; align-items: center; gap: 16px; border: 1px solid var(--line); border-radius: 12px; padding: 17px 20px; background: var(--panel); margin-bottom: 30px; }
+.cap .intro-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: var(--tint); color: var(--green); flex-shrink: 0; }
+
+/* empty state */
+.cap .empty { text-align: center; padding: 65px 20px 75px; border: 1px dashed var(--line); border-radius: 14px; }
+.cap .empty .empty-icon { margin: 0 auto 22px; width: 66px; height: 66px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--green); }
+.cap .empty h2 { font-size: 30px; margin-bottom: 13px; }
+.cap .empty p { max-width: 430px; margin: 0 auto 23px; color: var(--muted); font-size: 13px; }
+
+/* settings layout (연결·프로젝트 in Settings) */
+.cap .settings-layout { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 40px; }
+.cap .settings-nav { border-right: 1px solid var(--line); padding-right: 22px; }
+.cap .settings-nav .eyebrow { margin-bottom: 12px; }
+.cap .settings-nav button { display: block; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; color: var(--muted); padding: 9px 11px; font-size: 13px; margin: 3px 0; }
+.cap .settings-nav button.active { color: var(--green); background: var(--tint); font-weight: 500; }
+.cap .setting-title { font-size: 25px; font-weight: 600; letter-spacing: -.03em; margin: 0 0 9px; }
+
+/* connection rows */
+.cap .connection { display: flex; align-items: flex-start; gap: 16px; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.cap .connection-icon { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); display: grid; place-items: center; color: var(--muted); }
+.cap .connection h3 { margin-bottom: 3px; }
+.cap .connection .meta { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; flex-wrap: wrap; margin: 6px 0; }
+.cap .connection .meta svg { width: 13px; height: 13px; }
+.cap .connection .actions { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; }
+.cap .scope-list { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 9px; }
+.cap .scope-list span { font-size: 10px; padding: 2px 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); }
+
+/* project rows */
+.cap .project-row { padding: 22px 0; border-bottom: 1px solid var(--line); display: flex; gap: 14px; align-items: center; }
+.cap .project-row h3 { font-size: 13px; overflow-wrap: anywhere; }
+
+/* token reveal + code box + guide steps (설치 안내) */
+.cap .token { padding: 17px; border: 1px dashed var(--accent); background: var(--tint); color: var(--gt); border-radius: 9px; overflow-wrap: anywhere; font-size: 13px; letter-spacing: .01em; margin: 20px 0; }
+.cap .code-box { position: relative; border: 1px solid var(--line); background: var(--bg); border-radius: 9px; padding: 16px; margin: 10px 0; }
+.cap .code-box pre { font-size: 11px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; padding-right: 38px; }
+.cap .code-box button { position: absolute; right: 8px; top: 8px; }
+.cap .guide-step { display: flex; gap: 15px; margin: 24px 0; }
+.cap .guide-n { width: 25px; height: 25px; flex-shrink: 0; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; color: var(--green); font-size: 11px; margin-top: 1px; }
+
+/* forms (modals) */
+.cap .form-field { display: block; margin: 17px 0; }
+.cap .form-field > span { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.cap .cap-input { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 10px 12px; color: var(--text); font-size: 13px; outline: 0; }
+.cap .cap-input:focus { border-color: var(--accent); }
+.cap textarea.cap-input { resize: vertical; min-height: 100px; line-height: 1.8; }
+.cap .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.cap .choice { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 12px; line-height: 1.7; }
+.cap .error-list { font-size: 11px; line-height: 1.7; color: var(--rose); padding: 11px 12px; background: var(--rose-bg); border-radius: 7px; margin: 12px 0; }
+.cap .error-list p + p { margin-top: 6px; }
+
+/* checkbox */
+.cap .check { appearance: none; width: 18px; height: 18px; border: 1.5px solid #d4d4d8; border-radius: 5px; background: transparent; vertical-align: middle; flex-shrink: 0; cursor: pointer; margin: 0; }
+html.dark .cap .check { border-color: #52525b; }
+.cap .check:checked { border: 2px solid var(--accent); border-radius: 6px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E"); background-size: 12px; background-repeat: no-repeat; background-position: center; }
+
+/* modal (overlay + card) — large edit modals, footer */
+.cap-overlay { position: fixed; inset: 0; z-index: 100; background: #09090b70; backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 22px; }
+.cap-overlay .cap-modal { background: var(--panel); border: 1px solid var(--line); border-radius: 17px; box-shadow: var(--shadow); width: min(600px, 100%); max-height: 90dvh; overflow: auto; padding: 27px; color: var(--text); font-family: var(--cap-font); }
+.cap-overlay .cap-modal.large { width: min(840px, 100%); }
+.cap-overlay .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 21px; gap: 18px; }
+.cap-overlay .modal-head h2 { font-size: 20px; }
+.cap-overlay .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+
+/* toast */
+.cap-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 28px; z-index: 130; background: var(--text); color: var(--bg); border-radius: 99px; padding: 12px 23px; box-shadow: var(--shadow); font-size: 12px; display: flex; align-items: center; gap: 9px; max-width: 90vw; font-family: var(--cap-font); }
+html.dark .cap-toast { background: #e4e4e7; color: #18181b; }
+.cap-toast svg { color: var(--accent); width: 16px; }
+
+/* spinner */
+.cap .spinner { width: 16px; height: 16px; border: 2px solid #ffffff55; border-top-color: #fff; border-radius: 50%; animation: cap-spin .8s linear infinite; }
+@keyframes cap-spin { to { transform: rotate(360deg); } }
+
+/* loading shimmer */
+.cap .loading { height: 11px; border-radius: 4px; background: linear-gradient(90deg, var(--line), var(--hover), var(--line)); background-size: 200%; animation: cap-shimmer 1.1s infinite; margin: 12px 0; }
+@keyframes cap-shimmer { to { background-position: -200%; } }
+
+@media (max-width: 1100px) {
+  .cap .page { padding: 35px 28px 65px; }
+  .cap .settings-layout { grid-template-columns: 145px minmax(0, 1fr); gap: 25px; }
+}
+@media (max-width: 800px) {
+  .cap .settings-layout { grid-template-columns: 1fr; }
+  .cap .settings-nav { border: 0; border-bottom: 1px solid var(--line); display: flex; gap: 6px; overflow: auto; padding: 0 0 12px; }
+  .cap .settings-nav .eyebrow { display: none; }
+  .cap .settings-nav button { width: auto; white-space: nowrap; }
+}
+@media (max-width: 560px) {
+  .cap .page { padding: 25px 17px 55px; }
+  .cap .page-title { font-size: 32px; }
+  .cap .form-grid { grid-template-columns: 1fr; }
+  .cap-overlay { padding: 12px; }
+  .cap-overlay .cap-modal { padding: 21px; max-height: 94dvh; }
+  .cap .connection { gap: 10px; flex-wrap: wrap; }
+  .cap .connection .actions { flex-direction: row; margin-left: 52px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cap *, .cap-overlay *, .cap-toast { animation: none !important; transition: none !important; }
+}
