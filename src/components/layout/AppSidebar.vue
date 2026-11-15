@@ -17,6 +17,7 @@ import {
   ChartBarIcon,
   UserGroupIcon,
   UserCircleIcon,
+  InboxArrowDownIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   SunIcon,
@@ -107,6 +108,12 @@ function goSettings() {
   if (authStore.isGuest) return demo.openDialog('settings')
   router.push({ name: 'settings' })
 }
+function goCaptures() {
+  menuOpen.value = false
+  // 개인·비공개 영역. 게스트는 실제 계정이 없어 세션 안내 모달로.
+  if (authStore.isGuest) return demo.openDialog('account')
+  router.push({ name: 'captureInbox' })
+}
 async function onLogout() {
   menuOpen.value = false
   await logout()
@@ -177,6 +184,10 @@ async function onLogout() {
         <button role="menuitem" class="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors" @click="goProfile">
           <UserCircleIcon class="w-4 h-4 text-zinc-400" />
           Profile
+        </button>
+        <button role="menuitem" class="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors" @click="goCaptures">
+          <InboxArrowDownIcon class="w-4 h-4 text-zinc-400" />
+          Capture Inbox
         </button>
         <button role="menuitem" class="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors" @click="goSettings">
           <Cog6ToothIcon class="w-4 h-4 text-zinc-400" />

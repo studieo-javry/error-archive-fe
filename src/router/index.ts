@@ -24,6 +24,9 @@ const routes = [
   // ExplorePage 자체 헤더로 chrome-less 렌더(App.vue 가 레이아웃 분기).
   { path: '/explore', name: 'explore', component: () => import('@/pages/ExplorePage.vue'), meta: { optionalAuth: true } },
   { path: '/me/publications', name: 'myPublications', component: () => import('@/pages/MyPublicationsPage.vue') },
+  // Agent Capture — 개인·비공개. 검토 대기함(탭: ?tab=queue|history|metrics) + 초안 검토 상세.
+  { path: '/me/captures', name: 'captureInbox', component: () => import('@/pages/CaptureInboxPage.vue') },
+  { path: '/me/captures/:uuid', name: 'captureReview', component: () => import('@/pages/CaptureReviewPage.vue'), meta: { wideLayout: true } },
   { path: '/profile/:id?', name: 'profile', component: () => import('@/pages/ProfilePage.vue') },
   { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true, fullHeight: true } },
   { path: '/settings/integrations', name: 'settingsIntegrations', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true, fullHeight: true } },

@@ -29,6 +29,8 @@ const ROUTE_LABELS: Record<string, string> = {
   profile: 'Profile',
   settings: 'Settings',
   myPublications: 'Publications',
+  captureInbox: 'Capture Inbox',
+  captureReview: 'Capture Inbox',
 }
 const routeLabel = computed(() => ROUTE_LABELS[String(route.name)] ?? '')
 const open = ref(false)
