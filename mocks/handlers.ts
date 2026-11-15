@@ -1,7 +1,17 @@
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse, delay } from 'msw'
 import type { MyProfile } from '@/types/user'
 import type { ErrorCaseSummary } from '@/types/error'
 import type { GithubInstallation } from '@/types/githubIntegration'
+import type { ImportCaptureRequest } from '@/types/capture'
+import type { CreateAgentConnectionRequest } from '@/types/agentConnection'
+import type { CreateProjectBindingRequest } from '@/types/projectBinding'
+import {
+  captureStore, connectionStore, findCapture, getScenario, historyCaptures,
+  nextCaseId, projectStore, queueCaptures,
+} from './captureData'
+
+// 응답 유실 시나리오에서 "재시도 성공"을 재현: 같은 Idempotency-Key 의 두 번째 요청은 통과.
+const seenImportKeys = new Set<string>()
 
 // Synthesize ~1 year of activity-grass data in the insight-api ActivityGrassResponse shape.
 function buildGrass() {
@@ -337,6 +347,119 @@ const mockNotifications: Array<{
 ]
 
 export const handlers = [
+  // ─────────────── Agent Capture (오프라인 데모) ───────────────
+  http.get('/api/v1/captures', async () => {
+    const s = getScenario()
+    if (s === 'error') return new HttpResponse(null, { status: 500 })
+    if (s === 'loading') await delay(1400)
+    const items = s === 'empty' || s === 'first' ? [] : queueCaptures()
+    return HttpResponse.json({ items, nextCursor: null, hasNext: false })
+  }),
+
+  http.get('/api/v1/captures/metrics', () => {
+    const group = captureStore
+    const n = (st: string) => group.filter((c) => c.capture.status === st).length
+    const imported = n('IMPORTED'); const discarded = n('DISCARDED'); const reviewed = imported + discarded
+    return HttpResponse.json({
+      windowDays: 30, since: '2026-10-16T00:00:00Z', created: group.length, open: n('OPEN'),
+      readyForReview: n('READY_FOR_REVIEW'), imported, discarded, reviewed,
+      discardRate: reviewed ? discarded / reviewed : null, adoptionRate: reviewed ? imported / reviewed : null,
+    })
+  }),
+
+  http.get('/api/v1/captures/history', ({ request }) => {
+    const status = new URL(request.url).searchParams.get('status')
+    let items = historyCaptures()
+    if (status) items = items.filter((c) => c.status === status)
+    return HttpResponse.json({ items, nextCursor: null, hasNext: false })
+  }),
+
+  http.get('/api/v1/captures/:uuid', ({ params }) => {
+    if (getScenario() === 'notfound') return new HttpResponse(null, { status: 404 })
+    const c = findCapture(String(params.uuid))
+    if (!c) return new HttpResponse(null, { status: 404 })
+    return HttpResponse.json({ capture: c.capture, attempts: c.attempts, solutions: c.solutions, artifacts: c.artifacts })
+  }),
+
+  http.post('/api/v1/captures/:uuid/import', async ({ request, params }) => {
+    const s = getScenario()
+    const key = request.headers.get('Idempotency-Key') ?? ''
+    const body = (await request.json()) as ImportCaptureRequest
+    const c = findCapture(String(params.uuid))
+    if (!c) return new HttpResponse(null, { status: 404 })
+
+    // 응답 유실: 같은 키의 첫 요청만 실패, 재시도(동일 키)는 통과.
+    if (s === 'network' && !seenImportKeys.has(key)) {
+      seenImportKeys.add(key)
+      return HttpResponse.error()
+    }
+    // revision 충돌: 클라이언트가 검토한 revision 과 서버 revision 이 다르면 409(+서버 revision 상향).
+    if (s === 'revision' && body.reviewedRevision === c.capture.revision) {
+      c.capture.revision += 1
+      return new HttpResponse(JSON.stringify({ code: 'REVISION_CONFLICT' }), { status: 409 })
+    }
+    // 다른 탭에서 이미 반영: 멱등 200 + alreadyImported.
+    if (s === 'duplicate') {
+      c.capture.status = 'IMPORTED'; c.caseId = c.caseId ?? 845
+      return HttpResponse.json({ captureUuid: c.capture.captureUuid, caseId: c.caseId, alreadyImported: true })
+    }
+    const caseId = nextCaseId.value++
+    c.capture.status = 'IMPORTED'; c.caseId = caseId
+    return HttpResponse.json({ captureUuid: c.capture.captureUuid, caseId, alreadyImported: false }, { status: 201 })
+  }),
+
+  http.post('/api/v1/captures/:uuid/discard', ({ params }) => {
+    const c = findCapture(String(params.uuid))
+    if (!c) return new HttpResponse(null, { status: 404 })
+    if (c.capture.status === 'IMPORTED') return new HttpResponse(null, { status: 409 })
+    c.capture.status = 'DISCARDED'
+    return HttpResponse.json(c.capture)
+  }),
+
+  http.post('/api/v1/captures/:uuid/restore', ({ params }) => {
+    const c = findCapture(String(params.uuid))
+    if (!c) return new HttpResponse(null, { status: 404 })
+    if (c.capture.status !== 'DISCARDED') return new HttpResponse(null, { status: 409 })
+    c.capture.status = c.capture.completedAt ? 'READY_FOR_REVIEW' : 'OPEN'
+    return HttpResponse.json(c.capture)
+  }),
+
+  http.get('/api/v1/me/agent-connections', () => {
+    return HttpResponse.json(getScenario() === 'first' ? [] : connectionStore)
+  }),
+  http.post('/api/v1/me/agent-connections', async ({ request }) => {
+    const body = (await request.json()) as CreateAgentConnectionRequest
+    const scopes = body.scopes?.length ? body.scopes : ['capture:read', 'capture:write', 'artifact:write', 'case:read']
+    const id = crypto.randomUUID()
+    const now = new Date()
+    const expires = new Date(now.getTime() + 30 * 86400000)
+    connectionStore.push({
+      connectionId: id, label: body.label ?? null, displayName: body.label || '이름 없는 연결',
+      clientKind: null, clientVersion: null, installLabel: null, scopes,
+      createdAt: now.toISOString(), lastUsedAt: null, expiresAt: expires.toISOString(), expired: false,
+    })
+    return HttpResponse.json({
+      connectionId: id, token: 'eaa_demo_' + Math.random().toString(36).slice(2, 14),
+      scopes, label: body.label ?? null, createdAt: now.toISOString(), expiresAt: expires.toISOString(),
+    }, { status: 201 })
+  }),
+  http.delete('/api/v1/me/agent-connections/:id', ({ params }) => {
+    const i = connectionStore.findIndex((c) => c.connectionId === String(params.id))
+    if (i < 0) return new HttpResponse(null, { status: 404 })
+    connectionStore.splice(i, 1)
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('/api/v1/me/project-bindings', () => HttpResponse.json({ items: projectStore })),
+  http.post('/api/v1/me/project-bindings', async ({ request }) => {
+    const body = (await request.json()) as CreateProjectBindingRequest
+    const existing = projectStore.find((p) => p.projectKey === body.projectKey)
+    if (existing) return HttpResponse.json(existing)
+    const created = { id: Date.now(), projectKey: body.projectKey, normalizedRepoId: body.normalizedRepoId ?? null, storagePolicy: 'DEFAULT', createdAt: new Date().toISOString() }
+    projectStore.push(created)
+    return HttpResponse.json(created, { status: 201 })
+  }),
+
   // Auth - OAuth flow
   http.post('/api/v1/auth/oauth/github/authorize', () => {
     return HttpResponse.json({

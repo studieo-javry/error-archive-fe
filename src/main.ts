@@ -16,6 +16,10 @@ async function bootstrap() {
     if (!localStorage.getItem('accessToken')) {
       localStorage.setItem('accessToken', 'mock-access-token')
     }
+
+    // Agent Capture 오프라인 데모: 시나리오 스위처(네 디자인 목업의 상단 바 역할).
+    const { mountDemoPanel } = await import('../mocks/demoPanel')
+    mountDemoPanel()
   }
 
   const pinia = createPinia()
