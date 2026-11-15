@@ -215,6 +215,54 @@ function depsDiscarded(): Stored {
   }
 }
 
+// 리치 본문 데모 — bodyMarkdown(@snippet·@attach) + 상황 코드스니펫 + 상황 이미지(#854 축약).
+function oomCapture(): Stored {
+  return {
+    capture: {
+      captureUuid: uuid(8), status: 'READY_FOR_REVIEW', revision: 5,
+      title: 'core-api 파드가 OOMKilled 로 반복 재시작', project: 'error-archive', projectBindingId: 1,
+      content: {
+        symptom: 'core-api 가 메모리 한도(640Mi)를 넘어 OOMKilled(Exit 137)로 반복 재시작.',
+        observedFacts: [], hypotheses: [], reproduction: { steps: [], executed: false },
+        environment: { service: 'core-api', branch: 'fix/jvm-heap', commitSha: 'a34edcf', dirtyWorktree: false, diffRef: null },
+        unknowns: [],
+        bodyMarkdown:
+          '## 요약\n' +
+          'Slack 에 파드 재시작 반복 알림이 왔다. core-api 가 메모리 한도(640Mi)를 넘어 커널에 의해 강제 종료(OOMKilled, Exit 137)되고 다시 뜨기를 반복했다. ' +
+          '원인은 코드가 아니라 JVM 힙 비율(75%)이 컨테이너 한도와 맞지 않는 것.\n\n' +
+          '## 현상\n배포 75분 만에 두 번째 재시작, 두 번 모두 OOMKilled.\n\n' +
+          '@snippet(s-describe)\n\n' +
+          '재시작 직후에도 금방 한도 95% 에 붙는다.\n\n' +
+          '@snippet(s-cgroup)\n\n' +
+          '### 발견 경위 — Slack 알림\n17:31(KST) Grafana 가 #개발 채널에 재시작 반복 알림을 보냈다.\n\n' +
+          '@attach(img-alert)',
+        snippets: [
+          {
+            clientSnippetId: 's-describe', title: 'kubectl describe pod — 마지막 종료 사유', language: 'yaml',
+            filePathOrClass: 'kubectl -n apps describe pod core-api-f5mzl', caption: 'Exit 137 = 커널 OOM killer.',
+            code: 'Last State:     Terminated\n  Reason:       OOMKilled\n  Exit Code:    137\nLimits:\n  memory:  640Mi',
+          },
+          {
+            clientSnippetId: 's-cgroup', title: '재시작 직후 cgroup 메모리', language: 'text',
+            filePathOrClass: '/sys/fs/cgroup', caption: '대부분 anon(= JVM 이 잡은 메모리).',
+            code: 'memory.current  637,227,008   (≈ 608Mi)\nmemory.max      671,088,640   (= 640Mi)\nanon    549,007,360',
+          },
+        ],
+      },
+      createdAt: '2026-11-05T17:49:51Z', updatedAt: '2026-11-05T18:05:48Z', completedAt: '2026-11-05T18:05:48Z',
+    },
+    attempts: [
+      attempt('a-heap', 0, 'SUCCEEDED', 'CODE_CHANGE', {
+        title: '힙 비율을 75%→55% 로 낮춤', hypothesis: '비힙(~250Mi)까지 더하면 한도를 넘는다.',
+        action: 'MaxRAMPercentage=55 로 ENTRYPOINT 수정, 재배포.', insight: '힙 상한 352Mi + 비힙 ≈ 한도 안.',
+        nextStep: '24시간 재시작 0회 확인.', evidenceRefs: [],
+      }),
+    ],
+    solutions: [],
+    artifacts: [artifact('img-alert', 'slack-pod-restart-alert.png', 'image/png', 194737, 'c4f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0')],
+  }
+}
+
 // restoreOpen 시나리오용 — 봉인 전 폐기(복원 시 OPEN 으로).
 function configDiscardedOpen(): Stored {
   return {
@@ -233,11 +281,11 @@ function configDiscardedOpen(): Stored {
 
 // ── 가변 상태(요청 사이 유지) ──────────────────────────────────────────────
 export const captureStore: Stored[] = [
-  paymentCapture(), redisCapture(), mobileCapture(), outboxImported(), depsDiscarded(), configDiscardedOpen(),
+  oomCapture(), paymentCapture(), redisCapture(), mobileCapture(), outboxImported(), depsDiscarded(), configDiscardedOpen(),
 ]
 
 export function resetCaptureStore() {
-  captureStore.splice(0, captureStore.length, paymentCapture(), redisCapture(), mobileCapture(), outboxImported(), depsDiscarded(), configDiscardedOpen())
+  captureStore.splice(0, captureStore.length, oomCapture(), paymentCapture(), redisCapture(), mobileCapture(), outboxImported(), depsDiscarded(), configDiscardedOpen())
   nextCaseId.value = 845
 }
 export const nextCaseId = { value: 845 }

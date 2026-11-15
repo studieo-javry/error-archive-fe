@@ -2,7 +2,7 @@
 // 01 문제 맥락 — compact brief(contextD). 본문을 직접 수정했으면 markdown 프리뷰(ctx-modified)로 전환.
 import { computed } from 'vue'
 import CapIcon from '@/components/capture/CapIcon.vue'
-import MarkdownBody from '@/components/common/MarkdownBody.vue'
+import CaptureBodyRenderer from './CaptureBodyRenderer.vue'
 import { defaultBody } from '@/composables/useCaptureReview'
 import type { CaptureReview } from '@/composables/useCaptureReview'
 import type { CaptureContent, CaptureDetail } from '@/types/capture'
@@ -12,6 +12,9 @@ const emit = defineEmits<{ edit: []; original: [] }>()
 
 const content = computed<CaptureContent>(() => props.detail.capture.content)
 const modified = computed(() => props.review.draft.body !== defaultBody(content.value))
+// 에이전트 리치 본문(@snippet/@attach 포함)이 있으면 compact brief 대신 본문 렌더러로.
+const hasRichBody = computed(() => !!content.value.bodyMarkdown && content.value.bodyMarkdown.trim().length > 0)
+const showBrief = computed(() => !hasRichBody.value && !modified.value)
 
 const ENV_NAMES: Record<string, string> = {
   service: 'Service', branch: 'Branch', commitSha: 'Commit', dirtyWorktree: 'Working tree', diffRef: 'Diff',
@@ -34,12 +37,12 @@ const hasUnknowns = computed(() => (content.value.unknowns?.length ?? 0) > 0)
       <button type="button" class="btn ghost small" @click="emit('edit')"><CapIcon name="edit" />제목·본문 수정</button>
     </div>
 
-    <div v-if="modified" class="ctx-modified">
-      <div class="row between" style="margin-bottom: 15px">
+    <div v-if="!showBrief" :class="modified ? 'ctx-modified' : 'card'">
+      <div v-if="modified" class="row between" style="margin-bottom: 15px">
         <span class="badge green">반영 본문 수정됨</span>
         <button type="button" class="text-btn" @click="emit('original')">수집 원본 보기</button>
       </div>
-      <div class="preview-body"><MarkdownBody :content="review.draft.body" /></div>
+      <CaptureBodyRenderer :body="review.draft.body" :snippets="content.snippets" :artifacts="detail.artifacts" />
     </div>
 
     <div v-else class="clean-context clean-d">

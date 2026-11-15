@@ -19,8 +19,13 @@ export function statusOf(result: CaptureAttempt['result']): StepStatus {
   return 'IN_PROGRESS'
 }
 
-/** 초안 서사(content)를 Case 본문 마크다운으로 렌더. editedDescription 변경 감지의 기준값이기도 하다. */
+/**
+ * 초안 서사(content)를 Case 본문 마크다운으로 렌더. editedDescription 변경 감지의 기준값이기도 하다.
+ * content.bodyMarkdown(에이전트 리치 본문)이 있으면 그걸 기준으로 쓴다(BE import 우선순위와 정렬 —
+ * 미편집이면 editedDescription 미전송 → BE 가 bodyMarkdown 사용). 없으면 6개 구조화 필드를 조립.
+ */
 export function defaultBody(content: CaptureContent): string {
+  if (content.bodyMarkdown && content.bodyMarkdown.trim()) return content.bodyMarkdown
   const parts: string[] = []
   if (content.symptom) parts.push(`## 증상\n${content.symptom}`)
   if (content.observedFacts.length) parts.push(`## 관측된 사실\n${content.observedFacts.map((v) => `- ${v}`).join('\n')}`)

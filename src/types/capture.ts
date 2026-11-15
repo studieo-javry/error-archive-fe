@@ -44,6 +44,21 @@ export interface CaptureContent {
   reproduction?: Reproduction | null
   environment?: CaptureEnvironment | null
   unknowns: string[]
+  /** 상황을 리치 마크다운으로 서술한 본문. @snippet(clientSnippetId)·@attach(clientArtifactId) 인라인 참조. 있으면 Case 본문의 기준값. */
+  bodyMarkdown?: string | null
+  /** 상황에 귀속되는 1급 코드 스니펫. bodyMarkdown 의 @snippet() 가 가리킨다. */
+  snippets?: CaptureSnippet[] | null
+}
+
+/** 상황 본문에 인라인되는 코드 스니펫(CaptureSnippet). clientSnippetId 로 @snippet() 가 참조. */
+export interface CaptureSnippet {
+  clientSnippetId: string
+  title?: string | null
+  language?: string | null
+  filePathOrClass?: string | null
+  lineRange?: string | null
+  caption?: string | null
+  code: string
 }
 
 /** Attempt 서사(결과·순서·clientId 는 상위). */

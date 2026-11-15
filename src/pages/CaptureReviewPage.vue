@@ -20,6 +20,7 @@ import ProjectSection from '@/components/capture/review/ProjectSection.vue'
 import ReviewSummary from '@/components/capture/review/ReviewSummary.vue'
 import ReviewStepper from '@/components/capture/review/ReviewStepper.vue'
 import PreviewContent from '@/components/capture/review/PreviewContent.vue'
+import CaptureBodyRenderer from '@/components/capture/review/CaptureBodyRenderer.vue'
 import VerifyBlock from '@/components/capture/review/VerifyBlock.vue'
 import { captureApi } from '@/services/captureApi'
 import { projectBindingApi } from '@/services/projectBindingApi'
@@ -500,7 +501,7 @@ function stateTone(): string {
         <button type="button" class="btn primary" :disabled="busy" @click="onRestore">기록 복원</button>
       </div>
 
-      <div class="card"><MarkdownBody :content="defaultBody(detail.capture.content)" /></div>
+      <div class="card"><CaptureBodyRenderer :body="defaultBody(detail.capture.content)" :snippets="detail.capture.content.snippets" :artifacts="detail.artifacts" /></div>
 
       <section class="section" style="margin-top: 25px">
         <h3 style="margin-bottom: 15px">수집된 시도 {{ detail.attempts.length }}건</h3>
@@ -588,7 +589,7 @@ function stateTone(): string {
 
     <CapModal :show="modal === 'original'" title="수집된 원본" large @close="modal = null">
       <h3 v-if="detail">{{ detail.capture.title }}</h3>
-      <div v-if="detail" class="preview-body"><MarkdownBody :content="defaultBody(detail.capture.content)" /></div>
+      <div v-if="detail" class="preview-body"><CaptureBodyRenderer :body="defaultBody(detail.capture.content)" :snippets="detail.capture.content.snippets" :artifacts="detail.artifacts" /></div>
       <template #footer><button type="button" class="btn primary" @click="modal = null">닫기</button></template>
     </CapModal>
 

@@ -3,6 +3,7 @@
 import { computed } from 'vue'
 import CapIcon from '@/components/capture/CapIcon.vue'
 import MarkdownBody from '@/components/common/MarkdownBody.vue'
+import CaptureBodyRenderer from './CaptureBodyRenderer.vue'
 import VerifyBlock from './VerifyBlock.vue'
 import { statusOf, stepBody } from '@/composables/useCaptureReview'
 import type { CaptureReview } from '@/composables/useCaptureReview'
@@ -41,7 +42,7 @@ const relatedArtifacts = computed<CaptureArtifact[]>(() => {
       <span class="tiny muted">{{ detail.capture.project }}</span>
     </div>
     <h2 class="preview-title">{{ review.draft.title }}</h2>
-    <div class="preview-body"><MarkdownBody :content="review.draft.body" /></div>
+    <div class="preview-body"><CaptureBodyRenderer :body="review.draft.body" :snippets="detail.capture.content.snippets" :artifacts="detail.artifacts" /></div>
 
     <div class="divider" />
     <h2 class="serif" style="font-size: 24px; margin-bottom: 22px">Resolution Timeline</h2>
