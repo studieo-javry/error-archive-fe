@@ -79,6 +79,11 @@ watch(() => route.params.uuid, (id) => { if (typeof id === 'string') load(id) },
 function backToInbox() {
   router.push({ name: 'captureInbox' })
 }
+// 섹션 네비 — SPA 스크롤 컨테이너(main) 안에서 프로그래매틱 이동(네이티브 #anchor 는 중첩 스크롤·라우터와 얽혀 불안정).
+// 정렬 오프셋은 .section { scroll-margin-top } 이 처리.
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 function caseLink(id: number) {
   return { name: 'errorDetail', params: { slug: teamStore.currentSlug, id } }
 }
@@ -416,9 +421,12 @@ function stateTone(): string {
         <p class="small muted">남길 내용을 선택하고, 필요한 부분을 정정해 주세요. 수집된 원본은 그대로 보관됩니다.</p>
         <ReviewStepper step="review" />
         <div class="section-nav">
-          <a href="#context">문제 맥락</a><a href="#attempts">시도 기록</a><a href="#solutions">해결책 후보</a><a href="#artifacts">근거 파일</a>
+          <a href="#context" @click.prevent="scrollToSection('context')">문제 맥락</a>
+          <a href="#attempts" @click.prevent="scrollToSection('attempts')">시도 기록</a>
+          <a href="#solutions" @click.prevent="scrollToSection('solutions')">해결책 후보</a>
+          <a href="#artifacts" @click.prevent="scrollToSection('artifacts')">근거 파일</a>
           <span class="grow" />
-          <a style="color: var(--muted)" @click="modal = 'discard'">기록 폐기</a>
+          <a style="color: var(--muted); cursor: pointer" @click="modal = 'discard'">기록 폐기</a>
         </div>
         <div class="review-layout">
           <div class="review-content">
