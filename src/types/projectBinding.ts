@@ -22,3 +22,8 @@ export interface CreateProjectBindingRequest {
 export interface AssignCaseProjectBindingRequest {
   projectBindingId: number
 }
+
+/** Case 의 현재 귀속 상태. CaseProjectBindingResponse. 미귀속이면 projectBinding=null. */
+export interface CaseProjectBindingState {
+  projectBinding: ProjectBinding | null
+}

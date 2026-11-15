@@ -272,6 +272,9 @@ export const connectionStore: AgentConnection[] = [
   },
 ]
 
+// Case id → 귀속된 projectBinding id(또는 null). 데모 ErrorDetailPage 의 프로젝트 지정/해제용.
+export const caseBindings: Record<number, number | null> = { 1: null, 842: 1 }
+
 export const projectStore: ProjectBinding[] = [
   { id: 1, projectKey: 'error-archive', normalizedRepoId: 'github.com/studieo-javry/error-archive', storagePolicy: 'DEFAULT', createdAt: '2026-11-12T00:00:00Z' },
   { id: 2, projectKey: 'notification-api', normalizedRepoId: null, storagePolicy: 'DEFAULT', createdAt: '2026-11-13T00:00:00Z' },

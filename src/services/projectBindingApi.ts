@@ -1,6 +1,7 @@
 import apiClient from './apiClient'
 import type {
   AssignCaseProjectBindingRequest,
+  CaseProjectBindingState,
   CreateProjectBindingRequest,
   ProjectBinding,
 } from '@/types/projectBinding'
@@ -19,10 +20,11 @@ export const projectBindingApi = {
   create(request: CreateProjectBindingRequest) {
     return apiClient.post<ProjectBinding>('/me/project-bindings', request)
   },
-  /**
-   * 기존 Case 를 ProjectBinding 에 귀속. 본인 소유 Case + 본인 소유 Binding 만.
-   * ⚠️ BE 에 현재 귀속값 GET 이 없어 사전 조회 불가 — 변경(지정/해제)만 가능.
-   */
+  /** Case 의 현재 귀속 프로젝트 조회(본인 소유). 미귀속이면 projectBinding=null. */
+  getCaseBinding(caseId: number) {
+    return apiClient.get<CaseProjectBindingState>(`/me/cases/${caseId}/project-binding`)
+  },
+  /** 기존 Case 를 ProjectBinding 에 귀속. 본인 소유 Case + 본인 소유 Binding 만. */
   bindCase(caseId: number, request: AssignCaseProjectBindingRequest) {
     return apiClient.put<void>(`/me/cases/${caseId}/project-binding`, request)
   },

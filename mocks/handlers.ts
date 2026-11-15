@@ -6,7 +6,7 @@ import type { ImportCaptureRequest } from '@/types/capture'
 import type { CreateAgentConnectionRequest } from '@/types/agentConnection'
 import type { CreateProjectBindingRequest } from '@/types/projectBinding'
 import {
-  captureStore, connectionStore, findCapture, getScenario, historyCaptures,
+  captureStore, caseBindings, connectionStore, findCapture, getScenario, historyCaptures,
   nextCaseId, projectStore, queueCaptures,
 } from './captureData'
 
@@ -447,6 +447,22 @@ export const handlers = [
     const i = connectionStore.findIndex((c) => c.connectionId === String(params.id))
     if (i < 0) return new HttpResponse(null, { status: 404 })
     connectionStore.splice(i, 1)
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('/api/v1/me/cases/:caseId/project-binding', ({ params }) => {
+    const bindingId = caseBindings[Number(params.caseId)] ?? null
+    const binding = bindingId != null ? projectStore.find((p) => p.id === bindingId) ?? null : null
+    return HttpResponse.json({ projectBinding: binding })
+  }),
+  http.put('/api/v1/me/cases/:caseId/project-binding', async ({ request, params }) => {
+    const body = (await request.json()) as { projectBindingId: number }
+    if (!projectStore.some((p) => p.id === body.projectBindingId)) return new HttpResponse(null, { status: 404 })
+    caseBindings[Number(params.caseId)] = body.projectBindingId
+    return new HttpResponse(null, { status: 204 })
+  }),
+  http.delete('/api/v1/me/cases/:caseId/project-binding', ({ params }) => {
+    caseBindings[Number(params.caseId)] = null
     return new HttpResponse(null, { status: 204 })
   }),
 
