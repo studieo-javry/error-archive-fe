@@ -12,6 +12,8 @@ const props = defineProps<{
   submitError: SubmitError
   hasSubmission: boolean
   latestSeen: boolean
+  /** 반영 프로젝트 라벨(Phase 2). 미지정이면 kv 생략. */
+  projectLabel?: string
 }>()
 const emit = defineEmits<{
   preview: []
@@ -39,6 +41,7 @@ function setResolved(checked: boolean) {
     <div class="kv"><span>새 Case</span><strong>1건</strong></div>
     <div class="kv"><span>시도 / 해결책</span><strong>{{ review.draft.attempts.length }} / {{ review.draft.solutions.length }}</strong></div>
     <div class="kv"><span>근거 파일</span><strong>{{ review.draft.artifacts.length }}개</strong></div>
+    <div v-if="projectLabel" class="kv"><span>프로젝트</span><strong class="small">{{ projectLabel }}</strong></div>
 
     <div class="divider" />
     <label class="choice">

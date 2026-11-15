@@ -330,3 +330,25 @@ html.dark .cap-toast { background: #e4e4e7; color: #18181b; }
   .cap .clean-d .clean-symptom { font-size: 16px; }
 }
 
+/* 05 프로젝트 확인 — 인라인 카드 + 변경 팝오버(Phase 2) */
+.cap .project-inline { position: relative; display: flex; align-items: center; gap: 13px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 21px 0; }
+.cap .project-inline-icon { width: 37px; height: 37px; flex: none; display: grid; place-items: center; background: var(--hover); color: var(--muted); border-radius: 9px; }
+.cap .project-inline-icon svg { height: 18px; width: 18px; }
+.cap .project-inline-kicker { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.cap .project-inline-name { font-weight: 600; font-size: 13px; overflow-wrap: anywhere; line-height: 1.6; }
+.cap .project-inline-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.cap .project-inline-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex: none; }
+.cap .project-change { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--green); font-size: 12px; font-weight: 500; padding: 6px; cursor: pointer; }
+.cap .project-change:hover { text-decoration: underline; }
+.cap .project-change svg { width: 13px; height: 13px; }
+.cap .project-popover { position: absolute; z-index: 15; right: 0; top: calc(100% - 4px); min-width: min(330px, 100%); max-width: 100%; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); padding: 8px; box-shadow: var(--shadow); }
+.cap .project-popover-header { font-size: 10px; color: var(--muted); padding: 8px 10px 7px; font-weight: 600; }
+.cap .project-option { display: flex; align-items: center; gap: 11px; text-align: left; width: 100%; border: 0; background: transparent; border-radius: 7px; padding: 10px 11px; cursor: pointer; }
+.cap .project-option:hover, .cap .project-option.active { background: var(--hover); }
+.cap .project-option-icon { color: var(--muted); }
+.cap .project-option-icon svg { height: 17px; width: 17px; }
+.cap .project-option .grow { font-size: 12px; line-height: 1.6; }
+.cap .project-option small { display: block; color: var(--muted); font-size: 10px; }
+.cap .project-option .chosen-check { color: var(--green); width: 16px; height: 16px; }
+.cap .project-no-box-hint { font-size: 11px; color: var(--soft); margin-top: 11px; line-height: 1.8; }
+

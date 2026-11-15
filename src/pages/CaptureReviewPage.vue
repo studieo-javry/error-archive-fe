@@ -6,7 +6,7 @@
  *  - 그 외 상태(IMPORTED/DISCARDED/OPEN): 읽기 뷰(+ 복원/Case 보기)
  * 반영은 Idempotency-Key 로 멱등. 충돌 3종(revision/응답 유실/다른 탭 중복)을 회복 UI 로 처리.
  */
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { isAxiosError } from 'axios'
 import CapIcon from '@/components/capture/CapIcon.vue'
@@ -16,15 +16,18 @@ import ContextCard from '@/components/capture/review/ContextCard.vue'
 import AttemptTimeline from '@/components/capture/review/AttemptTimeline.vue'
 import SolutionList from '@/components/capture/review/SolutionList.vue'
 import ArtifactList from '@/components/capture/review/ArtifactList.vue'
+import ProjectSection from '@/components/capture/review/ProjectSection.vue'
 import ReviewSummary from '@/components/capture/review/ReviewSummary.vue'
 import ReviewStepper from '@/components/capture/review/ReviewStepper.vue'
 import PreviewContent from '@/components/capture/review/PreviewContent.vue'
 import VerifyBlock from '@/components/capture/review/VerifyBlock.vue'
 import { captureApi } from '@/services/captureApi'
+import { projectBindingApi } from '@/services/projectBindingApi'
 import { defaultBody, stepBody, useCaptureReview } from '@/composables/useCaptureReview'
 import { useCaptureToast } from '@/composables/useCaptureToast'
 import { useTeamStore } from '@/stores/teamStore'
 import type { CaptureArtifact, CaptureDetail, VerificationResult, VerificationScope } from '@/types/capture'
+import type { ProjectBinding } from '@/types/projectBinding'
 import { ATTEMPT_RESULT_LABELS, CAPTURE_STATE_LABELS } from '@/utils/captureLabels'
 
 type SubmitError = 'revision' | 'network' | 'duplicate' | null
@@ -51,6 +54,25 @@ const importedCaseId = ref<number | null>(null)
 
 const uuid = computed(() => String(route.params.uuid))
 const isReady = computed(() => detail.value?.capture.status === 'READY_FOR_REVIEW')
+
+// 프로젝트 분류(Phase 2) — 한 번 로드. 검토 내 프로젝트 섹션·요약·반영 payload 에 사용.
+const projects = ref<ProjectBinding[]>([])
+async function loadProjects() {
+  try {
+    const { data } = await projectBindingApi.list()
+    projects.value = data.items
+  } catch {
+    projects.value = []
+  }
+}
+onMounted(loadProjects)
+
+const projectLabel = computed(() => {
+  const v = review.draft.project
+  if (v === 'none') return '프로젝트 지정 안 함'
+  const id = v === 'inherit' ? detail.value?.capture.projectBindingId : Number(v)
+  return projects.value.find((p) => p.id === id)?.projectKey ?? '프로젝트 지정 안 함'
+})
 
 async function load(id: string) {
   loading.value = true
@@ -117,7 +139,7 @@ async function doImport(retry = false) {
     return
   }
   if (!submission.value) {
-    submission.value = { key: crypto.randomUUID(), payload: review.payload(false) }
+    submission.value = { key: crypto.randomUUID(), payload: review.payload(true) }
   }
   busy.value = true
   try {
@@ -420,6 +442,7 @@ function stateTone(): string {
           <a href="#attempts" @click.prevent="scrollToSection('attempts')">시도 기록</a>
           <a href="#solutions" @click.prevent="scrollToSection('solutions')">해결책 후보</a>
           <a href="#artifacts" @click.prevent="scrollToSection('artifacts')">근거 파일</a>
+          <a href="#project" @click.prevent="scrollToSection('project')">프로젝트 확인</a>
           <span class="grow" />
           <a style="color: var(--muted); cursor: pointer" @click="modal = 'discard'">기록 폐기</a>
         </div>
@@ -429,10 +452,11 @@ function stateTone(): string {
             <AttemptTimeline :review="review" :detail="detail" @edit-step="openEditStep" />
             <SolutionList :review="review" :detail="detail" @edit-solution="openEditSolution" />
             <ArtifactList :review="review" :detail="detail" @file-info="openFileInfo" />
+            <ProjectSection :review="review" :projects="projects" :suggested-id="detail.capture.projectBindingId ?? null" />
           </div>
           <ReviewSummary
             :review="review" step="review" :busy="busy" :submit-error="submitError"
-            :has-submission="!!submission" :latest-seen="latestSeen"
+            :has-submission="!!submission" :latest-seen="latestSeen" :project-label="projectLabel"
             @preview="goPreview" @go-queue="backToInbox"
             @latest="onLatest" @retry-import="doImport(true)" @existing-case="onExistingCase"
           />
@@ -450,7 +474,7 @@ function stateTone(): string {
           </div>
           <ReviewSummary
             :review="review" step="preview" :busy="busy" :submit-error="submitError"
-            :has-submission="!!submission" :latest-seen="latestSeen"
+            :has-submission="!!submission" :latest-seen="latestSeen" :project-label="projectLabel"
             @import="doImport()" @back-review="backReview"
             @latest="onLatest" @retry-import="doImport(true)" @existing-case="onExistingCase"
           />
