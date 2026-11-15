@@ -8,6 +8,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CapIcon from '@/components/capture/CapIcon.vue'
+import CaptureMetricsPanel from '@/components/capture/CaptureMetricsPanel.vue'
 import { captureApi } from '@/services/captureApi'
 import type { Capture, CaptureHistoryItem, CaptureStatus } from '@/types/capture'
 import { CAPTURE_STATE_LABELS } from '@/utils/captureLabels'
@@ -17,8 +18,10 @@ const route = useRoute()
 const router = useRouter()
 const { toast } = useCaptureToast()
 
-type Tab = 'queue' | 'history'
-const tab = computed<Tab>(() => (route.query.tab === 'history' ? 'history' : 'queue'))
+type Tab = 'queue' | 'history' | 'metrics'
+const tab = computed<Tab>(() =>
+  route.query.tab === 'history' ? 'history' : route.query.tab === 'metrics' ? 'metrics' : 'queue',
+)
 
 const queueItems = ref<Capture[]>([])
 const historyItems = ref<CaptureHistoryItem[]>([])
@@ -69,6 +72,7 @@ const rows = computed<Row[]>(() => {
 const loadedCount = computed(() => (tab.value === 'queue' ? queueItems.value.length : historyItems.value.length))
 
 async function load() {
+  if (tab.value === 'metrics') return // 현황 탭은 자체 패널이 로드
   loading.value = true
   loadError.value = false
   cursor.value = null
@@ -184,10 +188,16 @@ const HISTORY_FILTERS: { value: CaptureStatus | ''; label: string }[] = [
       <button role="tab" :aria-selected="tab === 'history'" class="cap-tab" :class="{ active: tab === 'history' }" @click="setTab('history')">
         검토 이력
       </button>
+      <button role="tab" :aria-selected="tab === 'metrics'" class="cap-tab" :class="{ active: tab === 'metrics' }" @click="setTab('metrics')">
+        기록 현황
+      </button>
     </div>
 
+    <!-- 기록 현황 -->
+    <CaptureMetricsPanel v-if="tab === 'metrics'" />
+
     <!-- 로딩 -->
-    <div v-if="loading" class="card">
+    <div v-else-if="loading" class="card">
       <div class="loading" style="width: 60%" />
       <div class="loading" style="width: 90%" />
       <div class="loading" style="width: 35%" />

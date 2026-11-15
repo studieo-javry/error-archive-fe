@@ -352,3 +352,13 @@ html.dark .cap-toast { background: #e4e4e7; color: #18181b; }
 .cap .project-option .chosen-check { color: var(--green); width: 16px; height: 16px; }
 .cap .project-no-box-hint { font-size: 11px; color: var(--soft); margin-top: 11px; line-height: 1.8; }
 
+/* 기록 현황(metrics, Phase 2) */
+.cap .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 26px 0; }
+.cap .metric { padding: 23px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.cap .metric .value { font-family: Georgia, serif; font-size: 34px; line-height: 1.2; margin-top: 12px; font-variant-numeric: tabular-nums; }
+.cap .metric small { color: var(--muted); }
+.cap .stat-row { display: flex; justify-content: space-between; padding: 17px 0; border-bottom: 1px solid var(--line); }
+.cap .window-select { font-size: 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--text); padding: 5px 9px; cursor: pointer; }
+@media (max-width: 1100px) { .cap .metric-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .cap .metric { padding: 17px; } .cap .metric .value { font-size: 29px; } }
+
