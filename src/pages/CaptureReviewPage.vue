@@ -28,7 +28,7 @@ import type { CaptureArtifact, CaptureDetail, VerificationResult, VerificationSc
 import { ATTEMPT_RESULT_LABELS, CAPTURE_STATE_LABELS } from '@/utils/captureLabels'
 
 type SubmitError = 'revision' | 'network' | 'duplicate' | null
-type ModalKind = 'edit-context' | 'edit-step' | 'edit-solution' | 'file-info' | 'original' | 'request' | 'discard' | null
+type ModalKind = 'edit-context' | 'edit-step' | 'edit-solution' | 'file-info' | 'original' | 'discard' | null
 
 const route = useRoute()
 const router = useRouter()
@@ -343,11 +343,6 @@ function openFileInfo(id: string) {
   modal.value = 'file-info'
 }
 
-const requestPreview = computed(() => ({
-  key: submission.value?.key ?? '(최종 제출 시 생성)',
-  payload: JSON.stringify(submission.value?.payload ?? review.payload(false), null, 2),
-}))
-
 const RESULT_OPTIONS: VerificationResult[] = ['NOT_RUN', 'PASSED', 'FAILED', 'INCONCLUSIVE']
 const SCOPE_OPTIONS: VerificationScope[] = ['LOCAL', 'CI', 'MANUAL']
 
@@ -438,7 +433,7 @@ function stateTone(): string {
           <ReviewSummary
             :review="review" step="review" :busy="busy" :submit-error="submitError"
             :has-submission="!!submission" :latest-seen="latestSeen"
-            @preview="goPreview" @go-queue="backToInbox" @request="modal = 'request'"
+            @preview="goPreview" @go-queue="backToInbox"
             @latest="onLatest" @retry-import="doImport(true)" @existing-case="onExistingCase"
           />
         </div>
@@ -456,7 +451,7 @@ function stateTone(): string {
           <ReviewSummary
             :review="review" step="preview" :busy="busy" :submit-error="submitError"
             :has-submission="!!submission" :latest-seen="latestSeen"
-            @import="doImport()" @back-review="backReview" @request="modal = 'request'"
+            @import="doImport()" @back-review="backReview"
             @latest="onLatest" @retry-import="doImport(true)" @existing-case="onExistingCase"
           />
         </div>
@@ -573,13 +568,6 @@ function stateTone(): string {
       <template #footer><button type="button" class="btn primary" @click="modal = null">닫기</button></template>
     </CapModal>
 
-    <CapModal :show="modal === 'request'" title="Import 요청 미리보기" large @close="modal = null">
-      <p class="small muted">사용자 세션으로 POST /api/v1/captures/{uuid}/import</p>
-      <pre class="api-pre">Idempotency-Key: {{ requestPreview.key }}
-
-{{ requestPreview.payload }}</pre>
-      <template #footer><button type="button" class="btn primary" @click="modal = null">닫기</button></template>
-    </CapModal>
 
     <CapModal :show="modal === 'discard'" title="이 기록을 폐기할까요?" @close="modal = null">
       <p class="subtitle">{{ detail?.capture.title }}</p>

@@ -18,7 +18,6 @@ const emit = defineEmits<{
   import: []
   'back-review': []
   'go-queue': []
-  request: []
   latest: []
   'retry-import': []
   'existing-case': []
@@ -95,6 +94,5 @@ function setResolved(checked: boolean) {
       </button>
     </div>
     <p class="hint">{{ hasSubmission ? '제출한 요청을 보관하고 있어요.' : '선택·수정은 최종 반영할 때 적용됩니다.' }}</p>
-    <button type="button" class="text-btn" style="margin-top: 7px" @click="emit('request')">요청 보기</button>
   </aside>
 </template>
