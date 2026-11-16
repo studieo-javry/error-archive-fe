@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import hljs from 'highlight.js'
 import { TASK_LINE } from '@/utils/markdownTasks'
+import { isTableStart, buildTable } from '@/utils/markdownTable'
 import { collectRefKeys, linkifyRefs } from '@/utils/githubRefs'
 import { useGithubRefs } from '@/composables/useGithubRefs'
 import { linkifyMentions } from '@/utils/mentions'
@@ -84,7 +85,7 @@ const rendered = computed(() => {
       .join('')
   }
 
-  // 블록 레벨: 제목(#/##/###) · 목록(-, 1.) · 작업 목록(- [ ]) · 문단 · 코드블록 센티넬. 라인 단위로 그룹핑한다.
+  // 블록 레벨: 제목(#/##/###) · 목록(-, 1.) · 작업 목록(- [ ]) · 표(GFM) · 문단 · 코드블록 센티넬.
   const out: string[] = []
   let para: string[] = []
   let list: { type: 'ul' | 'ol' | 'task'; items: string[] } | null = null
@@ -97,11 +98,20 @@ const rendered = computed(() => {
   }
   const flush = () => { flushPara(); flushList() }
 
-  for (const rawLine of html.split('\n')) {
-    const line = rawLine.trim()
+  const lines = html.split('\n')
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li].trim()
     if (!line) { flush(); continue }
     // 코드블록은 자체 라인으로 — <p> 안에 넣지 않는다.
     if (/^@@CODEBLOCK\d+@@$/.test(line)) { flush(); out.push(line); continue }
+    // GFM 표: 헤더행 + 바로 다음 구분행(---) 이면 표로 본다. 이어지는 셀 행들을 소비한다.
+    if (isTableStart(lines, li)) {
+      flush()
+      const t = buildTable(lines, li)
+      out.push(t.html)
+      li = t.end
+      continue
+    }
     // 제목
     const h = line.match(/^(#{1,3})\s+(.+)$/)
     if (h) { flush(); const lvl = h[1].length; out.push(`<h${lvl}>${h[2]}</h${lvl}>`); continue }
@@ -153,5 +163,5 @@ async function onChange(e: Event) {
 </script>
 
 <template>
-  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-2 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic [&_h1]:text-[15px] [&_h1]:font-bold [&_h1]:text-zinc-800 dark:[&_h1]:text-zinc-100 [&_h1]:mt-6 [&_h1]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-zinc-800 dark:[&_h2]:text-zinc-100 [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-zinc-700 dark:[&_h3]:text-zinc-200 [&_h3]:mt-5 [&_h3]:mb-2 [&>h1:first-child]:mt-0 [&>h2:first-child]:mt-0 [&>h3:first-child]:mt-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-0.5" :class="{ 'md-ghref': ghRefs }" @change="onChange" @click="onClick" v-html="rendered" />
+  <div class="markdown-body text-xs text-zinc-600 dark:text-[#c7c7cd] leading-relaxed [&_p]:mb-2 [&_strong]:text-zinc-700 dark:[&_strong]:text-zinc-200 [&_em]:italic [&_h1]:text-[15px] [&_h1]:font-bold [&_h1]:text-zinc-800 dark:[&_h1]:text-zinc-100 [&_h1]:mt-6 [&_h1]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-zinc-800 dark:[&_h2]:text-zinc-100 [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-zinc-700 dark:[&_h3]:text-zinc-200 [&_h3]:mt-5 [&_h3]:mb-2 [&>h1:first-child]:mt-0 [&>h2:first-child]:mt-0 [&>h3:first-child]:mt-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-0.5 [&_.md-table-wrap]:my-3 [&_.md-table-wrap]:overflow-x-auto [&_.md-table-wrap]:themed-scroll [&_table]:w-full [&_table]:border-collapse [&_table]:text-xs [&_th]:border [&_th]:border-zinc-300 dark:[&_th]:border-zinc-700 [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:bg-[#ececee] dark:[&_th]:bg-zinc-800 [&_th]:font-semibold [&_th]:text-left [&_th]:whitespace-nowrap [&_th]:text-zinc-700 dark:[&_th]:text-zinc-200 [&_td]:border [&_td]:border-zinc-300 dark:[&_td]:border-zinc-700 [&_td]:px-2.5 [&_td]:py-1.5 [&_td]:align-top" :class="{ 'md-ghref': ghRefs }" @change="onChange" @click="onClick" v-html="rendered" />
 </template>
