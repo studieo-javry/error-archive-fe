@@ -28,6 +28,7 @@ import CommentThread from '@/components/comment/CommentThread.vue'
 import CommentForm from '@/components/comment/CommentForm.vue'
 import QuotePopup from '@/components/comment/QuotePopup.vue'
 import PublishStatusBar from '@/components/publish/PublishStatusBar.vue'
+import CaseProjectBinding from '@/components/capture/CaseProjectBinding.vue'
 import PublishSheet from '@/components/publish/PublishSheet.vue'
 import { publishmentApi } from '@/services/publishmentApi'
 import type { PublishmentDetail } from '@/types/publish'
@@ -599,6 +600,11 @@ onUnmounted(() => {
           <span class="w-1 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
           <span>{{ errorCase.tags.join(', ') }}</span>
         </template>
+      </div>
+
+      <!-- 개인·본인 소유 Case: 프로젝트 귀속 표시·정정(사후 재분류). -->
+      <div v-if="isOwner && errorCase.workspaceId == null" class="mt-4 flex justify-center">
+        <CaseProjectBinding :case-id="caseId" />
       </div>
 
       <div class="mt-6 flex items-center justify-center gap-5">

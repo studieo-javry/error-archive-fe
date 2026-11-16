@@ -24,6 +24,9 @@ const routes = [
   // ExplorePage 자체 헤더로 chrome-less 렌더(App.vue 가 레이아웃 분기).
   { path: '/explore', name: 'explore', component: () => import('@/pages/ExplorePage.vue'), meta: { optionalAuth: true } },
   { path: '/me/publications', name: 'myPublications', component: () => import('@/pages/MyPublicationsPage.vue') },
+  // Agent Capture — 개인·비공개. 검토 대기함(탭: ?tab=queue|history|metrics) + 초안 검토 상세.
+  { path: '/me/captures', name: 'captureInbox', component: () => import('@/pages/CaptureInboxPage.vue') },
+  { path: '/me/captures/:uuid', name: 'captureReview', component: () => import('@/pages/CaptureReviewPage.vue'), meta: { wideLayout: true } },
   { path: '/profile/:id?', name: 'profile', component: () => import('@/pages/ProfilePage.vue') },
   { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true, fullHeight: true } },
   { path: '/settings/integrations', name: 'settingsIntegrations', component: () => import('@/pages/SettingsPage.vue'), meta: { wideLayout: true, fullHeight: true } },
@@ -49,6 +52,9 @@ const routes = [
 const PUBLIC_ONLY_ROUTES = new Set(['explore', 'search'])
 // 공개 공간 → 데모 워크스페이스로 돌려보낼 때 같은 화면을 유지할 수 있는 라우트(나머진 Home 으로).
 const GUEST_PORTABLE_ROUTES = new Set(['home', 'errorList', 'errorCreate', 'insights', 'team'])
+// 게스트(데모)가 들어갈 수 없는 개인·비공개 실계정 전용 공간 — Agent Capture 검토함/상세.
+// 로그인 사용자 전용이라 사이드바에도 노출되지만, 직접 URL 진입은 데모 Home 으로 되돌린다.
+const GUEST_PRIVATE_ROUTES = new Set(['captureInbox', 'captureReview'])
 
 const router = createRouter({
   history: createWebHistory(),
@@ -70,6 +76,16 @@ router.beforeEach(async (to) => {
       useDemoStore().toast('공개 공간(Search · Explore)은 가입 후 이용할 수 있어요.')
       const name = GUEST_PORTABLE_ROUTES.has(String(to.name)) ? String(to.name) : 'home'
       return { name, params: { slug: demoSlug } }
+    }
+  }
+  // Agent Capture 는 개인·비공개 실계정 기능 — 게스트는 진입 불가(직접 URL 방어). 데모 Home 으로 되돌린다.
+  if (authStore.isGuest && GUEST_PRIVATE_ROUTES.has(String(to.name))) {
+    const teamStore = useTeamStore()
+    if (!teamStore.workspaces.length) await teamStore.fetchWorkspaces().catch(() => {})
+    const demoSlug = teamStore.workspaces[0]?.slug
+    if (demoSlug) {
+      useDemoStore().toast('Agent Capture 는 가입 후 이용할 수 있어요.')
+      return { name: 'home', params: { slug: demoSlug } }
     }
   }
   // Sync the current workspace from the URL slug on workspace-scoped routes.

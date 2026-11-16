@@ -10,6 +10,7 @@ import TourCompanion from '@/components/layout/TourCompanion.vue'
 import GuideArticleOverlay from '@/components/layout/GuideArticleOverlay.vue'
 import DemoLayer from '@/components/demo/DemoLayer.vue'
 import NotificationToasts from '@/components/layout/NotificationToasts.vue'
+import CaptureToast from '@/components/capture/CaptureToast.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
 
@@ -68,6 +69,7 @@ const isChromeless = computed(() => isPublic.value || isOptionalLoggedOut.value)
       </div>
     </div>
     <NotificationToasts />
+    <CaptureToast />
     <GuestExpiryOverlay v-if="authStore.isGuest" />
     <DemoLayer v-if="authStore.isGuest" />
   </div>

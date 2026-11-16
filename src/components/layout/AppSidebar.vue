@@ -17,6 +17,7 @@ import {
   ChartBarIcon,
   UserGroupIcon,
   UserCircleIcon,
+  InboxArrowDownIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   SunIcon,
@@ -44,6 +45,8 @@ const navItems = computed<NavItem[]>(() => {
   const items: NavItem[] = [
     { name: 'home', icon: HomeIcon },
     { name: 'errorList', icon: BookOpenIcon },
+    // 개인·비공개 Agent Capture 검토함(전역 라우트, slug 무관) — 어느 공간에서도 접근.
+    { name: 'captureInbox', icon: InboxArrowDownIcon, global: true },
   ]
   // Explore = 전역 공개 쇼케이스(featured/recent). 개인 스페이스에서만 노출하고
   // 워크스페이스(팀/데모) 탭에선 제거한다 — 팀 사이드바는 그 팀의 작업 공간에 집중.
@@ -62,7 +65,16 @@ function targetFor(item: NavItem) {
   return item.global ? { name: item.name } : { name: item.name, params: { slug: teamStore.currentSlug } }
 }
 
+const NAV_LABELS: Record<string, string> = {
+  home: 'Home', errorList: 'Library', captureInbox: 'Capture Inbox', explore: 'Explore',
+  errorCreate: 'New Entry', search: 'Search', team: 'Members', insights: 'Insights',
+}
+function labelFor(item: NavItem) {
+  return NAV_LABELS[item.name] ?? item.name
+}
 function isActive(item: NavItem) {
+  // 검토 상세(captureReview)에서도 Capture Inbox 아이콘을 활성으로.
+  if (item.name === 'captureInbox') return route.name === 'captureInbox' || route.name === 'captureReview'
   return route.name === item.name
 }
 
@@ -121,6 +133,8 @@ async function onLogout() {
         v-for="item in navItems"
         :key="item.name"
         :to="targetFor(item)"
+        :title="labelFor(item)"
+        :aria-label="labelFor(item)"
         class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
         :class="isActive(item)
           ? 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950'
