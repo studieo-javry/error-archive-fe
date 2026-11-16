@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { Step } from '@/types/error'
-import MarkdownBody from '@/components/common/MarkdownBody.vue'
-import { setTaskChecked } from '@/utils/markdownTasks'
+import type { Step, ErrorCaseSnippet, ErrorCaseAttachment } from '@/types/error'
+import BodyRenderer from '@/components/common/BodyRenderer.vue'
 import StepForm, { type StepFormValues } from './StepForm.vue'
 
 const props = defineProps<{
@@ -15,6 +14,9 @@ const props = defineProps<{
   canModify?: boolean
   /** 본문 작업 목록 체크 저장(바뀐 본문만) — 수정 권한이 있을 때만 체크박스를 누를 수 있다. */
   onSaveBody?: (stepId: number, body: string) => Promise<unknown>
+  /** 케이스에 연결된 스니펫/첨부 — 스텝 본문의 @snippet/@attach 인라인 해석에 필요 */
+  snippets?: ErrorCaseSnippet[]
+  attachments?: ErrorCaseAttachment[]
 }>()
 const emit = defineEmits<{
   toggle: [id: number]
@@ -24,9 +26,9 @@ const emit = defineEmits<{
 
 const editing = ref(false)
 
-async function toggleTask(index: number, checked: boolean) {
-  const body = setTaskChecked(props.step.body ?? '', index, checked)
-  if (body != null) await props.onSaveBody?.(props.step.id, body)
+// BodyRenderer 가 작업목록 토글 시 바뀐 본문 전체를 돌려주면 그대로 저장한다.
+async function saveBody(body: string) {
+  await props.onSaveBody?.(props.step.id, body)
 }
 const confirmingDelete = ref(false)
 
@@ -81,7 +83,7 @@ function ledClass(status: string) {
           <p class="text-sm text-zinc-800 dark:text-zinc-200" data-tour-chip>{{ step.title }}</p>
           <span v-if="step.attemptType" class="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-700 text-[11px] text-zinc-500 dark:text-zinc-400">{{ attemptTypeLabels[step.attemptType] || step.attemptType }}</span>
         </div>
-        <MarkdownBody v-if="step.body" :content="step.body" class="mt-1 mb-2" github-refs :on-toggle-task="canModify && onSaveBody ? toggleTask : undefined" />
+        <BodyRenderer v-if="step.body" :content="step.body" :snippets="snippets ?? []" :attachments="attachments ?? []" :on-save-content="canModify && onSaveBody ? saveBody : undefined" class="mt-1 mb-2" />
         <!-- 스텝 본문 아래 부가 블록(예: 사용 가이드의 조사 근거) -->
         <slot name="extra" />
         <div v-if="step.insight" class="mt-1.5 mb-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30">
