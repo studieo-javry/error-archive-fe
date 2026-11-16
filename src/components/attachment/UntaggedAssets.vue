@@ -3,23 +3,20 @@ import { ref, computed } from 'vue'
 import type { ErrorCaseAttachment, ErrorCaseSnippet } from '@/types/error'
 import { PhotoIcon, DocumentIcon, CodeBracketIcon } from '@heroicons/vue/24/outline'
 import SnippetInline from '@/components/snippet/SnippetInline.vue'
+import { collectEmbedMarkers } from '@/utils/embedMarkers'
 
 const props = defineProps<{
   attachments: ErrorCaseAttachment[]
   snippets: ErrorCaseSnippet[]
   /** 케이스 본문(description). 여기 마커로 참조된 자료는 제외. */
   body: string | null
+  /** 추가로 '참조됨'으로 칠 본문들(스텝 본문 등). 여기 임베드된 자료도 '함께 올린 자료'에서 제외한다. */
+  extraBodies?: Array<string | null | undefined>
 }>()
 
-// 본문에서 참조된 markerId 집합 — BodyRenderer 와 동일한 마커 문법.
-const referenced = computed(() => {
-  const ids = new Set<string>()
-  const re = /@(?:snippet|attach)\(([a-zA-Z0-9_-]+)(?:\|\d{2,4})?\)/g
-  let m: RegExpExecArray | null
-  const src = props.body ?? ''
-  while ((m = re.exec(src)) !== null) ids.add(m[1])
-  return ids
-})
+// 본문 + 스텝 본문에서 참조된 markerId 집합 — BodyRenderer 와 동일한 마커 문법.
+// (스텝에 임베드된 스니펫/첨부는 이미 독자에게 보이므로 '미삽입 자료'에서 제외 — 중복 노출 방지.)
+const referenced = computed(() => collectEmbedMarkers(props.body, ...(props.extraBodies ?? [])))
 
 // "붙었지만 본문에 삽입 안 한" 자료.
 const untaggedAttachments = computed(() => props.attachments.filter(a => !referenced.value.has(a.markerId)))
