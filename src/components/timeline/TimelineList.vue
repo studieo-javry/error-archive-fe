@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Step, Solution } from '@/types/error'
+import type { Step, Solution, ErrorCaseSnippet, ErrorCaseAttachment } from '@/types/error'
 import TimelineStep from './TimelineStep.vue'
 import TimelineSolution from './TimelineSolution.vue'
 import type { StepFormValues } from './StepForm.vue'
@@ -19,6 +19,9 @@ defineProps<{
   entries?: TimelineEntry[]
   /** Step 본문 작업 목록 체크 저장 */
   saveStepBody?: (stepId: number, body: string) => Promise<unknown>
+  /** 케이스 스니펫/첨부 — 스텝 본문의 @snippet/@attach 인라인 해석용 */
+  snippets?: ErrorCaseSnippet[]
+  attachments?: ErrorCaseAttachment[]
 }>()
 defineEmits<{ toggle: [id: number]; update: [id: number, values: StepFormValues]; delete: [id: number] }>()
 </script>
@@ -36,6 +39,8 @@ defineEmits<{ toggle: [id: number]; update: [id: number, values: StepFormValues]
           :dimmed="highlightedIds != null && !highlightedIds.has(entry.step.id)"
           :can-modify="viewerUserId != null && entry.step.authorUserId === viewerUserId"
           :on-save-body="saveStepBody"
+          :snippets="snippets"
+          :attachments="attachments"
           @toggle="$emit('toggle', $event)"
           @update="(id, values) => $emit('update', id, values)"
           @delete="$emit('delete', $event)"
@@ -58,6 +63,8 @@ defineEmits<{ toggle: [id: number]; update: [id: number, values: StepFormValues]
         :dimmed="highlightedIds != null && !highlightedIds.has(step.id)"
         :can-modify="viewerUserId != null && step.authorUserId === viewerUserId"
         :on-save-body="saveStepBody"
+        :snippets="snippets"
+        :attachments="attachments"
         @toggle="$emit('toggle', $event)"
         @update="(id, values) => $emit('update', id, values)"
         @delete="$emit('delete', $event)"
