@@ -424,6 +424,10 @@ export const handlers = [
     return HttpResponse.json(c.capture)
   }),
 
+  http.get('/api/v1/me/agent-connections/connector-version', () => {
+    // 오프라인 데모 — 설치 안내의 최신 버전 표시용 샘플. 설치 명령은 @latest 라 이 값에 의존하지 않는다.
+    return HttpResponse.json({ packageName: '@error-archive/agent', latest: '1.11.1' })
+  }),
   http.get('/api/v1/me/agent-connections', () => {
     return HttpResponse.json(getScenario() === 'first' ? [] : connectionStore)
   }),

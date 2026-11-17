@@ -26,6 +26,7 @@ const PATHS: Record<string, string> = {
   link: 'm9 15 6-6M7 17l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0M17 7l1-1a4 4 0 0 0-6-6L8 4a4 4 0 0 0 0 6',
   device: 'M3 3h18v13H3V3Zm5 18h8m-4-5v5',
   alert: 'm12 3 10 18H2L12 3Zm0 6v5m0 3h.01',
+  external: 'M13 5h6v6m0-6-9 9M19 13v6H5V5h6',
   eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Zm13 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
 }
 
