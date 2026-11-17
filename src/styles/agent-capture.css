@@ -146,8 +146,8 @@ html.dark .cap {
 .cap .guide-version-status .version-refresh { padding: 4px 6px; margin-left: auto; font-size: 11px; }
 .cap .guide-version-status .version-refresh svg { width: 13px; height: 13px; }
 .cap .guide-version-status .version-loading { width: 13px; height: 13px; border: 1.5px solid var(--line); border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
-.cap .guide-version-status .version-error { color: var(--muted); font-size: 12px; }
-.cap .guide-version-status .version-error svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 4px; }
+.cap .guide-version-status .version-error { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.cap .guide-version-status .version-error svg { width: 13px; height: 13px; flex-shrink: 0; }
 .cap .guide-version-caption { line-height: 1.75; font-size: 11px; color: var(--muted); margin-top: 6px; }
 .cap .guide-version-caption code { color: var(--text); font-size: 11px; }
 .cap .guide-target-note { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.75; }
