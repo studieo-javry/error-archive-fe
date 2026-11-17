@@ -34,6 +34,12 @@ export interface CreateAgentConnectionRequest {
   scopes?: string[] | null
 }
 
+/** 설치 안내용 — 커넥터 npm 패키지 최신 버전. ConnectorVersionResponse. latest=null 이면 조회 실패. */
+export interface ConnectorVersionResult {
+  packageName: string
+  latest: string | null
+}
+
 /** 발급 결과. token 은 이 응답에서만 볼 수 있음(서버는 해시만 저장). CreateAgentConnectionResponse. */
 export interface CreateAgentConnectionResult {
   connectionId: string

@@ -134,6 +134,38 @@ html.dark .cap {
 .cap .guide-step { display: flex; gap: 15px; margin: 24px 0; }
 .cap .guide-n { width: 25px; height: 25px; flex-shrink: 0; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; color: var(--green); font-size: 11px; margin-top: 1px; }
 
+/* 설치 안내 — 버전 메타(설치 대상과 분리). 설치 명령은 @latest, 아래 버전은 표시·고정용. */
+.cap .guide-version { margin: 20px 0 24px; padding: 15px 17px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg); }
+.cap .guide-version-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cap .guide-package { font-size: 12px; font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
+.cap .guide-npm-link { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); text-decoration: none; white-space: nowrap; }
+.cap .guide-npm-link:hover { color: var(--green); text-decoration: underline; }
+.cap .guide-npm-link svg { width: 13px; height: 13px; }
+.cap .guide-version-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 29px; margin-top: 8px; }
+.cap .guide-version-status strong { font-size: 13px; font-weight: 600; }
+.cap .guide-version-status .version-refresh { padding: 4px 6px; margin-left: auto; font-size: 11px; }
+.cap .guide-version-status .version-refresh svg { width: 13px; height: 13px; }
+.cap .guide-version-status .version-loading { width: 13px; height: 13px; border: 1.5px solid var(--line); border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+.cap .guide-version-status .version-error { color: var(--muted); font-size: 12px; }
+.cap .guide-version-status .version-error svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 4px; }
+.cap .guide-version-caption { line-height: 1.75; font-size: 11px; color: var(--muted); margin-top: 6px; }
+.cap .guide-version-caption code { color: var(--text); font-size: 11px; }
+.cap .guide-target-note { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.75; }
+.cap .guide-target-note code { color: var(--text); }
+.cap .guide-version-details { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.cap .guide-version-details summary { cursor: pointer; color: var(--muted); font-size: 11px; list-style: none; display: flex; align-items: center; gap: 6px; }
+.cap .guide-version-details summary::-webkit-details-marker { display: none; }
+.cap .guide-version-details summary svg { width: 13px; height: 13px; transition: transform .15s; }
+.cap .guide-version-details[open] summary svg { transform: rotate(180deg); }
+.cap .guide-version-details summary:hover { color: var(--text); }
+.cap .guide-version-details .code-box { background: var(--panel); margin: 8px 0 10px; }
+.cap .guide-version-details .code-box pre { font-size: 11px; }
+.cap .guide-pin-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-top: 10px; }
+.cap .guide-pin-row .btn { font-size: 11px; padding: 5px 9px; }
+.cap .guide-step .guide-step-hint { margin-top: 5px; font-size: 12px; color: var(--muted); }
+.cap .guide-install-footer { margin-top: 16px; font-size: 11px; color: var(--muted); line-height: 1.8; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* forms (modals) */
 .cap .form-field { display: block; margin: 17px 0; }
 .cap .form-field > span { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; }

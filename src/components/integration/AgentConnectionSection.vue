@@ -5,7 +5,7 @@
  * 마크업·문구는 error_archive_agent_capture_final.html 의 connectionPage/모달, 스타일은 styles/agent-capture.css(.cap).
  *  - 목록: GET /me/agent-connections   - 발급: POST (token 1회 노출)   - 폐기: DELETE /{id}
  */
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { isAxiosError } from 'axios'
 import CapIcon from '@/components/capture/CapIcon.vue'
 import CapModal from '@/components/capture/CapModal.vue'
@@ -19,9 +19,6 @@ const { toast } = useCaptureToast()
 const connections = ref<AgentConnection[]>([])
 const loading = ref(false)
 const loadError = ref(false)
-
-// 드래프트 커넥터 버전(설치 안내). package.json version 한 곳만 바꾸면 되는 커넥터와 맞춤.
-const CONNECTOR_VERSION = '1.11.0'
 
 type ModalKind = 'new' | 'token' | 'guide' | 'revoke' | null
 const modal = ref<ModalKind>(null)
@@ -127,18 +124,82 @@ async function confirmRevoke() {
   }
 }
 
-const guideCommands = {
-  register: `npm login --scope=@error-archive
-claude mcp add --scope user --transport stdio error-archive -- npx -y @error-archive/agent@${CONNECTOR_VERSION}`,
-  config: `{
+// 설치 안내 — 패키지 메타. 설치 명령은 @latest 가 기본(아래 최신 버전 조회 성공 여부와 독립).
+// 최신 버전은 BE(GET /me/agent-connections/connector-version)가 비공개 npm 을 조회·캐싱해 제공한다
+// → 커넥터 버전업 시 FE 수정/재배포 불필요. (public 전환 시 FE 가 npm Registry 직접 조회로 대체 가능.)
+const GUIDE_PACKAGE = '@error-archive/agent'
+const GUIDE_NPM_URL = 'https://www.npmjs.com/package/@error-archive/agent'
+
+type VersionStatus = 'idle' | 'loading' | 'success' | 'error'
+const versionStatus = ref<VersionStatus>('idle')
+const latestVersion = ref<string | null>(null)
+// 설치 명령이 가리키는 대상. 기본 'latest'. 사용자가 조회된 버전으로 고정(pin)하면 그 버전 문자열.
+const versionTarget = ref('latest')
+let versionTicket = 0
+
+const isPinned = computed(() => versionTarget.value !== 'latest')
+const hasVersion = computed(() => versionStatus.value === 'success' && !!latestVersion.value)
+const targetNote = computed(() =>
+  versionTarget.value === 'latest'
+    ? '실행할 때 npm의 latest 태그를 사용합니다.'
+    : '선택한 정확한 버전으로 모든 설치 명령을 고정합니다.',
+)
+
+const guideCommands = computed(() => {
+  const pkg = `${GUIDE_PACKAGE}@${versionTarget.value}`
+  return {
+    register: `npm login --scope=@error-archive
+claude mcp add --scope user --transport stdio error-archive -- npx -y ${pkg}`,
+    config: `{
   "baseUrl": "<사용 중인 Error Archive API 주소>",
   "token": "<발급한 연결 토큰>"
 }`,
-  chmod: 'chmod 600 ~/.config/error-archive-agent/config.json',
-  doctor: `npx -y @error-archive/agent@${CONNECTOR_VERSION} doctor`,
-  hooks: `npm install -g @error-archive/agent@${CONNECTOR_VERSION}
+    chmod: 'chmod 600 ~/.config/error-archive-agent/config.json',
+    doctor: `npx -y ${pkg} doctor`,
+    hooks: `npm install -g ${pkg}
 error-archive-agent install-hooks
 error-archive-agent connect-project /path/to/project`,
+  }
+})
+
+/** 최신 커넥터 버전 조회(BE 경유). 레이스 방지용 ticket. 설치 명령은 @latest 라 실패해도 안내는 그대로 유효. */
+async function checkGuideLatest() {
+  const ticket = ++versionTicket
+  versionStatus.value = 'loading'
+  try {
+    const { data } = await agentConnectionApi.connectorVersion()
+    if (ticket !== versionTicket) return
+    if (data.latest) {
+      latestVersion.value = data.latest
+      versionStatus.value = 'success'
+    } else {
+      latestVersion.value = null
+      versionStatus.value = 'error'
+    }
+  } catch {
+    if (ticket !== versionTicket) return
+    latestVersion.value = null
+    versionStatus.value = 'error'
+  }
+}
+
+function openGuide() {
+  versionTarget.value = 'latest'
+  latestVersion.value = null
+  versionStatus.value = 'loading'
+  modal.value = 'guide'
+  void checkGuideLatest()
+}
+
+function pinVersion() {
+  if (versionStatus.value === 'success' && latestVersion.value) {
+    versionTarget.value = latestVersion.value
+    toast(`설치 명령을 v${versionTarget.value}로 고정했어요.`)
+  }
+}
+function useLatestVersion() {
+  versionTarget.value = 'latest'
+  toast('설치 명령을 @latest로 변경했어요.')
 }
 </script>
 
@@ -159,7 +220,7 @@ error-archive-agent connect-project /path/to/project`,
         <h3>Claude Code</h3>
         <p class="small muted">MCP 커넥터 · 초안 수집 · 근거 파일</p>
       </div>
-      <button type="button" class="btn small" @click="modal = 'guide'">설치 안내</button>
+      <button type="button" class="btn small" @click="openGuide">설치 안내</button>
     </div>
 
     <div class="row between">
@@ -262,17 +323,63 @@ error-archive-agent connect-project /path/to/project`,
       </div>
       <div class="notice amber" style="margin-top: 18px">창을 닫으면 토큰을 다시 볼 수 없습니다. 분실하면 연결을 폐기하고 새로 발급해 주세요.</div>
       <template #footer>
-        <button type="button" class="btn primary" @click="modal = 'guide'">보관했어요 · 설치 안내</button>
+        <button type="button" class="btn primary" @click="openGuide">보관했어요 · 설치 안내</button>
       </template>
     </CapModal>
 
     <!-- 설치 안내 -->
     <CapModal :show="modal === 'guide'" title="Claude Code 연결하기" large @close="modal = null">
-      <p class="subtitle">Node.js 20 이상과 패키지 읽기 권한이 필요합니다. 아래 버전은 코드 기준이며, npm 게시·접근 가능 여부를 먼저 확인해 주세요.</p>
+      <p class="subtitle">Node.js 20 이상과 npm 패키지 읽기 권한이 필요합니다. 아래 명령은 기본적으로 최신 배포 버전을 사용해요.</p>
+
+      <div class="guide-version">
+        <div class="guide-version-top">
+          <span class="guide-package mono">{{ GUIDE_PACKAGE }}</span>
+          <a class="guide-npm-link" :href="GUIDE_NPM_URL" target="_blank" rel="noopener noreferrer">npm에서 보기 <CapIcon name="external" /></a>
+        </div>
+        <div class="guide-version-status" aria-live="polite">
+          <template v-if="versionStatus === 'loading'">
+            <span class="version-loading" aria-hidden="true" />
+            <span class="small muted">최신 버전 확인 중…</span>
+          </template>
+          <template v-else-if="versionStatus === 'success'">
+            <span class="small muted">최신 배포 버전</span>
+            <strong class="mono">v{{ latestVersion }}</strong>
+          </template>
+          <template v-else>
+            <span class="version-error"><CapIcon name="alert" />최신 버전을 확인하지 못했어요.</span>
+          </template>
+          <button
+            type="button"
+            class="btn ghost version-refresh"
+            :disabled="versionStatus === 'loading'"
+            aria-label="최신 배포 버전 다시 확인"
+            @click="checkGuideLatest"
+          >
+            <CapIcon name="refresh" />{{ versionStatus === 'error' ? '다시 확인' : '새로고침' }}
+          </button>
+        </div>
+        <div class="guide-version-caption">비공개 패키지입니다. npm 계정에 조직 읽기 권한이 있어야 설치하거나 버전을 확인할 수 있어요.</div>
+        <div class="guide-target-note">설치 대상 <code>{{ GUIDE_PACKAGE }}@{{ versionTarget }}</code> · {{ targetNote }}</div>
+        <details class="guide-version-details">
+          <summary><CapIcon name="down" />버전 직접 확인 및 고정</summary>
+          <p class="tiny muted" style="margin-top: 8px">웹에서 버전 확인이 안 되면 npm 로그인 후 터미널에서 조회하세요. 버전 표시와 설치 명령은 독립적입니다.</p>
+          <div class="code-box">
+            <pre>npm view @error-archive/agent dist-tags.latest</pre>
+            <button type="button" class="iconbtn" aria-label="명령 복사" @click="copyText('npm view @error-archive/agent dist-tags.latest')"><CapIcon name="copy" /></button>
+          </div>
+          <div class="guide-pin-row">
+            <span class="tiny muted">{{ isPinned ? `현재 명령은 v${versionTarget}로 고정되어 있어요.` : '같은 버전을 재사용해야 할 때만 고정하세요.' }}</span>
+            <button v-if="isPinned" type="button" class="btn small" @click="useLatestVersion">최신 버전 사용</button>
+            <button v-else-if="hasVersion" type="button" class="btn small" @click="pinVersion">v{{ latestVersion }}로 고정</button>
+          </div>
+        </details>
+      </div>
+
       <div class="guide-step">
         <span class="guide-n">1</span>
         <div class="grow">
           <h3>패키지에 접근하고 MCP를 등록해요</h3>
+          <p class="guide-step-hint">처음 설치하는 경우 npm에 로그인한 뒤 Claude Code에 MCP를 등록합니다.</p>
           <div class="code-box">
             <pre>{{ guideCommands.register }}</pre>
             <button type="button" class="iconbtn" aria-label="명령 복사" @click="copyText(guideCommands.register)"><CapIcon name="copy" /></button>
@@ -303,7 +410,7 @@ error-archive-agent connect-project /path/to/project`,
             <pre>{{ guideCommands.doctor }}</pre>
             <button type="button" class="iconbtn" aria-label="명령 복사" @click="copyText(guideCommands.doctor)"><CapIcon name="copy" /></button>
           </div>
-          <p class="small muted">진단을 마친 후 이 목록을 새로고침하면 최근 사용 시각을 확인할 수 있어요.</p>
+          <p class="small muted">진단을 마친 후 웹의 연결 목록을 새로고침하면 최근 사용 시각을 확인할 수 있어요.</p>
         </div>
       </div>
       <div class="guide-step">
@@ -319,6 +426,7 @@ error-archive-agent connect-project /path/to/project`,
         </div>
       </div>
       <div class="notice neutral">프로젝트 승인에는 도구 입력·출력 수집이 포함됩니다. 프롬프트 원문은 저장하지 않으며, 민감 경로 제외·시크릿 마스킹·크기 제한이 적용됩니다. 로컬 수집 중지는 ERROR_ARCHIVE_COLLECT=off로 설정하세요.</div>
+      <p class="guide-install-footer">이미 설치했다면: 실행 중인 MCP는 즉시 바뀌지 않아요. 이전에 특정 버전으로 등록한 MCP는 새 명령으로 재등록하고 Claude Code를 다시 시작하세요. 전역 Hook 커넥터는 4번의 npm 설치 명령을 다시 실행해 갱신하세요.</p>
       <template #footer>
         <button type="button" class="btn primary" @click="modal = null">안내 확인</button>
       </template>
