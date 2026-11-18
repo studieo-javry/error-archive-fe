@@ -34,7 +34,7 @@ const ghRefs = props.githubRefs ? useGithubRefs() : null
 // 링크로 바꿀 참조 — 코드 블록·인라인 코드 안은 빼고 센다(렌더와 같은 규칙).
 const refKeys = computed(() => {
   if (!ghRefs) return []
-  const text = props.content.replace(/```[^\n]*\n[\s\S]*?```/g, '').replace(/`[^`]+`/g, '')
+  const text = props.content.replace(/^```[^\n]*\n[\s\S]*?^```[ \t]*$/gm, '').replace(/`[^`]+`/g, '')
   return collectRefKeys(text)
 })
 watch(refKeys, keys => { if (keys.length) ghRefs?.request(keys) }, { immediate: true })
@@ -51,10 +51,11 @@ const SENTINEL = /@@CODEBLOCK(\d+)@@/g
 const rendered = computed(() => {
   const blocks: string[] = []
 
-  // CommonMark: info-string 전체 중 첫 토큰만 언어, 나머지는 메타(파일경로 등)로 취급한다.
-  // 과거 정규식 ```(\w*)\n 은 ```lang src/Foo.ts 처럼 공백 있는 info-string 을 아예 매칭하지 못해
-  // 여는 펜스가 리터럴로 남고, 닫는 ``` 이 다음 블록의 여는 펜스와 짝지어져 이후 본문이 연쇄로 깨졌다.
-  const src = props.content.replace(/```([^\n]*)\n([\s\S]*?)```/g, (_m, info: string, code: string) => {
+  // CommonMark 규칙에 맞춘 펜스 인식:
+  //  (1) info-string 전체를 받아 첫 토큰만 언어, 나머지는 메타(파일경로 등)로 — ```lang src/Foo.ts 지원.
+  //  (2) 여는/닫는 ``` 를 줄 시작에서만(^…$, /m) 인식 — 문장 중간에 쓴 ``` 는 펜스로 보지 않는다.
+  //      (예: "에러는 ``` 로 감싸요" 처럼 설명용 ``` 가 멀리 떨어진 다음 ``` 까지 통째로 삼키던 버그 방지)
+  const src = props.content.replace(/^```([^\n]*)\n([\s\S]*?)^```[ \t]*$/gm, (_m, info: string, code: string) => {
     const parts = info.trim().split(/\s+/).filter(Boolean)
     const lang = parts[0] ?? ''
     const filePath = parts.slice(1).join(' ')
