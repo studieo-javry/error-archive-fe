@@ -34,7 +34,7 @@ const ghRefs = props.githubRefs ? useGithubRefs() : null
 // 링크로 바꿀 참조 — 코드 블록·인라인 코드 안은 빼고 센다(렌더와 같은 규칙).
 const refKeys = computed(() => {
   if (!ghRefs) return []
-  const text = props.content.replace(/```(\w*)\n([\s\S]*?)```/g, '').replace(/`[^`]+`/g, '')
+  const text = props.content.replace(/```[^\n]*\n[\s\S]*?```/g, '').replace(/`[^`]+`/g, '')
   return collectRefKeys(text)
 })
 watch(refKeys, keys => { if (keys.length) ghRefs?.request(keys) }, { immediate: true })
@@ -51,14 +51,22 @@ const SENTINEL = /@@CODEBLOCK(\d+)@@/g
 const rendered = computed(() => {
   const blocks: string[] = []
 
-  const src = props.content.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, lang: string, code: string) => {
+  // CommonMark: info-string 전체 중 첫 토큰만 언어, 나머지는 메타(파일경로 등)로 취급한다.
+  // 과거 정규식 ```(\w*)\n 은 ```lang src/Foo.ts 처럼 공백 있는 info-string 을 아예 매칭하지 못해
+  // 여는 펜스가 리터럴로 남고, 닫는 ``` 이 다음 블록의 여는 펜스와 짝지어져 이후 본문이 연쇄로 깨졌다.
+  const src = props.content.replace(/```([^\n]*)\n([\s\S]*?)```/g, (_m, info: string, code: string) => {
+    const parts = info.trim().split(/\s+/).filter(Boolean)
+    const lang = parts[0] ?? ''
+    const filePath = parts.slice(1).join(' ')
     const body = code.replace(/\s+$/, '')
     const known = Boolean(lang) && lang !== 'text' && Boolean(hljs.getLanguage(lang))
     const inner = known ? hljs.highlight(body, { language: lang }).value : escapeHtml(body)
+    // 경로가 있으면 함께 노출 — Import 후 스니펫 카드(filePathOrClass)와 리뷰 미리보기를 일치시킨다.
+    const label = [filePath, known ? lang : ''].filter(Boolean).join(' · ')
     blocks.push(
       '<pre class="relative bg-[#ececee] dark:bg-zinc-800/80 border-l-2 border-emerald-500/70 pl-3 pr-3 py-2.5 overflow-x-auto themed-scroll my-2">'
-      + (known
-        ? `<span class="absolute right-2 top-1.5 text-[10px] font-mono text-zinc-400 dark:text-zinc-500 select-none">${escapeHtml(lang)}</span>`
+      + (label
+        ? `<span class="absolute right-2 top-1.5 text-[10px] font-mono text-zinc-400 dark:text-zinc-500 select-none">${escapeHtml(label)}</span>`
         : '')
       + `<code class="hljs text-xs font-mono">${inner}</code></pre>`,
     )
