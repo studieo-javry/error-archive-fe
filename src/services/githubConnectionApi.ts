@@ -9,10 +9,14 @@ import type {
 
 // core-api /integrations/github — 멀티-공간 연결(2차). 설치 1건을 여러 공간에 연결하고 공간별 레포를 선택한다.
 export const githubConnectionApi = {
-  /** 연결 옵션(시나리오 ②) — 저장 토큰이 있으면 GitHub 재이동 없이 바로 후보. discoveryStatus 로 분기. */
-  getConnectionOptions(workspaceId: number | null) {
+  /**
+   * 연결 옵션(시나리오 ②) — 저장 토큰이 있으면 GitHub 재이동 없이 바로 후보. discoveryStatus 로 분기.
+   * [remember]=true 면 "인증 유지" 동의 — 서버가 인가 토큰을 refresh 토큰과 함께 보관해 다음 연결에서 재인증을
+   * 생략한다(기본 false=미보관, 약 8시간 뒤 재인증). 서버가 authorizeUrl 의 state 에 실어 왕복 유지.
+   */
+  getConnectionOptions(workspaceId: number | null, remember = false) {
     return apiClient.get<GithubConnectionOptions>('/integrations/github/connection-options', {
-      params: workspaceId != null ? { workspaceId } : undefined,
+      params: { ...(workspaceId != null ? { workspaceId } : {}), ...(remember ? { remember: true } : {}) },
     })
   },
   /** OAuth 인가 URL(+서명 state). 저장 토큰이 없을 때 이 URL 로 이동해 사용자 토큰을 받는다. */

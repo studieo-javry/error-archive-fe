@@ -266,6 +266,8 @@ interface Draft {
   selected: number[]
   shareable: boolean
   updated: boolean
+  /** "인증 유지" 동의 — 켜면 서버가 refresh 토큰까지 보관해 다음 연결에서 재인증 생략. 기본 false(=약 8시간 뒤 재인증). */
+  remember: boolean
 }
 
 const dialogEl = ref<HTMLDialogElement | null>(null)
@@ -334,6 +336,7 @@ function startConnect() {
     selected: [],
     shareable: true,
     updated: false,
+    remember: false,
   }
   openDialog('scope')
 }
@@ -349,7 +352,7 @@ async function continueToGithub() {
   starting.value = true
   const workspaceId = wsScopeId(d.scope)
   try {
-    const { data } = await githubConnectionApi.getConnectionOptions(workspaceId)
+    const { data } = await githubConnectionApi.getConnectionOptions(workspaceId, d.remember)
     if (data.status === 'VERIFIED_AVAILABLE') {
       starting.value = false
       openAccounts(data.candidates)
@@ -460,6 +463,7 @@ function editConnection(conn: GithubConnection) {
     selected: conn.selectedRepositories.map(r => r.repoId).filter(id => conn.availableRepositories.some(a => a.repoId === id)),
     shareable: true,
     updated: false,
+    remember: false,
   }
   openDialog('repos')
 }
@@ -526,6 +530,7 @@ function askDisconnect(conn: GithubConnection) {
     selected: [],
     shareable: true,
     updated: false,
+    remember: false,
   }
   openDialog('disconnect')
 }
@@ -647,6 +652,7 @@ async function handleCallback() {
       selected: [],
       shareable: true,
       updated: false,
+      remember: false,
     }
     // 방금 설치한 계정(installation_id 일치)이 있으면 자동 선택 후 저장소 선택 단계로 바로 보낸다.
     const justInstalled = installationId
@@ -1061,8 +1067,26 @@ onMounted(async () => {
           <div class="modal-inner">
             <div class="steps gh2-steps"><template v-for="(s, k) in steps" :key="s"><GhIcon v-if="k" name="chevron" class="gh2-sep" /><span class="gh2-step" :class="{ current: k === 1 }"><span class="step-num">{{ k < 1 ? '✓' : k + 1 }}</span>{{ s }}</span></template></div>
             <h2 id="gh-dialog-title" tabindex="-1">GitHub 계정으로 계속</h2>
-            <p class="modal-intro">GitHub App은 계정당 한 번만 설치하면 됩니다.</p>
-            <p class="scope-hint"><GhIcon name="info" />이미 설치한 계정이면 다시 설치하지 않고 저장소만 고르면 돼요. 처음이라면 다음 화면에서 GitHub 설치를 진행합니다.</p>
+            <p class="modal-intro">GitHub에서 연결할 계정과 사용 가능한 저장소를 확인합니다.</p>
+            <p class="gh2-desc"><GhIcon name="info" />이미 설치된 GitHub App은 다시 설치하지 않아도 돼요. 필요한 경우에만 GitHub에서 접근 권한을 확인합니다.</p>
+            <section class="gh2-remember-setting" aria-label="선택적 인증 정보 보관 설정">
+              <span class="gh2-option-label">다음 연결을 위한 선택 설정</span>
+              <label class="gh2-selection">
+                <input type="checkbox" :checked="draft.remember" @change="draft.remember = ($event.target as HTMLInputElement).checked" />
+                <span class="gh2-setting-main">
+                  <span class="gh2-setting-head"><span class="gh2-setting-title">다음에도 GitHub 인증 유지</span><span class="gh2-optional">선택</span></span>
+                  <span class="gh2-setting-desc">선택하면 인증 정보를 암호화해 보관하고, 다음에 저장소를 연결하거나 변경할 때 반복 인증을 줄일 수 있어요.</span>
+                </span>
+              </label>
+              <div class="gh2-setting-supplement"><GhIcon name="shield" />선택하지 않아도 이번 연결은 그대로 진행할 수 있어요.</div>
+              <details class="gh2-inline-details">
+                <summary><span>보관 방식과 해제 방법</span><svg class="gh2-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke-linecap="round" stroke-linejoin="round" /></svg></summary>
+                <div class="gh2-details-content">
+                  <p>인증 유지에 동의하면 GitHub 사용자 인증 정보를 서버에서 암호화해 보관하고, 유효한 범위에서 재사용할 수 있어요. 토큰 만료나 GitHub 권한 변경 시에는 다시 인증해야 할 수 있어요.</p>
+                  <p>인증 정보 보관은 GitHub App 설치와 별개예요. 연결 관리에서 저장된 인증 정보를 삭제할 수 있어요.</p>
+                </div>
+              </details>
+            </section>
           </div>
           <div class="modal-actions"><button type="button" class="button ghost" @click="openDialog('scope')">이전</button><button type="button" class="button primary" :disabled="starting" @click="continueToGithub">GitHub에서 계정 확인 <GhIcon name="arrow" /></button></div>
         </template>
