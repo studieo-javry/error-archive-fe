@@ -11,4 +11,4 @@ resources:
 images:
 - name: error-archive-fe
   newName: ghcr.io/studieo-javry/error-archive-fe
-  newTag: latest
+  newTag: 738ac7d79de0149c89d19566f5e9795e6044985a
